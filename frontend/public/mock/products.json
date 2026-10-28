@@ -1,0 +1,647 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "title": "Phone X Pro",
+      "description": "Phone X Pro by Apex. Reliable quality and great value, ideal for everyday use.",
+      "category": "smartphones",
+      "price": 699.0,
+      "discountPercentage": 5.0,
+      "rating": 4.5,
+      "stock": 3,
+      "brand": "Apex",
+      "thumbnail": "https://picsum.photos/seed/prod1-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod1-a/600/600",
+        "https://picsum.photos/seed/prod1-b/600/600"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Phone A Series",
+      "description": "Phone A Series by Nova. Reliable quality and great value, ideal for everyday use.",
+      "category": "smartphones",
+      "price": 449.0,
+      "discountPercentage": 8.0,
+      "rating": 4.0,
+      "stock": 12,
+      "brand": "Nova",
+      "thumbnail": "https://picsum.photos/seed/prod2-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod2-a/600/600",
+        "https://picsum.photos/seed/prod2-b/600/600"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Budget Phone Lite",
+      "description": "Budget Phone Lite by Zento. Reliable quality and great value, ideal for everyday use.",
+      "category": "smartphones",
+      "price": 179.0,
+      "discountPercentage": 10.0,
+      "rating": 4.9,
+      "stock": 25,
+      "brand": "Zento",
+      "thumbnail": "https://picsum.photos/seed/prod3-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod3-a/600/600",
+        "https://picsum.photos/seed/prod3-b/600/600"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Rugged Phone R2",
+      "description": "Rugged Phone R2 by Terra. Reliable quality and great value, ideal for everyday use.",
+      "category": "smartphones",
+      "price": 329.0,
+      "discountPercentage": 12.0,
+      "rating": 4.4,
+      "stock": 48,
+      "brand": "Terra",
+      "thumbnail": "https://picsum.photos/seed/prod4-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod4-a/600/600",
+        "https://picsum.photos/seed/prod4-b/600/600"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Foldable Flip 5",
+      "description": "Foldable Flip 5 by Nova. Reliable quality and great value, ideal for everyday use.",
+      "category": "smartphones",
+      "price": 999.0,
+      "discountPercentage": 15.0,
+      "rating": 3.9,
+      "stock": 80,
+      "brand": "Nova",
+      "thumbnail": "https://picsum.photos/seed/prod5-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod5-a/600/600",
+        "https://picsum.photos/seed/prod5-b/600/600"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Camera Phone Pro",
+      "description": "Camera Phone Pro by Apex. Reliable quality and great value, ideal for everyday use.",
+      "category": "smartphones",
+      "price": 849.0,
+      "discountPercentage": 20.0,
+      "rating": 4.8,
+      "stock": 0,
+      "brand": "Apex",
+      "thumbnail": "https://picsum.photos/seed/prod6-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod6-a/600/600",
+        "https://picsum.photos/seed/prod6-b/600/600"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Gaming Phone G1",
+      "description": "Gaming Phone G1 by Zento. Reliable quality and great value, ideal for everyday use.",
+      "category": "smartphones",
+      "price": 599.0,
+      "discountPercentage": 0.0,
+      "rating": 4.3,
+      "stock": 3,
+      "brand": "Zento",
+      "thumbnail": "https://picsum.photos/seed/prod7-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod7-a/600/600",
+        "https://picsum.photos/seed/prod7-b/600/600"
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Compact Phone Mini",
+      "description": "Compact Phone Mini by Apex. Reliable quality and great value, ideal for everyday use.",
+      "category": "smartphones",
+      "price": 399.0,
+      "discountPercentage": 5.0,
+      "rating": 3.8,
+      "stock": 12,
+      "brand": "Apex",
+      "thumbnail": "https://picsum.photos/seed/prod8-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod8-a/600/600",
+        "https://picsum.photos/seed/prod8-b/600/600"
+      ]
+    },
+    {
+      "id": 9,
+      "title": "UltraSlim 14",
+      "description": "UltraSlim 14 by Apex. Reliable quality and great value, ideal for everyday use.",
+      "category": "laptops",
+      "price": 1099.0,
+      "discountPercentage": 8.0,
+      "rating": 4.7,
+      "stock": 25,
+      "brand": "Apex",
+      "thumbnail": "https://picsum.photos/seed/prod9-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod9-a/600/600",
+        "https://picsum.photos/seed/prod9-b/600/600"
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Gaming Laptop Raptor",
+      "description": "Gaming Laptop Raptor by Zento. Reliable quality and great value, ideal for everyday use.",
+      "category": "laptops",
+      "price": 1499.0,
+      "discountPercentage": 10.0,
+      "rating": 4.2,
+      "stock": 48,
+      "brand": "Zento",
+      "thumbnail": "https://picsum.photos/seed/prod10-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod10-a/600/600",
+        "https://picsum.photos/seed/prod10-b/600/600"
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Student Laptop 15",
+      "description": "Student Laptop 15 by Nova. Reliable quality and great value, ideal for everyday use.",
+      "category": "laptops",
+      "price": 549.0,
+      "discountPercentage": 12.0,
+      "rating": 3.7,
+      "stock": 80,
+      "brand": "Nova",
+      "thumbnail": "https://picsum.photos/seed/prod11-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod11-a/600/600",
+        "https://picsum.photos/seed/prod11-b/600/600"
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Business Pro 13",
+      "description": "Business Pro 13 by Terra. Reliable quality and great value, ideal for everyday use.",
+      "category": "laptops",
+      "price": 1249.0,
+      "discountPercentage": 15.0,
+      "rating": 4.6,
+      "stock": 0,
+      "brand": "Terra",
+      "thumbnail": "https://picsum.photos/seed/prod12-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod12-a/600/600",
+        "https://picsum.photos/seed/prod12-b/600/600"
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Chromebook Go",
+      "description": "Chromebook Go by Nova. Reliable quality and great value, ideal for everyday use.",
+      "category": "laptops",
+      "price": 299.0,
+      "discountPercentage": 20.0,
+      "rating": 4.1,
+      "stock": 3,
+      "brand": "Nova",
+      "thumbnail": "https://picsum.photos/seed/prod13-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod13-a/600/600",
+        "https://picsum.photos/seed/prod13-b/600/600"
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Creator Studio 16",
+      "description": "Creator Studio 16 by Apex. Reliable quality and great value, ideal for everyday use.",
+      "category": "laptops",
+      "price": 1899.0,
+      "discountPercentage": 0.0,
+      "rating": 3.6,
+      "stock": 12,
+      "brand": "Apex",
+      "thumbnail": "https://picsum.photos/seed/prod14-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod14-a/600/600",
+        "https://picsum.photos/seed/prod14-b/600/600"
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Ocean Breeze 100ml",
+      "description": "Ocean Breeze 100ml by Aura. Reliable quality and great value, ideal for everyday use.",
+      "category": "fragrances",
+      "price": 49.0,
+      "discountPercentage": 5.0,
+      "rating": 4.5,
+      "stock": 25,
+      "brand": "Aura",
+      "thumbnail": "https://picsum.photos/seed/prod15-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod15-a/600/600",
+        "https://picsum.photos/seed/prod15-b/600/600"
+      ]
+    },
+    {
+      "id": 16,
+      "title": "Midnight Oud 50ml",
+      "description": "Midnight Oud 50ml by Aura. Reliable quality and great value, ideal for everyday use.",
+      "category": "fragrances",
+      "price": 89.0,
+      "discountPercentage": 8.0,
+      "rating": 4.0,
+      "stock": 48,
+      "brand": "Aura",
+      "thumbnail": "https://picsum.photos/seed/prod16-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod16-a/600/600",
+        "https://picsum.photos/seed/prod16-b/600/600"
+      ]
+    },
+    {
+      "id": 17,
+      "title": "Citrus Bloom 75ml",
+      "description": "Citrus Bloom 75ml by Lume. Reliable quality and great value, ideal for everyday use.",
+      "category": "fragrances",
+      "price": 39.0,
+      "discountPercentage": 10.0,
+      "rating": 4.9,
+      "stock": 80,
+      "brand": "Lume",
+      "thumbnail": "https://picsum.photos/seed/prod17-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod17-a/600/600",
+        "https://picsum.photos/seed/prod17-b/600/600"
+      ]
+    },
+    {
+      "id": 18,
+      "title": "Vanilla Amber 100ml",
+      "description": "Vanilla Amber 100ml by Lume. Reliable quality and great value, ideal for everyday use.",
+      "category": "fragrances",
+      "price": 59.0,
+      "discountPercentage": 12.0,
+      "rating": 4.4,
+      "stock": 0,
+      "brand": "Lume",
+      "thumbnail": "https://picsum.photos/seed/prod18-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod18-a/600/600",
+        "https://picsum.photos/seed/prod18-b/600/600"
+      ]
+    },
+    {
+      "id": 19,
+      "title": "Organic Olive Oil 1L",
+      "description": "Organic Olive Oil 1L by Greenfield. Reliable quality and great value, ideal for everyday use.",
+      "category": "groceries",
+      "price": 12.0,
+      "discountPercentage": 15.0,
+      "rating": 3.9,
+      "stock": 3,
+      "brand": "Greenfield",
+      "thumbnail": "https://picsum.photos/seed/prod19-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod19-a/600/600",
+        "https://picsum.photos/seed/prod19-b/600/600"
+      ]
+    },
+    {
+      "id": 20,
+      "title": "Basmati Rice 5kg",
+      "description": "Basmati Rice 5kg by Golden Grain. Reliable quality and great value, ideal for everyday use.",
+      "category": "groceries",
+      "price": 14.0,
+      "discountPercentage": 20.0,
+      "rating": 4.8,
+      "stock": 12,
+      "brand": "Golden Grain",
+      "thumbnail": "https://picsum.photos/seed/prod20-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod20-a/600/600",
+        "https://picsum.photos/seed/prod20-b/600/600"
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Honey Jar 500g",
+      "description": "Honey Jar 500g by Greenfield. Reliable quality and great value, ideal for everyday use.",
+      "category": "groceries",
+      "price": 9.0,
+      "discountPercentage": 0.0,
+      "rating": 4.3,
+      "stock": 25,
+      "brand": "Greenfield",
+      "thumbnail": "https://picsum.photos/seed/prod21-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod21-a/600/600",
+        "https://picsum.photos/seed/prod21-b/600/600"
+      ]
+    },
+    {
+      "id": 22,
+      "title": "Mixed Nuts 1kg",
+      "description": "Mixed Nuts 1kg by Golden Grain. Reliable quality and great value, ideal for everyday use.",
+      "category": "groceries",
+      "price": 18.0,
+      "discountPercentage": 5.0,
+      "rating": 3.8,
+      "stock": 48,
+      "brand": "Golden Grain",
+      "thumbnail": "https://picsum.photos/seed/prod22-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod22-a/600/600",
+        "https://picsum.photos/seed/prod22-b/600/600"
+      ]
+    },
+    {
+      "id": 23,
+      "title": "Green Tea Box",
+      "description": "Green Tea Box by Leafy. Reliable quality and great value, ideal for everyday use.",
+      "category": "groceries",
+      "price": 6.0,
+      "discountPercentage": 8.0,
+      "rating": 4.7,
+      "stock": 80,
+      "brand": "Leafy",
+      "thumbnail": "https://picsum.photos/seed/prod23-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod23-a/600/600",
+        "https://picsum.photos/seed/prod23-b/600/600"
+      ]
+    },
+    {
+      "id": 24,
+      "title": "Dates Box 1kg",
+      "description": "Dates Box 1kg by Golden Grain. Reliable quality and great value, ideal for everyday use.",
+      "category": "groceries",
+      "price": 11.0,
+      "discountPercentage": 10.0,
+      "rating": 4.2,
+      "stock": 0,
+      "brand": "Golden Grain",
+      "thumbnail": "https://picsum.photos/seed/prod24-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod24-a/600/600",
+        "https://picsum.photos/seed/prod24-b/600/600"
+      ]
+    },
+    {
+      "id": 25,
+      "title": "Ceramic Vase",
+      "description": "Ceramic Vase by Casa. Reliable quality and great value, ideal for everyday use.",
+      "category": "home-decoration",
+      "price": 24.0,
+      "discountPercentage": 12.0,
+      "rating": 3.7,
+      "stock": 3,
+      "brand": "Casa",
+      "thumbnail": "https://picsum.photos/seed/prod25-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod25-a/600/600",
+        "https://picsum.photos/seed/prod25-b/600/600"
+      ]
+    },
+    {
+      "id": 26,
+      "title": "Wall Clock Minimal",
+      "description": "Wall Clock Minimal by Casa. Reliable quality and great value, ideal for everyday use.",
+      "category": "home-decoration",
+      "price": 19.0,
+      "discountPercentage": 15.0,
+      "rating": 4.6,
+      "stock": 12,
+      "brand": "Casa",
+      "thumbnail": "https://picsum.photos/seed/prod26-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod26-a/600/600",
+        "https://picsum.photos/seed/prod26-b/600/600"
+      ]
+    },
+    {
+      "id": 27,
+      "title": "LED Floor Lamp",
+      "description": "LED Floor Lamp by Lume. Reliable quality and great value, ideal for everyday use.",
+      "category": "home-decoration",
+      "price": 45.0,
+      "discountPercentage": 20.0,
+      "rating": 4.1,
+      "stock": 25,
+      "brand": "Lume",
+      "thumbnail": "https://picsum.photos/seed/prod27-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod27-a/600/600",
+        "https://picsum.photos/seed/prod27-b/600/600"
+      ]
+    },
+    {
+      "id": 28,
+      "title": "Cotton Cushion Set",
+      "description": "Cotton Cushion Set by Casa. Reliable quality and great value, ideal for everyday use.",
+      "category": "home-decoration",
+      "price": 28.0,
+      "discountPercentage": 0.0,
+      "rating": 3.6,
+      "stock": 48,
+      "brand": "Casa",
+      "thumbnail": "https://picsum.photos/seed/prod28-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod28-a/600/600",
+        "https://picsum.photos/seed/prod28-b/600/600"
+      ]
+    },
+    {
+      "id": 29,
+      "title": "Yoga Mat Pro",
+      "description": "Yoga Mat Pro by Fitly. Reliable quality and great value, ideal for everyday use.",
+      "category": "sports-accessories",
+      "price": 22.0,
+      "discountPercentage": 5.0,
+      "rating": 4.5,
+      "stock": 80,
+      "brand": "Fitly",
+      "thumbnail": "https://picsum.photos/seed/prod29-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod29-a/600/600",
+        "https://picsum.photos/seed/prod29-b/600/600"
+      ]
+    },
+    {
+      "id": 30,
+      "title": "Adjustable Dumbbells",
+      "description": "Adjustable Dumbbells by Fitly. Reliable quality and great value, ideal for everyday use.",
+      "category": "sports-accessories",
+      "price": 79.0,
+      "discountPercentage": 8.0,
+      "rating": 4.0,
+      "stock": 0,
+      "brand": "Fitly",
+      "thumbnail": "https://picsum.photos/seed/prod30-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod30-a/600/600",
+        "https://picsum.photos/seed/prod30-b/600/600"
+      ]
+    },
+    {
+      "id": 31,
+      "title": "Running Bottle 750ml",
+      "description": "Running Bottle 750ml by Fitly. Reliable quality and great value, ideal for everyday use.",
+      "category": "sports-accessories",
+      "price": 11.0,
+      "discountPercentage": 10.0,
+      "rating": 4.9,
+      "stock": 3,
+      "brand": "Fitly",
+      "thumbnail": "https://picsum.photos/seed/prod31-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod31-a/600/600",
+        "https://picsum.photos/seed/prod31-b/600/600"
+      ]
+    },
+    {
+      "id": 32,
+      "title": "Football Size 5",
+      "description": "Football Size 5 by Goal. Reliable quality and great value, ideal for everyday use.",
+      "category": "sports-accessories",
+      "price": 25.0,
+      "discountPercentage": 12.0,
+      "rating": 4.4,
+      "stock": 12,
+      "brand": "Goal",
+      "thumbnail": "https://picsum.photos/seed/prod32-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod32-a/600/600",
+        "https://picsum.photos/seed/prod32-b/600/600"
+      ]
+    },
+    {
+      "id": 33,
+      "title": "Classic Steel Watch",
+      "description": "Classic Steel Watch by Chrono. Reliable quality and great value, ideal for everyday use.",
+      "category": "mens-watches",
+      "price": 129.0,
+      "discountPercentage": 15.0,
+      "rating": 3.9,
+      "stock": 25,
+      "brand": "Chrono",
+      "thumbnail": "https://picsum.photos/seed/prod33-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod33-a/600/600",
+        "https://picsum.photos/seed/prod33-b/600/600"
+      ]
+    },
+    {
+      "id": 34,
+      "title": "Sport Chronograph",
+      "description": "Sport Chronograph by Chrono. Reliable quality and great value, ideal for everyday use.",
+      "category": "mens-watches",
+      "price": 159.0,
+      "discountPercentage": 20.0,
+      "rating": 4.8,
+      "stock": 48,
+      "brand": "Chrono",
+      "thumbnail": "https://picsum.photos/seed/prod34-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod34-a/600/600",
+        "https://picsum.photos/seed/prod34-b/600/600"
+      ]
+    },
+    {
+      "id": 35,
+      "title": "Minimal Leather Watch",
+      "description": "Minimal Leather Watch by Terra. Reliable quality and great value, ideal for everyday use.",
+      "category": "mens-watches",
+      "price": 89.0,
+      "discountPercentage": 0.0,
+      "rating": 4.3,
+      "stock": 80,
+      "brand": "Terra",
+      "thumbnail": "https://picsum.photos/seed/prod35-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod35-a/600/600",
+        "https://picsum.photos/seed/prod35-b/600/600"
+      ]
+    },
+    {
+      "id": 36,
+      "title": "Smart Watch Fit",
+      "description": "Smart Watch Fit by Nova. Reliable quality and great value, ideal for everyday use.",
+      "category": "mens-watches",
+      "price": 109.0,
+      "discountPercentage": 5.0,
+      "rating": 3.8,
+      "stock": 0,
+      "brand": "Nova",
+      "thumbnail": "https://picsum.photos/seed/prod36-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod36-a/600/600",
+        "https://picsum.photos/seed/prod36-b/600/600"
+      ]
+    },
+    {
+      "id": 37,
+      "title": "Leather Tote Bag",
+      "description": "Leather Tote Bag by Elle. Reliable quality and great value, ideal for everyday use.",
+      "category": "womens-bags",
+      "price": 119.0,
+      "discountPercentage": 8.0,
+      "rating": 4.7,
+      "stock": 3,
+      "brand": "Elle",
+      "thumbnail": "https://picsum.photos/seed/prod37-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod37-a/600/600",
+        "https://picsum.photos/seed/prod37-b/600/600"
+      ]
+    },
+    {
+      "id": 38,
+      "title": "Crossbody Mini",
+      "description": "Crossbody Mini by Elle. Reliable quality and great value, ideal for everyday use.",
+      "category": "womens-bags",
+      "price": 69.0,
+      "discountPercentage": 10.0,
+      "rating": 4.2,
+      "stock": 12,
+      "brand": "Elle",
+      "thumbnail": "https://picsum.photos/seed/prod38-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod38-a/600/600",
+        "https://picsum.photos/seed/prod38-b/600/600"
+      ]
+    },
+    {
+      "id": 39,
+      "title": "Evening Clutch",
+      "description": "Evening Clutch by Elle. Reliable quality and great value, ideal for everyday use.",
+      "category": "womens-bags",
+      "price": 54.0,
+      "discountPercentage": 12.0,
+      "rating": 3.7,
+      "stock": 25,
+      "brand": "Elle",
+      "thumbnail": "https://picsum.photos/seed/prod39-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod39-a/600/600",
+        "https://picsum.photos/seed/prod39-b/600/600"
+      ]
+    },
+    {
+      "id": 40,
+      "title": "Canvas Backpack",
+      "description": "Canvas Backpack by Elle. Reliable quality and great value, ideal for everyday use.",
+      "category": "womens-bags",
+      "price": 42.0,
+      "discountPercentage": 15.0,
+      "rating": 4.6,
+      "stock": 48,
+      "brand": "Elle",
+      "thumbnail": "https://picsum.photos/seed/prod40-thumb/300/300",
+      "images": [
+        "https://picsum.photos/seed/prod40-a/600/600",
+        "https://picsum.photos/seed/prod40-b/600/600"
+      ]
+    }
+  ],
+  "total": 40,
+  "skip": 0,
+  "limit": 40
+}
