@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/*
+ * The Crown & Anchor — Tailwind CSS v4 starter.
+ * Confirm Tailwind v4 is installed before using this file.
+ * Load approved font files or import fonts using the project's agreed approach.
+ */
+
+@theme {
+  --color-brand-navy: #0B2D4A;
+  --color-brand-gold: #D4AF37;
+  --color-surface-cream: #F8F7F4;
+  --color-text-slate: #64748B;
+  --color-text-main: #1F2937;
+  --color-surface-white: #FFFFFF;
+  --color-border-subtle: #E5E7EB;
+  --color-status-success: #15803D;
+  --color-status-error: #B91C1C;
+  --color-status-warning: #A16207;
+  --color-status-info: #1D4ED8;
+
+  --font-sans: "Inter", "Cairo", system-ui, sans-serif;
+  --font-arabic: "Cairo", system-ui, sans-serif;
+  --font-latin: "Inter", system-ui, sans-serif;
+}
+
+:root {
+  font-family: "Inter", "Cairo", system-ui, sans-serif;
+  color: var(--color-text-main);
+  background: var(--color-surface-cream);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  min-width: 320px;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--color-surface-cream);
+  color: var(--color-text-main);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-brand-gold);
+  outline-offset: 2px;
+}
+
+/*
+ * Set lang and dir dynamically when the active locale changes, e.g.:
+ * Arabic: <html lang="ar" dir="rtl">
+ * English: <html lang="en" dir="ltr">
+ *
+ * Prefer logical CSS properties such as margin-inline-start and padding-inline.
+ */
