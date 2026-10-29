@@ -1,14 +1,15 @@
 import { Outlet } from 'react-router-dom';
-
+import NavBar from '../components/NavBar';
+import Footer from '../components/Footer';
 
 export default function MainLayout() {
   return (
     <div className="app-container">
-      <header className='m-5 '>header</header>
+      <NavBar />
       <main className="main-content">
         <Outlet />   
       </main>
-      <footer>footer</footer>
+      <Footer />
     </div>
   );
 }

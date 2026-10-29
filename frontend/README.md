@@ -1,5 +1,18 @@
 # React + TypeScript + Vite
 
+## Shared design system
+
+The frontend uses Tailwind CSS v4 with shared colors, typography, and base styles
+from `../crown_anchor_design_reference/styles/globals.css`. Keep that file and
+`../crown_anchor_design_reference/tokens/design-tokens.json` in sync when shared
+design tokens change.
+
+Use the shared `lucide-react` icon library for interface icons. Approved logo and
+social artwork is available under `/brand/logo/` and `/brand/social/` in the
+frontend's public assets; use the logo artwork without recoloring or stretching it.
+See the design reference pack's `DESIGN_SYSTEM.md` and `docs/COMPONENT_GUIDELINES.md`
+for RTL/LTR, accessibility, and component conventions.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
