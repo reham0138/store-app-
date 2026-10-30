@@ -16,6 +16,7 @@ import CheckoutPage from "./pages/CheckoutPage";
 
 import OrdersPage from "./pages/OrdersPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
+import ProductsPage from "./pages/ProductPage";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<MainLayout />}>
+          <Route path="products" element={<ProductsPage />} />
             <Route
               path="branch-test"
               element={<BranchSelectorTestPage />}

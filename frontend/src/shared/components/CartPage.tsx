@@ -33,7 +33,7 @@ export default function CartPage() {
         </p>
 
         <Link
-          to="/"
+          to="/products"
           className="mt-6 rounded-lg bg-brand-navy px-6 py-3 font-medium text-white hover:bg-brand-navy/90"
         >
           Explore Products

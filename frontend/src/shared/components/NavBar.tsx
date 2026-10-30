@@ -8,13 +8,14 @@ import {
 
 import { Link } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
+import { ShoppingBag } from "lucide-react";
 
 export default function NavBar() {
   const { totalItems } = useCart();
 
   return (
     <header className="border-b border-border-subtle bg-surface-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+      <div className="flex items-center justify-between gap-4 px-4 py-3">
         <Link
           to="/"
           className="flex min-w-0 items-center gap-3"
@@ -71,7 +72,11 @@ export default function NavBar() {
               </span>
             )}
           </Link>
+<Link to="/products" className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-brand-navy hover:bg-surface-cream sm:px-3">
 
+  <ShoppingBag size={18} />
+  <span>Products</span>
+                      </Link>
           <Link
             to="/orders"
             className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-brand-navy hover:bg-surface-cream sm:px-3"
