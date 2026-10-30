@@ -12,13 +12,18 @@ type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
 };
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ options, placeholder, className = "", ...rest }, ref) => {
+  (
+    { options, placeholder, className = "", value, defaultValue, ...rest },
+    ref,
+  ) => {
     return (
       <select
         ref={ref}
         className={`select ${className}`.trim()}
-        defaultValue=""
         {...rest}
+        {...(value !== undefined
+          ? { value }
+          : { defaultValue: defaultValue ?? (placeholder ? "" : undefined) })}
       >
         {placeholder && (
           <option value="" disabled>

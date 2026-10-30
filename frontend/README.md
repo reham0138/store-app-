@@ -13,6 +13,18 @@ frontend's public assets; use the logo artwork without recoloring or stretching 
 See the design reference pack's `DESIGN_SYSTEM.md` and `docs/COMPONENT_GUIDELINES.md`
 for RTL/LTR, accessibility, and component conventions.
 
+## Branch selector
+
+The shared branch selection state is provided by `BranchProvider`. Set available
+branches through its `initialBranches` prop or the context's `setBranches`
+function, then use `BranchSelector` and `BranchBadge` wherever branch context is
+available. `BranchSelector` is composed from the shared `Input`, `Label`,
+`Select`, and `Button` components. Branches can include `latitude` and
+`longitude` for nearest-branch selection via the browser's Geolocation API;
+location is requested only after the user chooses **Use my location**. Visit
+`/branch-test` to try searching, switching, and resetting branches with
+isolated sample data.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
