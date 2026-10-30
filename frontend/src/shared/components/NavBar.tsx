@@ -1,5 +1,5 @@
-import { House } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { GitBranch, House } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function NavBar() {
   return (
@@ -25,7 +25,7 @@ export default function NavBar() {
           </span>
         </Link>
 
-        <nav aria-label="Main navigation">
+        <nav aria-label="Main navigation" className="flex items-center gap-1">
           <Link
             to="/"
             className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-surface-cream focus-visible:outline-offset-2"
@@ -33,8 +33,15 @@ export default function NavBar() {
             <House aria-hidden="true" size={18} />
             <span>Home</span>
           </Link>
+          <Link
+            to="/branch-test"
+            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-surface-cream focus-visible:outline-offset-2"
+          >
+            <GitBranch aria-hidden="true" size={18} />
+            <span>Branch</span>
+          </Link>
         </nav>
       </div>
     </header>
-  )
+  );
 }
