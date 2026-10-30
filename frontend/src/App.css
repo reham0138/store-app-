@@ -38,6 +38,12 @@ body {
   color: var(--color-text-main);
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 button,
 input,
 select,
@@ -48,4 +54,128 @@ textarea {
 :focus-visible {
   outline: 3px solid var(--color-brand-gold);
   outline-offset: 2px;
+}
+
+.component-showcase {
+  display: grid;
+  gap: 1rem;
+  width: min(100% - 2rem, 48rem);
+  margin: 3rem auto;
+  padding: 2rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 1rem;
+  background-color: var(--color-surface-white);
+  box-shadow: 0 12px 30px rgb(11 45 74 / 8%);
+}
+
+.component-showcase h1 {
+  margin: 0;
+  color: var(--color-brand-navy);
+  font-size: 1.5rem;
+}
+
+.component-showcase__eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--color-brand-gold);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.component-showcase__description {
+  margin: 0.5rem 0 0;
+  color: var(--color-text-slate);
+}
+
+.component-showcase__form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.field__label {
+  color: var(--color-text-main);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.field__required {
+  margin-inline-start: 0.25rem;
+  color: var(--color-status-error);
+}
+
+.input,
+.select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0.625rem;
+  background-color: var(--color-surface-white);
+  color: var(--color-text-main);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.input::placeholder {
+  color: var(--color-text-slate);
+  opacity: 0.75;
+}
+
+.input:hover,
+.select:hover {
+  border-color: var(--color-text-slate);
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--color-brand-navy);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(212 175 55 / 25%);
+}
+
+.input[aria-invalid="true"],
+.select[aria-invalid="true"] {
+  border-color: var(--color-status-error);
+}
+
+.error,
+.hint {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.error {
+  color: var(--color-status-error);
+}
+
+.hint {
+  color: var(--color-text-slate);
+}
+
+.button-showcase__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .component-showcase {
+    padding: 1.25rem;
+  }
+
+  .button-showcase__actions {
+    flex-direction: column;
+  }
+
+  .button-showcase__actions .button {
+    width: 100%;
+  }
 }

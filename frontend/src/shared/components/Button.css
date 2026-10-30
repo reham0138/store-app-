@@ -1,0 +1,77 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.7rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.625rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.button--primary {
+  background-color: var(--color-brand-navy);
+  color: var(--color-surface-white);
+  box-shadow: 0 4px 10px rgb(11 45 74 / 18%);
+}
+
+.button--primary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--color-brand-navy) 88%, black);
+  box-shadow: 0 6px 14px rgb(11 45 74 / 24%);
+}
+
+.button--secondary {
+  background-color: var(--color-brand-gold);
+  color: var(--color-brand-navy);
+  box-shadow: 0 4px 10px rgb(212 175 55 / 18%);
+}
+
+.button--secondary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--color-brand-gold) 88%, black);
+  box-shadow: 0 6px 14px rgb(212 175 55 / 24%);
+}
+
+.button--tertiary {
+  border-color: var(--color-border-subtle);
+  background-color: var(--color-surface-white);
+  color: var(--color-brand-navy);
+}
+
+.button--tertiary:hover:not(:disabled) {
+  border-color: var(--color-brand-navy);
+  background-color: var(--color-surface-cream);
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--color-brand-gold);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+}
