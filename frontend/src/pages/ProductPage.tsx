@@ -4,6 +4,7 @@ import { Search, SlidersHorizontal } from "lucide-react";
 
 import { getProducts } from "../shared/services/product.service";
 import type { StoreProduct } from "../shared/types/cart";
+import ProductCard from "../shared/components/ProductCard";
 
 type SortOption = "default" | "price-low" | "price-high" | "rating";
 
@@ -249,24 +250,15 @@ export default function ProductsPage() {
           </div>
         )}
 
-        {/* Product Cards - To be integrated */}
-        {!loading && !error && filteredProducts.length > 0 && (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="rounded-xl border border-dashed border-border-subtle bg-white p-5 text-center"
-              >
-                <p className="text-sm font-medium text-brand-navy">
-                  {product.title}
-                </p>
-                <p className="mt-1 text-xs text-text-slate">
-                  Product card will be integrated here.
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Product Cards */}
+{!loading && !error && filteredProducts.length > 0 && (
+  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    {filteredProducts.map((product) => (
+      <ProductCard key={product.id} product={product} />
+    ))}
+  </div>
+)}
+      
       </section>
     </main>
   );

@@ -1,12 +1,10 @@
 
 import { useState } from "react";
-import { type Product } from "../types/Product";
+import type { StoreProduct } from "../types/cart";
 import { useCart } from "../contexts/CartContext";
-
 interface ProductCardProps {
-  product: Product;
+  product: StoreProduct;
 }
-
 function ProductCard({ product }: ProductCardProps) {
   const finalPrice = product.price * (1 - product.discountPercentage / 100);
 
