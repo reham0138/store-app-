@@ -38,6 +38,7 @@ body {
   color: var(--color-text-main);
 }
 
+
 *,
 *::before,
 *::after {
@@ -57,10 +58,10 @@ textarea {
 }
 
 .component-showcase {
-  display: grid;
-  gap: 1rem;
-  width: min(100% - 2rem, 48rem);
-  margin: 3rem auto;
+  width: 100%;
+  max-width: 80rem;      
+  margin-inline: auto;   
+  margin-block: 0;
   padding: 2rem;
   border: 1px solid var(--color-border-subtle);
   border-radius: 1rem;
