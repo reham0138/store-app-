@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MapPin } from "lucide-react";
 import Button from "../Button";
-import { Input } from "../Input";
+
 import { Label } from "../Label";
 import { Select } from "../Select";
 import { useBranch } from "../../contexts/useBranch";
@@ -9,7 +9,7 @@ import type { Branch } from "../../types/type";
 
 export function BranchSelector() {
   const { branches, selectedBranch, setSelectedBranch } = useBranch();
-  const [query, setQuery] = useState("");
+ const [query] = useState("");
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
   const defaultBranch =

@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter as Router,
   Route,
@@ -5,15 +6,12 @@ import {
 } from "react-router-dom";
 
 import MainLayout from "./shared/layouts/MainLayout";
-
 import BranchSelectorTestPage from "./pages/BranchSelectorTestPage";
 
 import { CartProvider } from "./shared/contexts/CartContext";
 
-import CartPage from  "../src/shared/components/CartPage" 
-
+import CartPage from "./shared/components/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
-
 import OrdersPage from "./pages/OrdersPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
 import ProductsPage from "./pages/ProductPage";
@@ -24,7 +22,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<MainLayout />}>
-          <Route path="products" element={<ProductsPage />} />
+            <Route index element={<div />} />
+            <Route path="products" element={<ProductsPage />} />
             <Route
               path="branch-test"
               element={<BranchSelectorTestPage />}
@@ -36,7 +35,6 @@ function App() {
               path="order-success"
               element={<OrderSuccessPage />}
             />
-
           </Route>
         </Routes>
       </Router>
