@@ -1,3 +1,9 @@
+export interface BranchInventory {
+  branchId: string;
+  price: number;
+  stock: number;
+}
+
 export interface StoreProduct {
   id: number;
   title: string;
@@ -10,6 +16,7 @@ export interface StoreProduct {
   brand: string;
   thumbnail: string;
   images: string[];
+  branchInventory?: BranchInventory[];
 }
 
 export interface CartItem {
