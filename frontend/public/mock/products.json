@@ -5,8 +5,8 @@
       "title": "Phone X Pro",
       "description": "Phone X Pro by Apex. Reliable quality and great value, ideal for everyday use.",
       "category": "smartphones",
-      "price": 699.0,
-      "discountPercentage": 5.0,
+      "price": 699,
+      "discountPercentage": 5,
       "rating": 4.5,
       "stock": 3,
       "brand": "Apex",
@@ -14,6 +14,23 @@
       "images": [
         "https://picsum.photos/seed/prod1-a/600/600",
         "https://picsum.photos/seed/prod1-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 719.97,
+          "stock": 5
+        },
+        {
+          "branchId": "homs",
+          "price": 685.02,
+          "stock": 3
+        },
+        {
+          "branchId": "latakia",
+          "price": 699,
+          "stock": 5
+        }
       ]
     },
     {
@@ -21,15 +38,32 @@
       "title": "Phone A Series",
       "description": "Phone A Series by Nova. Reliable quality and great value, ideal for everyday use.",
       "category": "smartphones",
-      "price": 449.0,
-      "discountPercentage": 8.0,
-      "rating": 4.0,
+      "price": 449,
+      "discountPercentage": 8,
+      "rating": 4,
       "stock": 12,
       "brand": "Nova",
       "thumbnail": "https://picsum.photos/seed/prod2-thumb/300/300",
       "images": [
         "https://picsum.photos/seed/prod2-a/600/600",
         "https://picsum.photos/seed/prod2-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 462.47,
+          "stock": 17
+        },
+        {
+          "branchId": "homs",
+          "price": 440.02,
+          "stock": 9
+        },
+        {
+          "branchId": "latakia",
+          "price": 449,
+          "stock": 12
+        }
       ]
     },
     {
@@ -37,8 +71,8 @@
       "title": "Budget Phone Lite",
       "description": "Budget Phone Lite by Zento. Reliable quality and great value, ideal for everyday use.",
       "category": "smartphones",
-      "price": 179.0,
-      "discountPercentage": 10.0,
+      "price": 179,
+      "discountPercentage": 10,
       "rating": 4.9,
       "stock": 25,
       "brand": "Zento",
@@ -46,6 +80,23 @@
       "images": [
         "https://picsum.photos/seed/prod3-a/600/600",
         "https://picsum.photos/seed/prod3-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 184.37,
+          "stock": 26
+        },
+        {
+          "branchId": "homs",
+          "price": 175.42,
+          "stock": 26
+        },
+        {
+          "branchId": "latakia",
+          "price": 179,
+          "stock": 23
+        }
       ]
     },
     {
@@ -53,8 +104,8 @@
       "title": "Rugged Phone R2",
       "description": "Rugged Phone R2 by Terra. Reliable quality and great value, ideal for everyday use.",
       "category": "smartphones",
-      "price": 329.0,
-      "discountPercentage": 12.0,
+      "price": 329,
+      "discountPercentage": 12,
       "rating": 4.4,
       "stock": 48,
       "brand": "Terra",
@@ -62,6 +113,23 @@
       "images": [
         "https://picsum.photos/seed/prod4-a/600/600",
         "https://picsum.photos/seed/prod4-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 338.87,
+          "stock": 52
+        },
+        {
+          "branchId": "homs",
+          "price": 322.42,
+          "stock": 46
+        },
+        {
+          "branchId": "latakia",
+          "price": 329,
+          "stock": 51
+        }
       ]
     },
     {
@@ -69,8 +137,8 @@
       "title": "Foldable Flip 5",
       "description": "Foldable Flip 5 by Nova. Reliable quality and great value, ideal for everyday use.",
       "category": "smartphones",
-      "price": 999.0,
-      "discountPercentage": 15.0,
+      "price": 999,
+      "discountPercentage": 15,
       "rating": 3.9,
       "stock": 80,
       "brand": "Nova",
@@ -78,6 +146,23 @@
       "images": [
         "https://picsum.photos/seed/prod5-a/600/600",
         "https://picsum.photos/seed/prod5-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 1028.97,
+          "stock": 80
+        },
+        {
+          "branchId": "homs",
+          "price": 979.02,
+          "stock": 82
+        },
+        {
+          "branchId": "latakia",
+          "price": 999,
+          "stock": 81
+        }
       ]
     },
     {
@@ -85,8 +170,8 @@
       "title": "Camera Phone Pro",
       "description": "Camera Phone Pro by Apex. Reliable quality and great value, ideal for everyday use.",
       "category": "smartphones",
-      "price": 849.0,
-      "discountPercentage": 20.0,
+      "price": 849,
+      "discountPercentage": 20,
       "rating": 4.8,
       "stock": 0,
       "brand": "Apex",
@@ -94,6 +179,23 @@
       "images": [
         "https://picsum.photos/seed/prod6-a/600/600",
         "https://picsum.photos/seed/prod6-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 874.47,
+          "stock": 0
+        },
+        {
+          "branchId": "homs",
+          "price": 832.02,
+          "stock": 0
+        },
+        {
+          "branchId": "latakia",
+          "price": 849,
+          "stock": 0
+        }
       ]
     },
     {
@@ -101,8 +203,8 @@
       "title": "Gaming Phone G1",
       "description": "Gaming Phone G1 by Zento. Reliable quality and great value, ideal for everyday use.",
       "category": "smartphones",
-      "price": 599.0,
-      "discountPercentage": 0.0,
+      "price": 599,
+      "discountPercentage": 0,
       "rating": 4.3,
       "stock": 3,
       "brand": "Zento",
@@ -110,6 +212,23 @@
       "images": [
         "https://picsum.photos/seed/prod7-a/600/600",
         "https://picsum.photos/seed/prod7-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 616.97,
+          "stock": 2
+        },
+        {
+          "branchId": "homs",
+          "price": 587.02,
+          "stock": 0
+        },
+        {
+          "branchId": "latakia",
+          "price": 599,
+          "stock": 0
+        }
       ]
     },
     {
@@ -117,8 +236,8 @@
       "title": "Compact Phone Mini",
       "description": "Compact Phone Mini by Apex. Reliable quality and great value, ideal for everyday use.",
       "category": "smartphones",
-      "price": 399.0,
-      "discountPercentage": 5.0,
+      "price": 399,
+      "discountPercentage": 5,
       "rating": 3.8,
       "stock": 12,
       "brand": "Apex",
@@ -126,6 +245,23 @@
       "images": [
         "https://picsum.photos/seed/prod8-a/600/600",
         "https://picsum.photos/seed/prod8-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 410.97,
+          "stock": 14
+        },
+        {
+          "branchId": "homs",
+          "price": 391.02,
+          "stock": 12
+        },
+        {
+          "branchId": "latakia",
+          "price": 399,
+          "stock": 14
+        }
       ]
     },
     {
@@ -133,8 +269,8 @@
       "title": "UltraSlim 14",
       "description": "UltraSlim 14 by Apex. Reliable quality and great value, ideal for everyday use.",
       "category": "laptops",
-      "price": 1099.0,
-      "discountPercentage": 8.0,
+      "price": 1099,
+      "discountPercentage": 8,
       "rating": 4.7,
       "stock": 25,
       "brand": "Apex",
@@ -142,6 +278,23 @@
       "images": [
         "https://picsum.photos/seed/prod9-a/600/600",
         "https://picsum.photos/seed/prod9-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 1131.97,
+          "stock": 30
+        },
+        {
+          "branchId": "homs",
+          "price": 1077.02,
+          "stock": 22
+        },
+        {
+          "branchId": "latakia",
+          "price": 1099,
+          "stock": 25
+        }
       ]
     },
     {
@@ -149,8 +302,8 @@
       "title": "Gaming Laptop Raptor",
       "description": "Gaming Laptop Raptor by Zento. Reliable quality and great value, ideal for everyday use.",
       "category": "laptops",
-      "price": 1499.0,
-      "discountPercentage": 10.0,
+      "price": 1499,
+      "discountPercentage": 10,
       "rating": 4.2,
       "stock": 48,
       "brand": "Zento",
@@ -158,6 +311,23 @@
       "images": [
         "https://picsum.photos/seed/prod10-a/600/600",
         "https://picsum.photos/seed/prod10-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 1543.97,
+          "stock": 49
+        },
+        {
+          "branchId": "homs",
+          "price": 1469.02,
+          "stock": 49
+        },
+        {
+          "branchId": "latakia",
+          "price": 1499,
+          "stock": 46
+        }
       ]
     },
     {
@@ -165,8 +335,8 @@
       "title": "Student Laptop 15",
       "description": "Student Laptop 15 by Nova. Reliable quality and great value, ideal for everyday use.",
       "category": "laptops",
-      "price": 549.0,
-      "discountPercentage": 12.0,
+      "price": 549,
+      "discountPercentage": 12,
       "rating": 3.7,
       "stock": 80,
       "brand": "Nova",
@@ -174,6 +344,23 @@
       "images": [
         "https://picsum.photos/seed/prod11-a/600/600",
         "https://picsum.photos/seed/prod11-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 565.47,
+          "stock": 84
+        },
+        {
+          "branchId": "homs",
+          "price": 538.02,
+          "stock": 78
+        },
+        {
+          "branchId": "latakia",
+          "price": 549,
+          "stock": 83
+        }
       ]
     },
     {
@@ -181,8 +368,8 @@
       "title": "Business Pro 13",
       "description": "Business Pro 13 by Terra. Reliable quality and great value, ideal for everyday use.",
       "category": "laptops",
-      "price": 1249.0,
-      "discountPercentage": 15.0,
+      "price": 1249,
+      "discountPercentage": 15,
       "rating": 4.6,
       "stock": 0,
       "brand": "Terra",
@@ -190,6 +377,23 @@
       "images": [
         "https://picsum.photos/seed/prod12-a/600/600",
         "https://picsum.photos/seed/prod12-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 1286.47,
+          "stock": 0
+        },
+        {
+          "branchId": "homs",
+          "price": 1224.02,
+          "stock": 0
+        },
+        {
+          "branchId": "latakia",
+          "price": 1249,
+          "stock": 0
+        }
       ]
     },
     {
@@ -197,8 +401,8 @@
       "title": "Chromebook Go",
       "description": "Chromebook Go by Nova. Reliable quality and great value, ideal for everyday use.",
       "category": "laptops",
-      "price": 299.0,
-      "discountPercentage": 20.0,
+      "price": 299,
+      "discountPercentage": 20,
       "rating": 4.1,
       "stock": 3,
       "brand": "Nova",
@@ -206,6 +410,23 @@
       "images": [
         "https://picsum.photos/seed/prod13-a/600/600",
         "https://picsum.photos/seed/prod13-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 307.97,
+          "stock": 6
+        },
+        {
+          "branchId": "homs",
+          "price": 293.02,
+          "stock": 2
+        },
+        {
+          "branchId": "latakia",
+          "price": 299,
+          "stock": 2
+        }
       ]
     },
     {
@@ -213,8 +434,8 @@
       "title": "Creator Studio 16",
       "description": "Creator Studio 16 by Apex. Reliable quality and great value, ideal for everyday use.",
       "category": "laptops",
-      "price": 1899.0,
-      "discountPercentage": 0.0,
+      "price": 1899,
+      "discountPercentage": 0,
       "rating": 3.6,
       "stock": 12,
       "brand": "Apex",
@@ -222,6 +443,23 @@
       "images": [
         "https://picsum.photos/seed/prod14-a/600/600",
         "https://picsum.photos/seed/prod14-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 1955.97,
+          "stock": 11
+        },
+        {
+          "branchId": "homs",
+          "price": 1861.02,
+          "stock": 8
+        },
+        {
+          "branchId": "latakia",
+          "price": 1899,
+          "stock": 9
+        }
       ]
     },
     {
@@ -229,8 +467,8 @@
       "title": "Ocean Breeze 100ml",
       "description": "Ocean Breeze 100ml by Aura. Reliable quality and great value, ideal for everyday use.",
       "category": "fragrances",
-      "price": 49.0,
-      "discountPercentage": 5.0,
+      "price": 49,
+      "discountPercentage": 5,
       "rating": 4.5,
       "stock": 25,
       "brand": "Aura",
@@ -238,6 +476,23 @@
       "images": [
         "https://picsum.photos/seed/prod15-a/600/600",
         "https://picsum.photos/seed/prod15-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 50.47,
+          "stock": 27
+        },
+        {
+          "branchId": "homs",
+          "price": 48.02,
+          "stock": 25
+        },
+        {
+          "branchId": "latakia",
+          "price": 49,
+          "stock": 27
+        }
       ]
     },
     {
@@ -245,15 +500,32 @@
       "title": "Midnight Oud 50ml",
       "description": "Midnight Oud 50ml by Aura. Reliable quality and great value, ideal for everyday use.",
       "category": "fragrances",
-      "price": 89.0,
-      "discountPercentage": 8.0,
-      "rating": 4.0,
+      "price": 89,
+      "discountPercentage": 8,
+      "rating": 4,
       "stock": 48,
       "brand": "Aura",
       "thumbnail": "https://picsum.photos/seed/prod16-thumb/300/300",
       "images": [
         "https://picsum.photos/seed/prod16-a/600/600",
         "https://picsum.photos/seed/prod16-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 91.67,
+          "stock": 53
+        },
+        {
+          "branchId": "homs",
+          "price": 87.22,
+          "stock": 45
+        },
+        {
+          "branchId": "latakia",
+          "price": 89,
+          "stock": 48
+        }
       ]
     },
     {
@@ -261,8 +533,8 @@
       "title": "Citrus Bloom 75ml",
       "description": "Citrus Bloom 75ml by Lume. Reliable quality and great value, ideal for everyday use.",
       "category": "fragrances",
-      "price": 39.0,
-      "discountPercentage": 10.0,
+      "price": 39,
+      "discountPercentage": 10,
       "rating": 4.9,
       "stock": 80,
       "brand": "Lume",
@@ -270,6 +542,23 @@
       "images": [
         "https://picsum.photos/seed/prod17-a/600/600",
         "https://picsum.photos/seed/prod17-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 40.17,
+          "stock": 81
+        },
+        {
+          "branchId": "homs",
+          "price": 38.22,
+          "stock": 81
+        },
+        {
+          "branchId": "latakia",
+          "price": 39,
+          "stock": 78
+        }
       ]
     },
     {
@@ -277,8 +566,8 @@
       "title": "Vanilla Amber 100ml",
       "description": "Vanilla Amber 100ml by Lume. Reliable quality and great value, ideal for everyday use.",
       "category": "fragrances",
-      "price": 59.0,
-      "discountPercentage": 12.0,
+      "price": 59,
+      "discountPercentage": 12,
       "rating": 4.4,
       "stock": 0,
       "brand": "Lume",
@@ -286,6 +575,23 @@
       "images": [
         "https://picsum.photos/seed/prod18-a/600/600",
         "https://picsum.photos/seed/prod18-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 60.77,
+          "stock": 0
+        },
+        {
+          "branchId": "homs",
+          "price": 57.82,
+          "stock": 0
+        },
+        {
+          "branchId": "latakia",
+          "price": 59,
+          "stock": 0
+        }
       ]
     },
     {
@@ -293,8 +599,8 @@
       "title": "Organic Olive Oil 1L",
       "description": "Organic Olive Oil 1L by Greenfield. Reliable quality and great value, ideal for everyday use.",
       "category": "groceries",
-      "price": 12.0,
-      "discountPercentage": 15.0,
+      "price": 12,
+      "discountPercentage": 15,
       "rating": 3.9,
       "stock": 3,
       "brand": "Greenfield",
@@ -302,6 +608,23 @@
       "images": [
         "https://picsum.photos/seed/prod19-a/600/600",
         "https://picsum.photos/seed/prod19-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 12.36,
+          "stock": 3
+        },
+        {
+          "branchId": "homs",
+          "price": 11.76,
+          "stock": 5
+        },
+        {
+          "branchId": "latakia",
+          "price": 12,
+          "stock": 4
+        }
       ]
     },
     {
@@ -309,8 +632,8 @@
       "title": "Basmati Rice 5kg",
       "description": "Basmati Rice 5kg by Golden Grain. Reliable quality and great value, ideal for everyday use.",
       "category": "groceries",
-      "price": 14.0,
-      "discountPercentage": 20.0,
+      "price": 14,
+      "discountPercentage": 20,
       "rating": 4.8,
       "stock": 12,
       "brand": "Golden Grain",
@@ -318,6 +641,23 @@
       "images": [
         "https://picsum.photos/seed/prod20-a/600/600",
         "https://picsum.photos/seed/prod20-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 14.42,
+          "stock": 15
+        },
+        {
+          "branchId": "homs",
+          "price": 13.72,
+          "stock": 11
+        },
+        {
+          "branchId": "latakia",
+          "price": 14,
+          "stock": 11
+        }
       ]
     },
     {
@@ -325,8 +665,8 @@
       "title": "Honey Jar 500g",
       "description": "Honey Jar 500g by Greenfield. Reliable quality and great value, ideal for everyday use.",
       "category": "groceries",
-      "price": 9.0,
-      "discountPercentage": 0.0,
+      "price": 9,
+      "discountPercentage": 0,
       "rating": 4.3,
       "stock": 25,
       "brand": "Greenfield",
@@ -334,6 +674,23 @@
       "images": [
         "https://picsum.photos/seed/prod21-a/600/600",
         "https://picsum.photos/seed/prod21-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 9.27,
+          "stock": 24
+        },
+        {
+          "branchId": "homs",
+          "price": 8.82,
+          "stock": 21
+        },
+        {
+          "branchId": "latakia",
+          "price": 9,
+          "stock": 22
+        }
       ]
     },
     {
@@ -341,8 +698,8 @@
       "title": "Mixed Nuts 1kg",
       "description": "Mixed Nuts 1kg by Golden Grain. Reliable quality and great value, ideal for everyday use.",
       "category": "groceries",
-      "price": 18.0,
-      "discountPercentage": 5.0,
+      "price": 18,
+      "discountPercentage": 5,
       "rating": 3.8,
       "stock": 48,
       "brand": "Golden Grain",
@@ -350,6 +707,23 @@
       "images": [
         "https://picsum.photos/seed/prod22-a/600/600",
         "https://picsum.photos/seed/prod22-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 18.54,
+          "stock": 50
+        },
+        {
+          "branchId": "homs",
+          "price": 17.64,
+          "stock": 48
+        },
+        {
+          "branchId": "latakia",
+          "price": 18,
+          "stock": 50
+        }
       ]
     },
     {
@@ -357,8 +731,8 @@
       "title": "Green Tea Box",
       "description": "Green Tea Box by Leafy. Reliable quality and great value, ideal for everyday use.",
       "category": "groceries",
-      "price": 6.0,
-      "discountPercentage": 8.0,
+      "price": 6,
+      "discountPercentage": 8,
       "rating": 4.7,
       "stock": 80,
       "brand": "Leafy",
@@ -366,6 +740,23 @@
       "images": [
         "https://picsum.photos/seed/prod23-a/600/600",
         "https://picsum.photos/seed/prod23-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 6.18,
+          "stock": 85
+        },
+        {
+          "branchId": "homs",
+          "price": 5.88,
+          "stock": 77
+        },
+        {
+          "branchId": "latakia",
+          "price": 6,
+          "stock": 80
+        }
       ]
     },
     {
@@ -373,8 +764,8 @@
       "title": "Dates Box 1kg",
       "description": "Dates Box 1kg by Golden Grain. Reliable quality and great value, ideal for everyday use.",
       "category": "groceries",
-      "price": 11.0,
-      "discountPercentage": 10.0,
+      "price": 11,
+      "discountPercentage": 10,
       "rating": 4.2,
       "stock": 0,
       "brand": "Golden Grain",
@@ -382,6 +773,23 @@
       "images": [
         "https://picsum.photos/seed/prod24-a/600/600",
         "https://picsum.photos/seed/prod24-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 11.33,
+          "stock": 0
+        },
+        {
+          "branchId": "homs",
+          "price": 10.78,
+          "stock": 0
+        },
+        {
+          "branchId": "latakia",
+          "price": 11,
+          "stock": 0
+        }
       ]
     },
     {
@@ -389,8 +797,8 @@
       "title": "Ceramic Vase",
       "description": "Ceramic Vase by Casa. Reliable quality and great value, ideal for everyday use.",
       "category": "home-decoration",
-      "price": 24.0,
-      "discountPercentage": 12.0,
+      "price": 24,
+      "discountPercentage": 12,
       "rating": 3.7,
       "stock": 3,
       "brand": "Casa",
@@ -398,6 +806,23 @@
       "images": [
         "https://picsum.photos/seed/prod25-a/600/600",
         "https://picsum.photos/seed/prod25-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 24.72,
+          "stock": 7
+        },
+        {
+          "branchId": "homs",
+          "price": 23.52,
+          "stock": 1
+        },
+        {
+          "branchId": "latakia",
+          "price": 24,
+          "stock": 6
+        }
       ]
     },
     {
@@ -405,8 +830,8 @@
       "title": "Wall Clock Minimal",
       "description": "Wall Clock Minimal by Casa. Reliable quality and great value, ideal for everyday use.",
       "category": "home-decoration",
-      "price": 19.0,
-      "discountPercentage": 15.0,
+      "price": 19,
+      "discountPercentage": 15,
       "rating": 4.6,
       "stock": 12,
       "brand": "Casa",
@@ -414,6 +839,23 @@
       "images": [
         "https://picsum.photos/seed/prod26-a/600/600",
         "https://picsum.photos/seed/prod26-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 19.57,
+          "stock": 12
+        },
+        {
+          "branchId": "homs",
+          "price": 18.62,
+          "stock": 14
+        },
+        {
+          "branchId": "latakia",
+          "price": 19,
+          "stock": 13
+        }
       ]
     },
     {
@@ -421,8 +863,8 @@
       "title": "LED Floor Lamp",
       "description": "LED Floor Lamp by Lume. Reliable quality and great value, ideal for everyday use.",
       "category": "home-decoration",
-      "price": 45.0,
-      "discountPercentage": 20.0,
+      "price": 45,
+      "discountPercentage": 20,
       "rating": 4.1,
       "stock": 25,
       "brand": "Lume",
@@ -430,6 +872,23 @@
       "images": [
         "https://picsum.photos/seed/prod27-a/600/600",
         "https://picsum.photos/seed/prod27-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 46.35,
+          "stock": 28
+        },
+        {
+          "branchId": "homs",
+          "price": 44.1,
+          "stock": 24
+        },
+        {
+          "branchId": "latakia",
+          "price": 45,
+          "stock": 24
+        }
       ]
     },
     {
@@ -437,8 +896,8 @@
       "title": "Cotton Cushion Set",
       "description": "Cotton Cushion Set by Casa. Reliable quality and great value, ideal for everyday use.",
       "category": "home-decoration",
-      "price": 28.0,
-      "discountPercentage": 0.0,
+      "price": 28,
+      "discountPercentage": 0,
       "rating": 3.6,
       "stock": 48,
       "brand": "Casa",
@@ -446,6 +905,23 @@
       "images": [
         "https://picsum.photos/seed/prod28-a/600/600",
         "https://picsum.photos/seed/prod28-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 28.84,
+          "stock": 47
+        },
+        {
+          "branchId": "homs",
+          "price": 27.44,
+          "stock": 44
+        },
+        {
+          "branchId": "latakia",
+          "price": 28,
+          "stock": 45
+        }
       ]
     },
     {
@@ -453,8 +929,8 @@
       "title": "Yoga Mat Pro",
       "description": "Yoga Mat Pro by Fitly. Reliable quality and great value, ideal for everyday use.",
       "category": "sports-accessories",
-      "price": 22.0,
-      "discountPercentage": 5.0,
+      "price": 22,
+      "discountPercentage": 5,
       "rating": 4.5,
       "stock": 80,
       "brand": "Fitly",
@@ -462,6 +938,23 @@
       "images": [
         "https://picsum.photos/seed/prod29-a/600/600",
         "https://picsum.photos/seed/prod29-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 22.66,
+          "stock": 82
+        },
+        {
+          "branchId": "homs",
+          "price": 21.56,
+          "stock": 80
+        },
+        {
+          "branchId": "latakia",
+          "price": 22,
+          "stock": 82
+        }
       ]
     },
     {
@@ -469,15 +962,32 @@
       "title": "Adjustable Dumbbells",
       "description": "Adjustable Dumbbells by Fitly. Reliable quality and great value, ideal for everyday use.",
       "category": "sports-accessories",
-      "price": 79.0,
-      "discountPercentage": 8.0,
-      "rating": 4.0,
+      "price": 79,
+      "discountPercentage": 8,
+      "rating": 4,
       "stock": 0,
       "brand": "Fitly",
       "thumbnail": "https://picsum.photos/seed/prod30-thumb/300/300",
       "images": [
         "https://picsum.photos/seed/prod30-a/600/600",
         "https://picsum.photos/seed/prod30-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 81.37,
+          "stock": 0
+        },
+        {
+          "branchId": "homs",
+          "price": 77.42,
+          "stock": 0
+        },
+        {
+          "branchId": "latakia",
+          "price": 79,
+          "stock": 0
+        }
       ]
     },
     {
@@ -485,8 +995,8 @@
       "title": "Running Bottle 750ml",
       "description": "Running Bottle 750ml by Fitly. Reliable quality and great value, ideal for everyday use.",
       "category": "sports-accessories",
-      "price": 11.0,
-      "discountPercentage": 10.0,
+      "price": 11,
+      "discountPercentage": 10,
       "rating": 4.9,
       "stock": 3,
       "brand": "Fitly",
@@ -494,6 +1004,23 @@
       "images": [
         "https://picsum.photos/seed/prod31-a/600/600",
         "https://picsum.photos/seed/prod31-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 11.33,
+          "stock": 4
+        },
+        {
+          "branchId": "homs",
+          "price": 10.78,
+          "stock": 4
+        },
+        {
+          "branchId": "latakia",
+          "price": 11,
+          "stock": 1
+        }
       ]
     },
     {
@@ -501,8 +1028,8 @@
       "title": "Football Size 5",
       "description": "Football Size 5 by Goal. Reliable quality and great value, ideal for everyday use.",
       "category": "sports-accessories",
-      "price": 25.0,
-      "discountPercentage": 12.0,
+      "price": 25,
+      "discountPercentage": 12,
       "rating": 4.4,
       "stock": 12,
       "brand": "Goal",
@@ -510,6 +1037,23 @@
       "images": [
         "https://picsum.photos/seed/prod32-a/600/600",
         "https://picsum.photos/seed/prod32-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 25.75,
+          "stock": 16
+        },
+        {
+          "branchId": "homs",
+          "price": 24.5,
+          "stock": 10
+        },
+        {
+          "branchId": "latakia",
+          "price": 25,
+          "stock": 15
+        }
       ]
     },
     {
@@ -517,8 +1061,8 @@
       "title": "Classic Steel Watch",
       "description": "Classic Steel Watch by Chrono. Reliable quality and great value, ideal for everyday use.",
       "category": "mens-watches",
-      "price": 129.0,
-      "discountPercentage": 15.0,
+      "price": 129,
+      "discountPercentage": 15,
       "rating": 3.9,
       "stock": 25,
       "brand": "Chrono",
@@ -526,6 +1070,23 @@
       "images": [
         "https://picsum.photos/seed/prod33-a/600/600",
         "https://picsum.photos/seed/prod33-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 132.87,
+          "stock": 25
+        },
+        {
+          "branchId": "homs",
+          "price": 126.42,
+          "stock": 27
+        },
+        {
+          "branchId": "latakia",
+          "price": 129,
+          "stock": 26
+        }
       ]
     },
     {
@@ -533,8 +1094,8 @@
       "title": "Sport Chronograph",
       "description": "Sport Chronograph by Chrono. Reliable quality and great value, ideal for everyday use.",
       "category": "mens-watches",
-      "price": 159.0,
-      "discountPercentage": 20.0,
+      "price": 159,
+      "discountPercentage": 20,
       "rating": 4.8,
       "stock": 48,
       "brand": "Chrono",
@@ -542,6 +1103,23 @@
       "images": [
         "https://picsum.photos/seed/prod34-a/600/600",
         "https://picsum.photos/seed/prod34-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 163.77,
+          "stock": 51
+        },
+        {
+          "branchId": "homs",
+          "price": 155.82,
+          "stock": 47
+        },
+        {
+          "branchId": "latakia",
+          "price": 159,
+          "stock": 47
+        }
       ]
     },
     {
@@ -549,8 +1127,8 @@
       "title": "Minimal Leather Watch",
       "description": "Minimal Leather Watch by Terra. Reliable quality and great value, ideal for everyday use.",
       "category": "mens-watches",
-      "price": 89.0,
-      "discountPercentage": 0.0,
+      "price": 89,
+      "discountPercentage": 0,
       "rating": 4.3,
       "stock": 80,
       "brand": "Terra",
@@ -558,6 +1136,23 @@
       "images": [
         "https://picsum.photos/seed/prod35-a/600/600",
         "https://picsum.photos/seed/prod35-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 91.67,
+          "stock": 79
+        },
+        {
+          "branchId": "homs",
+          "price": 87.22,
+          "stock": 76
+        },
+        {
+          "branchId": "latakia",
+          "price": 89,
+          "stock": 77
+        }
       ]
     },
     {
@@ -565,8 +1160,8 @@
       "title": "Smart Watch Fit",
       "description": "Smart Watch Fit by Nova. Reliable quality and great value, ideal for everyday use.",
       "category": "mens-watches",
-      "price": 109.0,
-      "discountPercentage": 5.0,
+      "price": 109,
+      "discountPercentage": 5,
       "rating": 3.8,
       "stock": 0,
       "brand": "Nova",
@@ -574,6 +1169,23 @@
       "images": [
         "https://picsum.photos/seed/prod36-a/600/600",
         "https://picsum.photos/seed/prod36-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 112.27,
+          "stock": 0
+        },
+        {
+          "branchId": "homs",
+          "price": 106.82,
+          "stock": 0
+        },
+        {
+          "branchId": "latakia",
+          "price": 109,
+          "stock": 0
+        }
       ]
     },
     {
@@ -581,8 +1193,8 @@
       "title": "Leather Tote Bag",
       "description": "Leather Tote Bag by Elle. Reliable quality and great value, ideal for everyday use.",
       "category": "womens-bags",
-      "price": 119.0,
-      "discountPercentage": 8.0,
+      "price": 119,
+      "discountPercentage": 8,
       "rating": 4.7,
       "stock": 3,
       "brand": "Elle",
@@ -590,6 +1202,23 @@
       "images": [
         "https://picsum.photos/seed/prod37-a/600/600",
         "https://picsum.photos/seed/prod37-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 122.57,
+          "stock": 8
+        },
+        {
+          "branchId": "homs",
+          "price": 116.62,
+          "stock": 0
+        },
+        {
+          "branchId": "latakia",
+          "price": 119,
+          "stock": 3
+        }
       ]
     },
     {
@@ -597,8 +1226,8 @@
       "title": "Crossbody Mini",
       "description": "Crossbody Mini by Elle. Reliable quality and great value, ideal for everyday use.",
       "category": "womens-bags",
-      "price": 69.0,
-      "discountPercentage": 10.0,
+      "price": 69,
+      "discountPercentage": 10,
       "rating": 4.2,
       "stock": 12,
       "brand": "Elle",
@@ -606,6 +1235,23 @@
       "images": [
         "https://picsum.photos/seed/prod38-a/600/600",
         "https://picsum.photos/seed/prod38-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 71.07,
+          "stock": 13
+        },
+        {
+          "branchId": "homs",
+          "price": 67.62,
+          "stock": 13
+        },
+        {
+          "branchId": "latakia",
+          "price": 69,
+          "stock": 10
+        }
       ]
     },
     {
@@ -613,8 +1259,8 @@
       "title": "Evening Clutch",
       "description": "Evening Clutch by Elle. Reliable quality and great value, ideal for everyday use.",
       "category": "womens-bags",
-      "price": 54.0,
-      "discountPercentage": 12.0,
+      "price": 54,
+      "discountPercentage": 12,
       "rating": 3.7,
       "stock": 25,
       "brand": "Elle",
@@ -622,6 +1268,23 @@
       "images": [
         "https://picsum.photos/seed/prod39-a/600/600",
         "https://picsum.photos/seed/prod39-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 55.62,
+          "stock": 29
+        },
+        {
+          "branchId": "homs",
+          "price": 52.92,
+          "stock": 23
+        },
+        {
+          "branchId": "latakia",
+          "price": 54,
+          "stock": 28
+        }
       ]
     },
     {
@@ -629,8 +1292,8 @@
       "title": "Canvas Backpack",
       "description": "Canvas Backpack by Elle. Reliable quality and great value, ideal for everyday use.",
       "category": "womens-bags",
-      "price": 42.0,
-      "discountPercentage": 15.0,
+      "price": 42,
+      "discountPercentage": 15,
       "rating": 4.6,
       "stock": 48,
       "brand": "Elle",
@@ -638,6 +1301,23 @@
       "images": [
         "https://picsum.photos/seed/prod40-a/600/600",
         "https://picsum.photos/seed/prod40-b/600/600"
+      ],
+      "branchInventory": [
+        {
+          "branchId": "damascus",
+          "price": 43.26,
+          "stock": 48
+        },
+        {
+          "branchId": "homs",
+          "price": 41.16,
+          "stock": 50
+        },
+        {
+          "branchId": "latakia",
+          "price": 42,
+          "stock": 49
+        }
       ]
     }
   ],
