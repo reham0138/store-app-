@@ -1,20 +1,20 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { useAuth } from '../../shared/hooks/useAuth.ts'
-import { AuthError } from '../../shared/services/authService.ts'
-import { AuthCard } from './components/AuthCard.tsx'
-import { FormError } from './components/FormError.tsx'
-import { PasswordField } from './components/PasswordField.tsx'
-import { SubmitButton } from './components/SubmitButton.tsx'
-import { TextField } from './components/TextField.tsx'
+import { useAuth } from '../shared/hooks/useAuth.ts'
+import { AuthError } from '../shared/services/authService.ts'
+import { AuthCard } from '../shared/components/AuthCard.tsx'
+import { FormError } from '../shared/components/FormError.tsx'
+import { PasswordField } from '../shared/components/PasswordField.tsx'
+import { SubmitButton } from '../shared/components/SubmitButton.tsx'
+import { TextField } from '../shared/components/TextField.tsx'
 import {
   MIN_PASSWORD_LENGTH,
   validateConfirm,
   validateEmail,
   validateName,
   validatePassword,
-} from './validation.ts'
+} from '../shared/utils/authValidation.ts'
 
 interface FieldErrors {
   name?: string

@@ -7,8 +7,11 @@ import {
 
 import MainLayout from "./shared/layouts/MainLayout";
 import BranchSelectorTestPage from "./pages/BranchSelectorTestPage";
+import LoginPage from "./pages/login";
+import RegisterPage from "./pages/RegisterPage";
 
 import { CartProvider } from "./shared/contexts/CartContext";
+import { AuthProvider } from "./shared/contexts/AuthProvider";
 
 import CartPage from "./shared/components/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
@@ -19,25 +22,29 @@ import ProductsPage from "./pages/ProductPage";
 function App() {
   return (
     <CartProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<div />} />
-            <Route path="products" element={<ProductsPage />} />
-            <Route
-              path="branch-test"
-              element={<BranchSelectorTestPage />}
-            />
-            <Route path="cart" element={<CartPage />} />
-            <Route path="checkout" element={<CheckoutPage />} />
-            <Route path="orders" element={<OrdersPage />} />
-            <Route
-              path="order-success"
-              element={<OrderSuccessPage />}
-            />
-          </Route>
-        </Routes>
-      </Router>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<div />} />
+              <Route path="products" element={<ProductsPage />} />
+              <Route
+                path="branch-test"
+                element={<BranchSelectorTestPage />}
+              />
+              <Route path="cart" element={<CartPage />} />
+              <Route path="checkout" element={<CheckoutPage />} />
+              <Route path="orders" element={<OrdersPage />} />
+              <Route
+                path="order-success"
+                element={<OrderSuccessPage />}
+              />
+              <Route path="login" element={<LoginPage />} />
+              <Route path="register" element={<RegisterPage />} />
+            </Route>
+          </Routes>
+        </Router>
+      </AuthProvider>
     </CartProvider>
   );
 }
