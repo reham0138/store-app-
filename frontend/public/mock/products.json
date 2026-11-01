@@ -19,17 +19,17 @@
         {
           "branchId": "damascus",
           "price": 719.97,
-          "stock": 5
+          "stock": 1
         },
         {
           "branchId": "homs",
           "price": 685.02,
-          "stock": 3
+          "stock": 1
         },
         {
           "branchId": "latakia",
           "price": 699,
-          "stock": 5
+          "stock": 1
         }
       ]
     },
@@ -52,17 +52,17 @@
         {
           "branchId": "damascus",
           "price": 462.47,
-          "stock": 17
+          "stock": 4
         },
         {
           "branchId": "homs",
           "price": 440.02,
-          "stock": 9
+          "stock": 4
         },
         {
           "branchId": "latakia",
           "price": 449,
-          "stock": 12
+          "stock": 4
         }
       ]
     },
@@ -85,17 +85,17 @@
         {
           "branchId": "damascus",
           "price": 184.37,
-          "stock": 26
+          "stock": 9
         },
         {
           "branchId": "homs",
           "price": 175.42,
-          "stock": 26
+          "stock": 8
         },
         {
           "branchId": "latakia",
           "price": 179,
-          "stock": 23
+          "stock": 8
         }
       ]
     },
@@ -118,17 +118,17 @@
         {
           "branchId": "damascus",
           "price": 338.87,
-          "stock": 52
+          "stock": 16
         },
         {
           "branchId": "homs",
           "price": 322.42,
-          "stock": 46
+          "stock": 16
         },
         {
           "branchId": "latakia",
           "price": 329,
-          "stock": 51
+          "stock": 16
         }
       ]
     },
@@ -151,17 +151,17 @@
         {
           "branchId": "damascus",
           "price": 1028.97,
-          "stock": 80
+          "stock": 27
         },
         {
           "branchId": "homs",
           "price": 979.02,
-          "stock": 82
+          "stock": 27
         },
         {
           "branchId": "latakia",
           "price": 999,
-          "stock": 81
+          "stock": 26
         }
       ]
     },
@@ -217,17 +217,17 @@
         {
           "branchId": "damascus",
           "price": 616.97,
-          "stock": 2
+          "stock": 1
         },
         {
           "branchId": "homs",
           "price": 587.02,
-          "stock": 0
+          "stock": 1
         },
         {
           "branchId": "latakia",
           "price": 599,
-          "stock": 0
+          "stock": 1
         }
       ]
     },
@@ -250,17 +250,17 @@
         {
           "branchId": "damascus",
           "price": 410.97,
-          "stock": 14
+          "stock": 4
         },
         {
           "branchId": "homs",
           "price": 391.02,
-          "stock": 12
+          "stock": 4
         },
         {
           "branchId": "latakia",
           "price": 399,
-          "stock": 14
+          "stock": 4
         }
       ]
     },
@@ -283,17 +283,17 @@
         {
           "branchId": "damascus",
           "price": 1131.97,
-          "stock": 30
+          "stock": 9
         },
         {
           "branchId": "homs",
           "price": 1077.02,
-          "stock": 22
+          "stock": 8
         },
         {
           "branchId": "latakia",
           "price": 1099,
-          "stock": 25
+          "stock": 8
         }
       ]
     },
@@ -316,17 +316,17 @@
         {
           "branchId": "damascus",
           "price": 1543.97,
-          "stock": 49
+          "stock": 16
         },
         {
           "branchId": "homs",
           "price": 1469.02,
-          "stock": 49
+          "stock": 16
         },
         {
           "branchId": "latakia",
           "price": 1499,
-          "stock": 46
+          "stock": 16
         }
       ]
     },
@@ -349,17 +349,17 @@
         {
           "branchId": "damascus",
           "price": 565.47,
-          "stock": 84
+          "stock": 27
         },
         {
           "branchId": "homs",
           "price": 538.02,
-          "stock": 78
+          "stock": 27
         },
         {
           "branchId": "latakia",
           "price": 549,
-          "stock": 83
+          "stock": 26
         }
       ]
     },
@@ -415,17 +415,17 @@
         {
           "branchId": "damascus",
           "price": 307.97,
-          "stock": 6
+          "stock": 1
         },
         {
           "branchId": "homs",
           "price": 293.02,
-          "stock": 2
+          "stock": 1
         },
         {
           "branchId": "latakia",
           "price": 299,
-          "stock": 2
+          "stock": 1
         }
       ]
     },
@@ -448,17 +448,17 @@
         {
           "branchId": "damascus",
           "price": 1955.97,
-          "stock": 11
+          "stock": 4
         },
         {
           "branchId": "homs",
           "price": 1861.02,
-          "stock": 8
+          "stock": 4
         },
         {
           "branchId": "latakia",
           "price": 1899,
-          "stock": 9
+          "stock": 4
         }
       ]
     },
@@ -481,17 +481,17 @@
         {
           "branchId": "damascus",
           "price": 50.47,
-          "stock": 27
+          "stock": 9
         },
         {
           "branchId": "homs",
           "price": 48.02,
-          "stock": 25
+          "stock": 8
         },
         {
           "branchId": "latakia",
           "price": 49,
-          "stock": 27
+          "stock": 8
         }
       ]
     },
@@ -514,17 +514,17 @@
         {
           "branchId": "damascus",
           "price": 91.67,
-          "stock": 53
+          "stock": 16
         },
         {
           "branchId": "homs",
           "price": 87.22,
-          "stock": 45
+          "stock": 16
         },
         {
           "branchId": "latakia",
           "price": 89,
-          "stock": 48
+          "stock": 16
         }
       ]
     },
@@ -547,17 +547,17 @@
         {
           "branchId": "damascus",
           "price": 40.17,
-          "stock": 81
+          "stock": 27
         },
         {
           "branchId": "homs",
           "price": 38.22,
-          "stock": 81
+          "stock": 27
         },
         {
           "branchId": "latakia",
           "price": 39,
-          "stock": 78
+          "stock": 26
         }
       ]
     },
@@ -613,17 +613,17 @@
         {
           "branchId": "damascus",
           "price": 12.36,
-          "stock": 3
+          "stock": 1
         },
         {
           "branchId": "homs",
           "price": 11.76,
-          "stock": 5
+          "stock": 1
         },
         {
           "branchId": "latakia",
           "price": 12,
-          "stock": 4
+          "stock": 1
         }
       ]
     },
@@ -646,17 +646,17 @@
         {
           "branchId": "damascus",
           "price": 14.42,
-          "stock": 15
+          "stock": 4
         },
         {
           "branchId": "homs",
           "price": 13.72,
-          "stock": 11
+          "stock": 4
         },
         {
           "branchId": "latakia",
           "price": 14,
-          "stock": 11
+          "stock": 4
         }
       ]
     },
@@ -679,17 +679,17 @@
         {
           "branchId": "damascus",
           "price": 9.27,
-          "stock": 24
+          "stock": 9
         },
         {
           "branchId": "homs",
           "price": 8.82,
-          "stock": 21
+          "stock": 8
         },
         {
           "branchId": "latakia",
           "price": 9,
-          "stock": 22
+          "stock": 8
         }
       ]
     },
@@ -712,17 +712,17 @@
         {
           "branchId": "damascus",
           "price": 18.54,
-          "stock": 50
+          "stock": 16
         },
         {
           "branchId": "homs",
           "price": 17.64,
-          "stock": 48
+          "stock": 16
         },
         {
           "branchId": "latakia",
           "price": 18,
-          "stock": 50
+          "stock": 16
         }
       ]
     },
@@ -745,17 +745,17 @@
         {
           "branchId": "damascus",
           "price": 6.18,
-          "stock": 85
+          "stock": 27
         },
         {
           "branchId": "homs",
           "price": 5.88,
-          "stock": 77
+          "stock": 27
         },
         {
           "branchId": "latakia",
           "price": 6,
-          "stock": 80
+          "stock": 26
         }
       ]
     },
@@ -811,7 +811,7 @@
         {
           "branchId": "damascus",
           "price": 24.72,
-          "stock": 7
+          "stock": 1
         },
         {
           "branchId": "homs",
@@ -821,7 +821,7 @@
         {
           "branchId": "latakia",
           "price": 24,
-          "stock": 6
+          "stock": 1
         }
       ]
     },
@@ -844,17 +844,17 @@
         {
           "branchId": "damascus",
           "price": 19.57,
-          "stock": 12
+          "stock": 4
         },
         {
           "branchId": "homs",
           "price": 18.62,
-          "stock": 14
+          "stock": 4
         },
         {
           "branchId": "latakia",
           "price": 19,
-          "stock": 13
+          "stock": 4
         }
       ]
     },
@@ -877,17 +877,17 @@
         {
           "branchId": "damascus",
           "price": 46.35,
-          "stock": 28
+          "stock": 9
         },
         {
           "branchId": "homs",
           "price": 44.1,
-          "stock": 24
+          "stock": 8
         },
         {
           "branchId": "latakia",
           "price": 45,
-          "stock": 24
+          "stock": 8
         }
       ]
     },
@@ -910,17 +910,17 @@
         {
           "branchId": "damascus",
           "price": 28.84,
-          "stock": 47
+          "stock": 16
         },
         {
           "branchId": "homs",
           "price": 27.44,
-          "stock": 44
+          "stock": 16
         },
         {
           "branchId": "latakia",
           "price": 28,
-          "stock": 45
+          "stock": 16
         }
       ]
     },
@@ -943,17 +943,17 @@
         {
           "branchId": "damascus",
           "price": 22.66,
-          "stock": 82
+          "stock": 27
         },
         {
           "branchId": "homs",
           "price": 21.56,
-          "stock": 80
+          "stock": 27
         },
         {
           "branchId": "latakia",
           "price": 22,
-          "stock": 82
+          "stock": 26
         }
       ]
     },
@@ -1009,12 +1009,12 @@
         {
           "branchId": "damascus",
           "price": 11.33,
-          "stock": 4
+          "stock": 1
         },
         {
           "branchId": "homs",
           "price": 10.78,
-          "stock": 4
+          "stock": 1
         },
         {
           "branchId": "latakia",
@@ -1042,17 +1042,17 @@
         {
           "branchId": "damascus",
           "price": 25.75,
-          "stock": 16
+          "stock": 4
         },
         {
           "branchId": "homs",
           "price": 24.5,
-          "stock": 10
+          "stock": 4
         },
         {
           "branchId": "latakia",
           "price": 25,
-          "stock": 15
+          "stock": 4
         }
       ]
     },
@@ -1075,17 +1075,17 @@
         {
           "branchId": "damascus",
           "price": 132.87,
-          "stock": 25
+          "stock": 9
         },
         {
           "branchId": "homs",
           "price": 126.42,
-          "stock": 27
+          "stock": 8
         },
         {
           "branchId": "latakia",
           "price": 129,
-          "stock": 26
+          "stock": 8
         }
       ]
     },
@@ -1108,17 +1108,17 @@
         {
           "branchId": "damascus",
           "price": 163.77,
-          "stock": 51
+          "stock": 16
         },
         {
           "branchId": "homs",
           "price": 155.82,
-          "stock": 47
+          "stock": 16
         },
         {
           "branchId": "latakia",
           "price": 159,
-          "stock": 47
+          "stock": 16
         }
       ]
     },
@@ -1141,17 +1141,17 @@
         {
           "branchId": "damascus",
           "price": 91.67,
-          "stock": 79
+          "stock": 27
         },
         {
           "branchId": "homs",
           "price": 87.22,
-          "stock": 76
+          "stock": 27
         },
         {
           "branchId": "latakia",
           "price": 89,
-          "stock": 77
+          "stock": 26
         }
       ]
     },
@@ -1207,17 +1207,17 @@
         {
           "branchId": "damascus",
           "price": 122.57,
-          "stock": 8
+          "stock": 1
         },
         {
           "branchId": "homs",
           "price": 116.62,
-          "stock": 0
+          "stock": 1
         },
         {
           "branchId": "latakia",
           "price": 119,
-          "stock": 3
+          "stock": 1
         }
       ]
     },
@@ -1240,17 +1240,17 @@
         {
           "branchId": "damascus",
           "price": 71.07,
-          "stock": 13
+          "stock": 4
         },
         {
           "branchId": "homs",
           "price": 67.62,
-          "stock": 13
+          "stock": 4
         },
         {
           "branchId": "latakia",
           "price": 69,
-          "stock": 10
+          "stock": 4
         }
       ]
     },
@@ -1273,17 +1273,17 @@
         {
           "branchId": "damascus",
           "price": 55.62,
-          "stock": 29
+          "stock": 9
         },
         {
           "branchId": "homs",
           "price": 52.92,
-          "stock": 23
+          "stock": 8
         },
         {
           "branchId": "latakia",
           "price": 54,
-          "stock": 28
+          "stock": 8
         }
       ]
     },
@@ -1306,17 +1306,17 @@
         {
           "branchId": "damascus",
           "price": 43.26,
-          "stock": 48
+          "stock": 16
         },
         {
           "branchId": "homs",
           "price": 41.16,
-          "stock": 50
+          "stock": 16
         },
         {
           "branchId": "latakia",
           "price": 42,
-          "stock": 49
+          "stock": 16
         }
       ]
     }
