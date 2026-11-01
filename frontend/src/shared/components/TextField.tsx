@@ -27,7 +27,6 @@ export function TextField({
           id={id}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          // حدود الحقل text-slate (تباين كافي)، و border-subtle فقط للبطاقات والفواصل
           className={[
             'h-11 w-full rounded-lg border bg-surface-white px-3 text-text-main',
             'placeholder:text-text-slate focus:border-brand-navy',
