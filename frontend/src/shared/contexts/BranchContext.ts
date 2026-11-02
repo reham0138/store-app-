@@ -5,6 +5,8 @@ export type BranchContextValue = {
   branches: Branch[];
   selectedBranch: Branch | null;
   selectedByLocation: boolean;
+  isLoading: boolean;
+  error: string | null;
   setSelectedBranch: (
     branch: Branch | null,
     selectedByLocation?: boolean,

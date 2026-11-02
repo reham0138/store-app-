@@ -11,10 +11,12 @@ export function TextField({
   label,
   error,
   endAdornment,
+  id: providedId,
   className = '',
   ...rest
 }: TextFieldProps) {
-  const id = useId()
+  const generatedId = useId()
+  const id = providedId ?? generatedId
   const errorId = `${id}-error`
 
   return (

@@ -5,8 +5,11 @@ import { useCart } from "../contexts/CartContext";
 
 import CartItem from "../components/CartItem";
 import CartSummary from "../components/CartSummary";
+import { useBranch } from "../contexts/useBranch";
 
 export default function CartPage() {
+  const { isLoading: branchesLoading, selectedBranch, error: branchError } =
+    useBranch();
   const {
     items,
     subtotal,
@@ -14,11 +17,44 @@ export default function CartPage() {
     total,
     updateQuantity,
     removeFromCart,
+    cartNotice,
+    dismissCartNotice,
   } = useCart();
+
+  if (branchesLoading) {
+    return (
+      <p className="px-4 py-16 text-center text-text-slate" role="status">
+        Loading branch inventory...
+      </p>
+    );
+  }
+
+  if (branchError || !selectedBranch) {
+    return (
+      <p className="px-4 py-16 text-center text-status-error" role="alert">
+        {branchError ?? "No branches are currently available."}
+      </p>
+    );
+  }
 
   if (items.length === 0) {
     return (
       <section className="mx-auto flex min-h-[60vh] max-w-3xl flex-col items-center justify-center px-4 text-center">
+        {cartNotice && (
+          <div
+            className="mb-6 flex w-full items-start justify-between gap-4 rounded-lg border border-status-warning/30 bg-status-warning/10 p-4 text-left text-sm text-text-main"
+            role="status"
+          >
+            <span>{cartNotice}</span>
+            <button
+              type="button"
+              onClick={dismissCartNotice}
+              className="font-semibold text-brand-navy underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div className="rounded-full bg-brand-navy/5 p-6">
           <ShoppingBag size={40} className="text-brand-navy" />
@@ -59,6 +95,22 @@ export default function CartPage() {
           You have {items.length} different products in your cart.
         </p>
       </header>
+
+      {cartNotice && (
+        <div
+          className="mb-6 flex items-start justify-between gap-4 rounded-lg border border-status-warning/30 bg-status-warning/10 p-4 text-sm text-text-main"
+          role="status"
+        >
+          <span>{cartNotice}</span>
+          <button
+            type="button"
+            onClick={dismissCartNotice}
+            className="shrink-0 font-semibold text-brand-navy underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_350px]">
 

@@ -8,7 +8,11 @@ import { FormError } from '../shared/components/FormError.tsx'
 import { PasswordField } from '../shared/components/PasswordField.tsx'
 import { SubmitButton } from '../shared/components/SubmitButton.tsx'
 import { TextField } from '../shared/components/TextField.tsx'
-import { validateEmail, validatePassword } from '../shared/utils/authValidation.ts'
+import {
+	MAX_EMAIL_LENGTH,
+	validateEmail,
+	validatePassword,
+} from '../shared/utils/authValidation.ts'
 
 interface FieldErrors {
 	email?: string
@@ -37,7 +41,7 @@ export default function LoginPage() {
 
 		const nextErrors: FieldErrors = {
 			email: validateEmail(email),
-			password: password ? undefined : validatePassword(password),
+			password: password.trim() ? undefined : validatePassword(password),
 		}
 		setErrors(nextErrors)
 		if (nextErrors.email || nextErrors.password) return
@@ -70,17 +74,26 @@ export default function LoginPage() {
 					label="البريد الإلكتروني"
 					type="email"
 					dir="ltr"
+					maxLength={MAX_EMAIL_LENGTH}
 					autoComplete="email"
 					placeholder="name@example.com"
 					value={email}
-					onChange={(e) => setEmail(e.target.value)}
+					onChange={(e) => {
+						setEmail(e.target.value)
+						setErrors((previous) => ({ ...previous, email: undefined }))
+						setFormError('')
+					}}
 					error={errors.email}
 				/>
 				<PasswordField
 					label="كلمة المرور"
 					autoComplete="current-password"
 					value={password}
-					onChange={(e) => setPassword(e.target.value)}
+					onChange={(e) => {
+						setPassword(e.target.value)
+						setErrors((previous) => ({ ...previous, password: undefined }))
+						setFormError('')
+					}}
 					error={errors.password}
 				/>
 				<SubmitButton loading={submitting}>تسجيل الدخول</SubmitButton>

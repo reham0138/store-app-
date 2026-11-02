@@ -119,6 +119,11 @@ export default function OrdersPage() {
               </div>
 
               <div className="mt-4 border-t border-border-subtle pt-4">
+                {order.branch && (
+                  <p className="text-sm text-text-slate">
+                    Fulfilled by: {order.branch.name}
+                  </p>
+                )}
 
                 <p className="text-sm text-text-slate">
                   Deliver to: {order.shippingAddress.city}

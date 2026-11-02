@@ -8,6 +8,7 @@ type LabelProps = {
   required?: boolean;
   children: ReactElement<{
     id?: string;
+    required?: boolean;
     "aria-describedby"?: string;
     "aria-invalid"?: boolean;
   }>;
@@ -34,6 +35,7 @@ export function Label({ label, error, hint, required, children }: LabelProps) {
       </label>
       {cloneElement(children, {
         id,
+        ...(required !== undefined ? { required } : {}),
         "aria-describedby": describedBy || undefined,
         "aria-invalid": error ? true : undefined,
       })}

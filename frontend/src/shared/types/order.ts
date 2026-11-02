@@ -21,6 +21,10 @@ export interface ShippingAddress {
 export interface Order {
   id: string;
   items: CartItem[];
+  branch?: {
+    id: string;
+    name: string;
+  };
 
   shippingAddress: ShippingAddress;
   paymentMethod: PaymentMethod;

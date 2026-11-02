@@ -7,12 +7,14 @@ import {
 } from "react-router-dom";
 
 import MainLayout from "./shared/layouts/MainLayout";
-import BranchSelectorTestPage from "./pages/BranchSelectorTestPage";
+import BranchesPage from "./pages/BranchesPage";
 import LoginPage from "./pages/login";
 import RegisterPage from "./pages/RegisterPage";
+import HomePage from "./pages/HomePage";
 
 import { CartProvider } from "./shared/contexts/CartContext";
 import { AuthProvider } from "./shared/contexts/AuthProvider";
+import { BranchProvider } from "./shared/contexts/BranchProvider";
 
 import CartPage from "./shared/components/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
