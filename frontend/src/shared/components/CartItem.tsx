@@ -5,7 +5,9 @@ import type { CartItem as CartItemType } from "../types/cart";
 import {
   formatPrice,
   getProductPrice,
+  getProductStock,
 } from "../utils/pricing";
+import { useBranch } from "../contexts/useBranch";
 
 interface CartItemProps {
   item: CartItemType;
@@ -19,8 +21,11 @@ export default function CartItem({
   onRemove,
 }: CartItemProps) {
   const { product, quantity } = item;
+  const { selectedBranch } = useBranch();
+  const branchId = selectedBranch?.id;
 
-  const unitPrice = getProductPrice(product);
+  const unitPrice = getProductPrice(product, branchId);
+  const stock = getProductStock(product, branchId);
 
   return (
     <article className="flex flex-col gap-4 rounded-xl border border-border-subtle bg-surface-white p-4 sm:flex-row sm:items-center">
@@ -47,7 +52,7 @@ export default function CartItem({
         </p>
 
         <p className="mt-1 text-xs text-text-slate">
-          {product.stock} available
+          {stock} available at {selectedBranch?.name ?? "the selected branch"}
         </p>
       </div>
 
@@ -71,7 +76,7 @@ export default function CartItem({
 
           <button
             type="button"
-            disabled={quantity >= product.stock}
+            disabled={quantity >= stock}
             onClick={() => onUpdateQuantity(product.id, quantity + 1)}
             aria-label="Increase quantity"
             className="rounded-md p-2 hover:bg-surface-cream disabled:cursor-not-allowed disabled:opacity-40"

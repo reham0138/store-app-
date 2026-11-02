@@ -87,6 +87,11 @@ export default function OrderSuccessPage() {
             ? "Cash on Delivery"
             : "Card (Demo)"}
         </p>
+        {order.branch && (
+          <p className="mt-2 text-xs text-text-slate">
+            Fulfilled by: {order.branch.name}
+          </p>
+        )}
 
       </div>
 

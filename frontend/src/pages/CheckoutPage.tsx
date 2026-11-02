@@ -6,7 +6,11 @@ import { ArrowLeft, MapPin, CreditCard } from "lucide-react";
 
 import { useCart } from "../shared/contexts/CartContext";
 
-import { formatPrice } from "../shared/utils/pricing";
+import {
+  formatPrice,
+  getProductPrice,
+} from "../shared/utils/pricing";
+import { useBranch } from "../shared/contexts/useBranch";
 
 import type {
   PaymentMethod,
@@ -18,6 +22,11 @@ import { saveOrder } from "../shared/utils/orderStorage";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
+  const {
+    selectedBranch,
+    isLoading: branchesLoading,
+    error: branchError,
+  } = useBranch();
 
   const {
     items,
@@ -25,6 +34,8 @@ export default function CheckoutPage() {
     deliveryFee,
     total,
     clearCart,
+    cartNotice,
+    dismissCartNotice,
   } = useCart();
 
   const [paymentMethod, setPaymentMethod] =
@@ -53,6 +64,8 @@ export default function CheckoutPage() {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!selectedBranch) return;
+
     if (items.length === 0) {
       navigate("/cart");
       return;
@@ -64,6 +77,9 @@ export default function CheckoutPage() {
         ...item,
         product: { ...item.product },
       })),
+      ...(selectedBranch
+        ? { branch: { id: selectedBranch.id, name: selectedBranch.name } }
+        : {}),
       shippingAddress: { ...address },
       paymentMethod,
       subtotal,
@@ -72,6 +88,22 @@ export default function CheckoutPage() {
       status: "pending",
       createdAt: new Date().toISOString(),
     };
+
+    if (branchesLoading) {
+      return (
+        <p className="px-4 py-16 text-center text-text-slate" role="status">
+          Loading branch inventory...
+        </p>
+      );
+    }
+
+    if (branchError || !selectedBranch) {
+      return (
+        <p className="px-4 py-16 text-center text-status-error" role="alert">
+          {branchError ?? "No branches are currently available."}
+        </p>
+      );
+    }
 
     saveOrder(order);
 
@@ -119,6 +151,22 @@ export default function CheckoutPage() {
           Complete your shipping and payment information.
         </p>
       </header>
+
+      {cartNotice && (
+        <div
+          className="mb-6 flex items-start justify-between gap-4 rounded-lg border border-status-warning/30 bg-status-warning/10 p-4 text-sm text-text-main"
+          role="status"
+        >
+          <span>{cartNotice}</span>
+          <button
+            type="button"
+            onClick={dismissCartNotice}
+            className="shrink-0 font-semibold text-brand-navy underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <form
         onSubmit={handleSubmit}
@@ -308,6 +356,11 @@ export default function CheckoutPage() {
           <h2 className="text-xl font-semibold text-brand-navy">
             Order Review
           </h2>
+          {selectedBranch && (
+            <p className="mt-2 text-sm text-text-slate">
+              Fulfilled by {selectedBranch.name}
+            </p>
+          )}
 
           <div className="mt-5 grid gap-4">
 
@@ -322,9 +375,8 @@ export default function CheckoutPage() {
 
                 <span className="shrink-0 font-medium">
                   {formatPrice(
-                    item.product.price *
-                    (1 - item.product.discountPercentage / 100) *
-                    item.quantity
+                    getProductPrice(item.product, selectedBranch?.id) *
+                    item.quantity,
                   )}
                 </span>
               </div>

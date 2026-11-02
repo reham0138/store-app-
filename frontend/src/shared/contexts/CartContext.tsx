@@ -14,7 +14,12 @@ import type {
   StoreProduct,
 } from "../types/cart";
 
-import { DELIVERY_FEE, getProductPrice } from "../utils/pricing";
+import {
+  DELIVERY_FEE,
+  getProductPrice,
+  getProductStock,
+} from "../utils/pricing";
+import { useBranch } from "./useBranch";
 
 const STORAGE_KEY = "crown-anchor-cart";
 
@@ -53,7 +58,9 @@ function isStoreProduct(value: unknown): value is StoreProduct {
             isRecord(inventory) &&
             typeof inventory.branchId === "string" &&
             isFiniteNumber(inventory.price) &&
-            isFiniteNumber(inventory.stock),
+            isFiniteNumber(inventory.stock) &&
+            inventory.price >= 0 &&
+            inventory.stock >= 0,
         )))
   );
 }
@@ -96,16 +103,53 @@ interface CartProviderProps {
 }
 
 export function CartProvider({ children }: CartProviderProps) {
+  const { selectedBranch } = useBranch();
+  const branchId = selectedBranch?.id;
   const [items, setItems] = useState<CartItem[]>(loadCart);
+  const [cartNotice, setCartNotice] = useState<string | null>(null);
 
-  // Save cart whenever it changes
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
-  // Add product
+  useEffect(() => {
+    if (!branchId || !selectedBranch) return;
+
+    let removedCount = 0;
+    let adjustedCount = 0;
+    const updatedItems = items.flatMap((item) => {
+      const availableStock = getProductStock(item.product, branchId);
+      if (availableStock <= 0) {
+        removedCount += 1;
+        return [];
+      }
+
+      const quantity = Math.min(item.quantity, availableStock);
+      if (quantity < item.quantity) adjustedCount += 1;
+      return quantity === item.quantity ? [item] : [{ ...item, quantity }];
+    });
+
+    if (removedCount || adjustedCount) {
+      // Reconcile cart state when the selected branch changes in its provider.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setItems(updatedItems);
+      const changes = [
+        removedCount
+          ? `${removedCount} item${removedCount === 1 ? "" : "s"} unavailable and removed`
+          : "",
+        adjustedCount
+          ? `${adjustedCount} item${adjustedCount === 1 ? "" : "s"} quantity adjusted to branch stock`
+          : "",
+      ].filter(Boolean);
+      setCartNotice(
+        `Your cart was updated for ${selectedBranch.name}: ${changes.join("; ")}.`,
+      );
+    }
+  }, [branchId, items, selectedBranch]);
+
   const addToCart = (product: StoreProduct, quantity = 1) => {
-    if (product.stock <= 0 || quantity <= 0) return;
+    const availableStock = getProductStock(product, branchId);
+    if (availableStock <= 0 || quantity <= 0) return;
 
     setItems((previousItems) => {
       const existingItem = previousItems.find(
@@ -120,7 +164,7 @@ export function CartProvider({ children }: CartProviderProps) {
                 product,
                 quantity: Math.min(
                   item.quantity + quantity,
-                  product.stock
+                  availableStock
                 ),
               }
             : item
@@ -131,7 +175,7 @@ export function CartProvider({ children }: CartProviderProps) {
         ...previousItems,
         {
           product,
-          quantity: Math.min(quantity, product.stock),
+          quantity: Math.min(quantity, availableStock),
         },
       ];
     });
@@ -147,7 +191,7 @@ export function CartProvider({ children }: CartProviderProps) {
                 ...item,
                 quantity: Math.min(
                   quantity,
-                  item.product.stock
+                  getProductStock(item.product, branchId)
                 ),
               }
             : item
@@ -156,7 +200,6 @@ export function CartProvider({ children }: CartProviderProps) {
     );
   };
 
-  // Remove product
   const removeFromCart = (productId: number) => {
     setItems((previousItems) =>
       previousItems.filter(
@@ -165,20 +208,20 @@ export function CartProvider({ children }: CartProviderProps) {
     );
   };
 
-  // Clear cart
   const clearCart = () => {
     setItems([]);
   };
 
-  // Calculate totals
+  const dismissCartNotice = () => setCartNotice(null);
+
   const subtotal = useMemo(
     () =>
       items.reduce(
         (sum, item) =>
-          sum + getProductPrice(item.product) * item.quantity,
+          sum + getProductPrice(item.product, branchId) * item.quantity,
         0
       ),
-    [items]
+    [items, branchId]
   );
 
   const totalItems = useMemo(
@@ -196,10 +239,12 @@ export function CartProvider({ children }: CartProviderProps) {
     subtotal,
     deliveryFee,
     total,
+    cartNotice,
     addToCart,
     updateQuantity,
     removeFromCart,
     clearCart,
+    dismissCartNotice,
   };
 
   return (

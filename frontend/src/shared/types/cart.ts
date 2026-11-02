@@ -30,9 +30,11 @@ export interface CartContextType {
   subtotal: number;
   deliveryFee: number;
   total: number;
+  cartNotice: string | null;
 
   addToCart: (product: StoreProduct, quantity?: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
   removeFromCart: (productId: number) => void;
   clearCart: () => void;
+  dismissCartNotice: () => void;
 }

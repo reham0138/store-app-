@@ -8,7 +8,13 @@ import { useBranch } from "../../contexts/useBranch";
 import type { Branch } from "../../types/type";
 
 export function BranchSelector() {
-  const { branches, selectedBranch, setSelectedBranch } = useBranch();
+  const {
+    branches,
+    selectedBranch,
+    setSelectedBranch,
+    isLoading,
+    error: branchesError,
+  } = useBranch();
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
   const defaultBranch =
@@ -75,7 +81,7 @@ export function BranchSelector() {
         <Select
           aria-label="Select branch"
           value={selectedBranchId}
-          disabled={branches.length <= 1}
+          disabled={isLoading || branches.length <= 1}
           placeholder={
             branches.length ? "Select a branch" : "No branches available"
           }
@@ -114,6 +120,21 @@ export function BranchSelector() {
           Use default branch
         </Button>
       </div>
+      {isLoading && (
+        <p className="text-sm text-text-slate" role="status">
+          Loading branches...
+        </p>
+      )}
+      {branchesError && (
+        <p className="text-sm text-status-error" role="alert">
+          {branchesError}
+        </p>
+      )}
+      {!isLoading && !branchesError && branches.length === 0 && (
+        <p className="text-sm text-status-error" role="alert">
+          No branches are currently available.
+        </p>
+      )}
       {locationError && (
         <p className="text-sm text-status-error" role="alert">
           {locationError}

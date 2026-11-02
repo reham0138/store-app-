@@ -5,6 +5,7 @@ import {
   LogIn,
   LogOut,
   Menu,
+  MapPin,
   ShoppingCart,
   ShoppingBag,
   UserRound,
@@ -68,6 +69,10 @@ export default function NavBar() {
             <NavLink to="/products" onClick={closeMenu} className={navigationLinkClass}>
               <ShoppingBag aria-hidden="true" size={18} />
               Products
+            </NavLink>
+            <NavLink to="/branches" onClick={closeMenu} className={navigationLinkClass}>
+              <MapPin aria-hidden="true" size={18} />
+              Branches
             </NavLink>
             <NavLink
               to="/cart"
