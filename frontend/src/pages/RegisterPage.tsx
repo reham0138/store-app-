@@ -10,6 +10,8 @@ import { SubmitButton } from '../shared/components/SubmitButton.tsx'
 import { TextField } from '../shared/components/TextField.tsx'
 import {
   MIN_PASSWORD_LENGTH,
+  MAX_EMAIL_LENGTH,
+  MAX_NAME_LENGTH,
   validateConfirm,
   validateEmail,
   validateName,
@@ -78,19 +80,29 @@ export default function RegisterPage() {
         {formError && <FormError message={formError} />}
         <TextField
           label="الاسم"
+          maxLength={MAX_NAME_LENGTH}
           autoComplete="name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value)
+            setErrors((previous) => ({ ...previous, name: undefined }))
+            setFormError('')
+          }}
           error={errors.name}
         />
         <TextField
           label="البريد الإلكتروني"
           type="email"
           dir="ltr"
+          maxLength={MAX_EMAIL_LENGTH}
           autoComplete="email"
           placeholder="name@example.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            setErrors((previous) => ({ ...previous, email: undefined }))
+            setFormError('')
+          }}
           error={errors.email}
         />
         <PasswordField
@@ -98,14 +110,26 @@ export default function RegisterPage() {
           autoComplete="new-password"
           placeholder={`${MIN_PASSWORD_LENGTH} أحرف على الأقل`}
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value)
+            setErrors((previous) => ({
+              ...previous,
+              password: undefined,
+              confirm: undefined,
+            }))
+            setFormError('')
+          }}
           error={errors.password}
         />
         <PasswordField
           label="تأكيد كلمة المرور"
           autoComplete="new-password"
           value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
+          onChange={(e) => {
+            setConfirm(e.target.value)
+            setErrors((previous) => ({ ...previous, confirm: undefined }))
+            setFormError('')
+          }}
           error={errors.confirm}
         />
         <SubmitButton loading={submitting}>إنشاء الحساب</SubmitButton>

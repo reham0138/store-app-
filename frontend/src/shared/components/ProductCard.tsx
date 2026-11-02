@@ -2,17 +2,36 @@
 import { useState } from "react";
 import type { StoreProduct } from "../types/cart";
 import { useCart } from "../contexts/CartContext";
+import { useBranch } from "../contexts/useBranch";
+import {
+  formatPrice,
+  getProductPrice,
+  getProductRegularPrice,
+  getProductStock,
+} from "../utils/pricing";
 interface ProductCardProps {
   product: StoreProduct;
 }
 function ProductCard({ product }: ProductCardProps) {
-  const finalPrice = product.price * (1 - product.discountPercentage / 100);
-
-  const { addToCart } = useCart();
+  const { selectedBranch } = useBranch();
+  const branchId = selectedBranch?.id;
+  const { addToCart, items } = useCart();
+  const stock = getProductStock(product, branchId);
+  const quantityInCart =
+    items.find((item) => item.product.id === product.id)?.quantity ?? 0;
+  const hasReachedStockLimit = quantityInCart >= stock;
   const [isAdded, setIsAdded] = useState(false);
+  const addButtonLabel =
+    stock <= 0
+      ? "Out of stock"
+      : hasReachedStockLimit
+        ? "Maximum quantity in cart"
+        : isAdded
+          ? "Added to cart ✓"
+          : "Add to cart";
 
   const handleAddToCart = () => {
-    if (product.stock <= 0) return;
+    if (hasReachedStockLimit) return;
 
     addToCart(product);
     setIsAdded(true);
@@ -41,31 +60,31 @@ function ProductCard({ product }: ProductCardProps) {
       </p>
 
       <p className="font-bold text-blue-600 mb-1">
-        السعر: ${finalPrice.toFixed(2)}
+        {formatPrice(getProductPrice(product, branchId))}
       </p>
 
       {product.discountPercentage > 0 && (
         <p className="text-xs text-gray-400 line-through mb-3">
-          ${product.price.toFixed(2)}
+          {formatPrice(getProductRegularPrice(product, branchId))}
         </p>
       )}
 
+      <p className="mb-3 text-xs text-gray-500">
+        {stock} available at {selectedBranch?.name ?? "the selected branch"}
+      </p>
+
       <button
         onClick={handleAddToCart}
-        disabled={product.stock <= 0}
+        disabled={hasReachedStockLimit}
         className={`font-medium py-2 px-4 rounded transition-colors w-full text-white ${
-          product.stock <= 0
+          hasReachedStockLimit
             ? "bg-gray-400 cursor-not-allowed"
             : isAdded
               ? "bg-green-600"
               : "bg-blue-600 hover:bg-blue-700"
         }`}
       >
-        {product.stock <= 0
-          ? "Out of stock"
-          : isAdded
-            ? "Added to cart ✓"
-            : "Add to cart"}
+        {addButtonLabel}
       </button>
     </div>
   );

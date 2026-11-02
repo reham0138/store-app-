@@ -5,10 +5,18 @@ import { Search, SlidersHorizontal } from "lucide-react";
 import { getProducts } from "../shared/services/product.service";
 import type { StoreProduct } from "../shared/types/cart";
 import ProductCard from "../shared/components/ProductCard";
+import { useBranch } from "../shared/contexts/useBranch";
+import { getProductPrice } from "../shared/utils/pricing";
 
 type SortOption = "default" | "price-low" | "price-high" | "rating";
 
 export default function ProductsPage() {
+  const {
+    selectedBranch,
+    isLoading: branchesLoading,
+    error: branchError,
+  } = useBranch();
+  const branchId = selectedBranch?.id;
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -16,6 +24,12 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState<SortOption>("default");
+  const pageLoading = loading || branchesLoading;
+  const pageError =
+    branchError ??
+    (!branchesLoading && !selectedBranch
+      ? "No branches are currently available."
+      : error);
 
   useEffect(() => {
     let isMounted = true;
@@ -72,17 +86,13 @@ export default function ProductsPage() {
     switch (sortBy) {
       case "price-low":
         result = [...result].sort(
-          (a, b) =>
-            a.price * (1 - a.discountPercentage / 100) -
-            b.price * (1 - b.discountPercentage / 100),
+          (a, b) => getProductPrice(a, branchId) - getProductPrice(b, branchId),
         );
         break;
 
       case "price-high":
         result = [...result].sort(
-          (a, b) =>
-            b.price * (1 - b.discountPercentage / 100) -
-            a.price * (1 - a.discountPercentage / 100),
+          (a, b) => getProductPrice(b, branchId) - getProductPrice(a, branchId),
         );
         break;
 
@@ -95,7 +105,7 @@ export default function ProductsPage() {
     }
 
     return result;
-  }, [products, search, selectedCategory, sortBy]);
+  }, [products, search, selectedCategory, sortBy, branchId]);
 
   return (
     <main className="min-h-screen bg-surface-cream">
@@ -126,7 +136,7 @@ export default function ProductsPage() {
             </h2>
 
             <p className="mt-1 text-sm text-text-slate">
-              {loading
+              {pageLoading
                 ? "Loading products..."
                 : `${filteredProducts.length} products found`}
             </p>
@@ -173,7 +183,7 @@ export default function ProductsPage() {
         </div>
 
         {/* Categories */}
-        {!loading && !error && (
+        {!pageLoading && !pageError && (
           <div className="mb-8 flex flex-wrap gap-2">
             <button
               type="button"
@@ -205,16 +215,16 @@ export default function ProductsPage() {
         )}
 
         {/* Loading State */}
-        {loading && (
+        {pageLoading && (
           <p className="py-16 text-center text-sm text-text-slate">
-            Loading products...
+            Loading products and branch inventory...
           </p>
         )}
 
         {/* Error State */}
-        {!loading && error && (
+        {!pageLoading && pageError && (
           <div className="rounded-xl border border-status-error/20 bg-white px-6 py-12 text-center">
-            <p className="font-medium text-status-error">{error}</p>
+            <p className="font-medium text-status-error">{pageError}</p>
 
             <button
               type="button"
@@ -227,7 +237,7 @@ export default function ProductsPage() {
         )}
 
         {/* Empty State */}
-        {!loading && !error && filteredProducts.length === 0 && (
+        {!pageLoading && !pageError && filteredProducts.length === 0 && (
           <div className="rounded-xl border border-border-subtle bg-white px-6 py-16 text-center">
             <h3 className="font-semibold text-brand-navy">
               No products found
@@ -251,7 +261,7 @@ export default function ProductsPage() {
         )}
 
         {/* Product Cards */}
-{!loading && !error && filteredProducts.length > 0 && (
+{!pageLoading && !pageError && filteredProducts.length > 0 && (
   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     {filteredProducts.map((product) => (
       <ProductCard key={product.id} product={product} />
