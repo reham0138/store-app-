@@ -22,12 +22,71 @@ const CartContext = createContext<CartContextType | undefined>(
   undefined
 );
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isStoreProduct(value: unknown): value is StoreProduct {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.id) &&
+    typeof value.title === "string" &&
+    typeof value.description === "string" &&
+    typeof value.category === "string" &&
+    isFiniteNumber(value.price) &&
+    isFiniteNumber(value.discountPercentage) &&
+    isFiniteNumber(value.rating) &&
+    isFiniteNumber(value.stock) &&
+    value.stock >= 0 &&
+    typeof value.brand === "string" &&
+    typeof value.thumbnail === "string" &&
+    Array.isArray(value.images) &&
+    value.images.every((image) => typeof image === "string") &&
+    (value.branchInventory === undefined ||
+      (Array.isArray(value.branchInventory) &&
+        value.branchInventory.every(
+          (inventory) =>
+            isRecord(inventory) &&
+            typeof inventory.branchId === "string" &&
+            isFiniteNumber(inventory.price) &&
+            isFiniteNumber(inventory.stock),
+        )))
+  );
+}
+
+function isCartItem(value: unknown): value is CartItem {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.quantity) &&
+    Number.isInteger(value.quantity) &&
+    value.quantity > 0 &&
+    isStoreProduct(value.product) &&
+    value.quantity <= value.product.stock
+  );
+}
+
 function loadCart(): CartItem[] {
   try {
     const savedCart = localStorage.getItem(STORAGE_KEY);
+    if (!savedCart) return [];
 
-    return savedCart ? JSON.parse(savedCart) as CartItem[] : [];
-  } catch {
+    const parsed: unknown = JSON.parse(savedCart);
+    if (!Array.isArray(parsed)) {
+      console.warn("Saved cart data is invalid; starting with an empty cart.");
+      return [];
+    }
+
+    const items = parsed.filter(isCartItem);
+    if (items.length !== parsed.length) {
+      console.warn("Invalid saved cart items were discarded.");
+    }
+    return items;
+  } catch (error) {
+    console.warn("Unable to load saved cart; starting with an empty cart.", error);
     return [];
   }
 }

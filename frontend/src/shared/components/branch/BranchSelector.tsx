@@ -9,7 +9,6 @@ import type { Branch } from "../../types/type";
 
 export function BranchSelector() {
   const { branches, selectedBranch, setSelectedBranch } = useBranch();
- const [query] = useState("");
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
   const defaultBranch =
@@ -22,16 +21,6 @@ export function BranchSelector() {
   )
     ? selectedBranch?.id ?? ""
     : "";
-  const matchingBranches = branches.filter((branch) =>
-    `${branch.name} ${branch.code ?? ""} ${branch.address ?? ""}`
-      .toLocaleLowerCase()
-      .includes(query.trim().toLocaleLowerCase()),
-  );
-  const visibleBranches =
-    selectedBranch &&
-    !matchingBranches.some((branch) => branch.id === selectedBranch.id)
-      ? [selectedBranch, ...matchingBranches]
-      : matchingBranches;
 
   function handleUseLocation() {
     setLocationError("");
@@ -90,7 +79,7 @@ export function BranchSelector() {
           placeholder={
             branches.length ? "Select a branch" : "No branches available"
           }
-          options={visibleBranches.map((branch) => ({
+          options={branches.map((branch) => ({
             value: branch.id,
             label: `${branch.name}${branch.isDefault ? " (default)" : ""}`,
           }))}

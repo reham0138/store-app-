@@ -8,11 +8,22 @@ interface ProductCardProps {
 function ProductCard({ product }: ProductCardProps) {
   const finalPrice = product.price * (1 - product.discountPercentage / 100);
 
-  const { addToCart } = useCart();
+  const { addToCart, items } = useCart();
+  const quantityInCart =
+    items.find((item) => item.product.id === product.id)?.quantity ?? 0;
+  const hasReachedStockLimit = quantityInCart >= product.stock;
   const [isAdded, setIsAdded] = useState(false);
+  const addButtonLabel =
+    product.stock <= 0
+      ? "Out of stock"
+      : hasReachedStockLimit
+        ? "Maximum quantity in cart"
+        : isAdded
+          ? "Added to cart ✓"
+          : "Add to cart";
 
   const handleAddToCart = () => {
-    if (product.stock <= 0) return;
+    if (hasReachedStockLimit) return;
 
     addToCart(product);
     setIsAdded(true);
@@ -52,20 +63,16 @@ function ProductCard({ product }: ProductCardProps) {
 
       <button
         onClick={handleAddToCart}
-        disabled={product.stock <= 0}
+        disabled={hasReachedStockLimit}
         className={`font-medium py-2 px-4 rounded transition-colors w-full text-white ${
-          product.stock <= 0
+          hasReachedStockLimit
             ? "bg-gray-400 cursor-not-allowed"
             : isAdded
               ? "bg-green-600"
               : "bg-blue-600 hover:bg-blue-700"
         }`}
       >
-        {product.stock <= 0
-          ? "Out of stock"
-          : isAdded
-            ? "Added to cart ✓"
-            : "Add to cart"}
+        {addButtonLabel}
       </button>
     </div>
   );
