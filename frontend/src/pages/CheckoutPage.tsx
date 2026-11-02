@@ -11,6 +11,11 @@ import {
   getProductPrice,
 } from "../shared/utils/pricing";
 import { useBranch } from "../shared/contexts/useBranch";
+import {
+  MAX_NAME_LENGTH,
+  sanitizePhoneInput,
+  validatePhone,
+} from "../shared/utils/authValidation";
 
 import type {
   PaymentMethod,
@@ -19,6 +24,13 @@ import type {
 } from "../shared/types/order";
 
 import { saveOrder } from "../shared/utils/orderStorage";
+
+interface CheckoutFieldErrors {
+  fullName?: string;
+  phone?: string;
+  city?: string;
+  street?: string;
+}
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -49,6 +61,7 @@ export default function CheckoutPage() {
     building: "",
     notes: "",
   });
+  const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -59,12 +72,36 @@ export default function CheckoutPage() {
       ...previous,
       [name]: value,
     }));
+    setFieldErrors((previous) => ({
+      ...previous,
+      [name]: undefined,
+    }));
+  };
+
+  const handlePhoneChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const phone = sanitizePhoneInput(event.target.value);
+    setAddress((previous) => ({ ...previous, phone }));
+    setFieldErrors((previous) => ({ ...previous, phone: undefined }));
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!selectedBranch) return;
+    if (branchesLoading || branchError || !selectedBranch) return;
+
+    const nextErrors: CheckoutFieldErrors = {
+      fullName:
+        address.fullName.trim().length < 2
+          ? "Enter your full name (at least 2 characters)."
+          : address.fullName.trim().length > MAX_NAME_LENGTH
+            ? `Name must be ${MAX_NAME_LENGTH} characters or fewer.`
+            : undefined,
+      phone: validatePhone(address.phone),
+      city: address.city.trim() ? undefined : "Enter your city.",
+      street: address.street.trim() ? undefined : "Enter your street address.",
+    };
+    setFieldErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) return;
 
     if (items.length === 0) {
       navigate("/cart");
@@ -77,10 +114,16 @@ export default function CheckoutPage() {
         ...item,
         product: { ...item.product },
       })),
-      ...(selectedBranch
-        ? { branch: { id: selectedBranch.id, name: selectedBranch.name } }
-        : {}),
-      shippingAddress: { ...address },
+      branch: { id: selectedBranch.id, name: selectedBranch.name },
+      shippingAddress: {
+        ...address,
+        fullName: address.fullName.trim(),
+        phone: address.phone.trim(),
+        city: address.city.trim(),
+        street: address.street.trim(),
+        building: address.building?.trim(),
+        notes: address.notes?.trim(),
+      },
       paymentMethod,
       subtotal,
       deliveryFee,
@@ -88,22 +131,6 @@ export default function CheckoutPage() {
       status: "pending",
       createdAt: new Date().toISOString(),
     };
-
-    if (branchesLoading) {
-      return (
-        <p className="px-4 py-16 text-center text-text-slate" role="status">
-          Loading branch inventory...
-        </p>
-      );
-    }
-
-    if (branchError || !selectedBranch) {
-      return (
-        <p className="px-4 py-16 text-center text-status-error" role="alert">
-          {branchError ?? "No branches are currently available."}
-        </p>
-      );
-    }
 
     saveOrder(order);
 
@@ -113,6 +140,22 @@ export default function CheckoutPage() {
       state: { orderId: order.id },
     });
   };
+
+  if (branchesLoading) {
+    return (
+      <p className="px-4 py-16 text-center text-text-slate" role="status">
+        Loading branch inventory...
+      </p>
+    );
+  }
+
+  if (branchError || !selectedBranch) {
+    return (
+      <p className="px-4 py-16 text-center text-status-error" role="alert">
+        {branchError ?? "No branches are currently available."}
+      </p>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -170,6 +213,7 @@ export default function CheckoutPage() {
 
       <form
         onSubmit={handleSubmit}
+        noValidate
         className="grid items-start gap-8 lg:grid-cols-[1fr_380px]"
       >
 
@@ -199,11 +243,18 @@ export default function CheckoutPage() {
                   name="fullName"
                   value={address.fullName}
                   onChange={handleChange}
-                  required
+                  maxLength={MAX_NAME_LENGTH}
+                  aria-invalid={fieldErrors.fullName ? true : undefined}
+                  aria-describedby={fieldErrors.fullName ? "fullName-error" : undefined}
                   autoComplete="name"
                   placeholder="Enter your full name"
                   className="input"
                 />
+                {fieldErrors.fullName && (
+                  <p id="fullName-error" className="text-sm text-status-error" role="alert">
+                    {fieldErrors.fullName}
+                  </p>
+                )}
               </div>
 
               <div className="grid gap-2">
@@ -215,13 +266,22 @@ export default function CheckoutPage() {
                   id="phone"
                   name="phone"
                   type="tel"
+                  inputMode="tel"
+                  pattern="[+]?[0-9][0-9 ()-]*[0-9]"
+                  title="Use 7 to 15 digits; +, spaces, parentheses, and hyphens are allowed."
                   value={address.phone}
-                  onChange={handleChange}
-                  required
+                  onChange={handlePhoneChange}
+                  aria-invalid={fieldErrors.phone ? true : undefined}
+                  aria-describedby={fieldErrors.phone ? "phone-error" : undefined}
                   autoComplete="tel"
                   placeholder="Enter your phone number"
                   className="input"
                 />
+                {fieldErrors.phone && (
+                  <p id="phone-error" className="text-sm text-status-error" role="alert">
+                    {fieldErrors.phone}
+                  </p>
+                )}
               </div>
 
               <div className="grid gap-2">
@@ -234,11 +294,18 @@ export default function CheckoutPage() {
                   name="city"
                   value={address.city}
                   onChange={handleChange}
-                  required
+                  maxLength={100}
+                  aria-invalid={fieldErrors.city ? true : undefined}
+                  aria-describedby={fieldErrors.city ? "city-error" : undefined}
                   autoComplete="address-level2"
                   placeholder="Enter your city"
                   className="input"
                 />
+                {fieldErrors.city && (
+                  <p id="city-error" className="text-sm text-status-error" role="alert">
+                    {fieldErrors.city}
+                  </p>
+                )}
               </div>
 
               <div className="grid gap-2 sm:col-span-2">
@@ -251,11 +318,18 @@ export default function CheckoutPage() {
                   name="street"
                   value={address.street}
                   onChange={handleChange}
-                  required
+                  maxLength={200}
+                  aria-invalid={fieldErrors.street ? true : undefined}
+                  aria-describedby={fieldErrors.street ? "street-error" : undefined}
                   autoComplete="street-address"
                   placeholder="Street and area"
                   className="input"
                 />
+                {fieldErrors.street && (
+                  <p id="street-error" className="text-sm text-status-error" role="alert">
+                    {fieldErrors.street}
+                  </p>
+                )}
               </div>
 
               <div className="grid gap-2 sm:col-span-2">
@@ -268,6 +342,7 @@ export default function CheckoutPage() {
                   name="building"
                   value={address.building}
                   onChange={handleChange}
+                  maxLength={100}
                   placeholder="Building number, floor, apartment"
                   className="input"
                 />
@@ -283,6 +358,7 @@ export default function CheckoutPage() {
                   name="notes"
                   value={address.notes}
                   onChange={handleChange}
+                  maxLength={500}
                   rows={3}
                   placeholder="Additional instructions (optional)"
                   className="input resize-y"
