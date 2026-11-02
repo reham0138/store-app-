@@ -4,8 +4,8 @@ import "./Button.css";
 type Variants = "primary" | "secondary" | "tertiary";
 
 export interface ButtonProps {
-  children: React.ReactNode;
-  onClick: () => void;
+  children?: React.ReactNode;
+  onClick?: () => void;
   type?: "button" | "submit" | "reset";
   variant?: Variants;
   disabled?: boolean;
