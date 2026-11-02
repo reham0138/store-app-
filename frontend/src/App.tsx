@@ -9,6 +9,7 @@ import MainLayout from "./shared/layouts/MainLayout";
 import BranchSelectorTestPage from "./pages/BranchSelectorTestPage";
 import LoginPage from "./pages/login";
 import RegisterPage from "./pages/RegisterPage";
+import HomePage from "./pages/HomePage";
 
 import { CartProvider } from "./shared/contexts/CartContext";
 import { AuthProvider } from "./shared/contexts/AuthProvider";
@@ -26,7 +27,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<MainLayout />}>
-              <Route index element={<div />} />
+              <Route index element={<HomePage />} />
               <Route path="products" element={<ProductsPage />} />
               <Route
                 path="branch-test"

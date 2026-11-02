@@ -90,7 +90,7 @@ export default function CheckoutPage() {
         </h1>
 
         <Link
-          to="/"
+          to="/products"
           className="mt-6 inline-block rounded-lg bg-brand-navy px-6 py-3 text-white"
         >
           Browse Products
