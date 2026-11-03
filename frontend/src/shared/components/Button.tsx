@@ -5,7 +5,7 @@ type Variants = "primary" | "secondary" | "tertiary";
 
 export interface ButtonProps {
   children: React.ReactNode;
-  onClick: () => void;
+  onClick?: () => void;
   type?: "button" | "submit" | "reset";
   variant?: Variants;
   disabled?: boolean;

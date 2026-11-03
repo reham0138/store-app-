@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   ClipboardList,
+  LayoutDashboard,
   House,
   LogIn,
   LogOut,
@@ -93,6 +94,14 @@ export default function NavBar() {
             <NavLink to="/orders" onClick={closeMenu} className={navigationLinkClass}>
               <ClipboardList aria-hidden="true" size={18} />
               Orders
+            </NavLink>
+            <NavLink
+              to="/dashboard"
+              onClick={closeMenu}
+              className={navigationLinkClass}
+            >
+              <LayoutDashboard aria-hidden="true" size={18} />
+              Dashboard
             </NavLink>
 
             {user ? (
