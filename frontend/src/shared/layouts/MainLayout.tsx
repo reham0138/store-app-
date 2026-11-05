@@ -4,14 +4,12 @@ import Footer from "../components/Footer";
 
 export default function MainLayout() {
   return (
-    <div className="app-container lg:flex-row">
+    <div className="app-container">
       <NavBar />
-      <div className="flex min-w-0 flex-1 flex-col pt-14 lg:pt-0">
-        <main className="main-content">
-          <Outlet />
-        </main>
-        <Footer />
-      </div>
+      <main className="main-content pt-14">
+        <Outlet />
+      </main>
+      <Footer />
     </div>
   );
 }

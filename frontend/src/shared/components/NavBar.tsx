@@ -7,12 +7,12 @@ import {
   LogOut,
   MapPin,
   Menu,
-  X,
   ShoppingCart,
   ShoppingBag,
   UserRound,
+  X,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import DashboardSidebar from "./dashboard/DashboardSidebar";
 import type { DashboardSidebarItem } from "./dashboard/DashboardSidebar";
@@ -23,6 +23,12 @@ export default function NavBar() {
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
   useEffect(() => {
     if (!isOpen) return;
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -74,8 +80,12 @@ export default function NavBar() {
         onClose={() => setIsOpen(false)}
         footer={footer}
         navigationLabel="Store navigation"
+        side="right"
+        desktopPersistent={false}
       />
-      <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center border-b border-border-subtle bg-surface-white px-4 lg:hidden">
+
+      <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-border-subtle bg-surface-white px-4">
+        <Link to="/" className="font-semibold text-brand-navy">The Crown &amp; Anchor</Link>
         <button
           type="button"
           onClick={() => setIsOpen((open) => !open)}
@@ -86,14 +96,14 @@ export default function NavBar() {
         >
           {isOpen ? <X size={21} aria-hidden="true" /> : <Menu size={21} aria-hidden="true" />}
         </button>
-        <Link to="/" className="ms-3 font-semibold text-brand-navy">The Crown &amp; Anchor</Link>
       </header>
+
       {isOpen && (
         <button
           type="button"
           onClick={() => setIsOpen(false)}
           aria-label="Close store navigation"
-          className="fixed inset-0 z-30 bg-brand-navy/50 lg:hidden"
+          className="fixed inset-0 z-30 cursor-default bg-brand-navy/50"
         />
       )}
     </>
