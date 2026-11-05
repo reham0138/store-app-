@@ -46,7 +46,7 @@ export default function DashboardLayout({
             type="button"
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open dashboard navigation"
-            aria-controls="dashboard-sidebar"
+            aria-controls="store-sidebar"
             aria-expanded={isSidebarOpen}
             className="m-2 inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-brand-navy hover:bg-surface-cream lg:hidden"
           >
