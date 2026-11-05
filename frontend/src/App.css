@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 @theme {
   --color-brand-navy: #0B2D4A;
   --color-brand-gold: #D4AF37;
@@ -11,6 +12,10 @@
   --color-status-error: #B91C1C;
   --color-status-warning: #A16207;
   --color-status-info: #1D4ED8;
+  --color-page: #F8F7F4;
+  --color-surface-raised: #FFFFFF;
+  --color-heading: #0B2D4A;
+  --color-border-ui: #E5E7EB;
 
   --font-sans: "Inter", "Cairo", system-ui, sans-serif;
   --font-arabic: "Cairo", system-ui, sans-serif;
@@ -20,7 +25,7 @@
 :root {
   font-family: "Inter", "Cairo", system-ui, sans-serif;
   color: var(--color-text-main);
-  background: var(--color-surface-cream);
+  background: var(--color-page);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
