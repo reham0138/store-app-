@@ -1,5 +1,4 @@
 import {
-  createContext,
   useEffect,
   useMemo,
   useState,
@@ -22,10 +21,6 @@ import { useBranch } from "./useBranch";
 import { CartContext } from "./cart-context";
 
 const STORAGE_KEY = "crown-anchor-cart";
-
-export const CartContext = createContext<CartContextType | undefined>(
-  undefined
-);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
