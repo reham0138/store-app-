@@ -41,7 +41,7 @@ export default function DashboardSidebar({
       <div className="border-b border-white/10 px-5 py-5">
         <div className="flex items-start justify-between gap-3">
           <NavLink to="/" onClick={onClose} aria-label="The Crown & Anchor home" className="flex min-w-0 items-center gap-3">
-            <img src="/brand/logo/the-crown-anchor-logo-black.png" alt="" className="size-11 shrink-0 object-contain dark:hidden" />
+            <img src="/brand/logo/the-crown-anchor-logo-black.png" alt="" className="size-11 shrink-0 rounded bg-white p-1 object-contain dark:hidden" />
             <img src="/brand/logo/the-crown-anchor-logo-white.png" alt="" className="hidden size-11 shrink-0 object-contain dark:block" />
             <span className="min-w-0">
               <span className="block font-semibold text-white">The Crown &amp; Anchor</span>
