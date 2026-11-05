@@ -32,6 +32,10 @@
   --color-border-subtle: #354454;
   --color-surface-cream: #111A24;
   --color-surface-white: #1B2937;
+  --color-status-success: #4ADE80;
+  --color-status-error: #F87171;
+  --color-status-warning: #FBBF24;
+  --color-status-info: #60A5FA;
 }
 
 .dark .text-brand-navy { color: var(--color-heading); }
