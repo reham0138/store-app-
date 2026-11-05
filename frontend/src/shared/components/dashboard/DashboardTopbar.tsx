@@ -23,7 +23,7 @@ export default function DashboardTopbar({
         {branchName && <p className="truncate text-xs text-text-slate">{branchName}</p>}
       </div>
       <div className="flex items-center gap-2">
-        <ThemeToggle />
+        <ThemeToggle variant="surface" />
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
     </div>
