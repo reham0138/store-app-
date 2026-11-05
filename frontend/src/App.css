@@ -35,6 +35,7 @@
 }
 
 .dark .text-brand-navy { color: var(--color-heading); }
+.dark .bg-brand-gold.text-brand-navy { color: var(--color-brand-navy); }
 .dark .bg-white { background-color: var(--color-surface-raised); }
 .dark .text-gray-800 { color: var(--color-text-main); }
 .dark .text-gray-500,
