@@ -32,6 +32,7 @@ import DashboardPlaceholderPage from "./pages/DashboardPlaceholderPage";
 import DashboardPreviewPage from "./pages/DashboardPreviewPage";
 import DashboardLayout from "./shared/layouts/DashboardLayout";
 import { DashboardTopbar } from "./shared/components/dashboard";
+import ErrorBoundary from "./shared/components/ErrorBoundary";
 
 const dashboardSidebarItems = [
   {
@@ -68,6 +69,7 @@ function App() {
       <CartProvider>
         <AuthProvider>
           <Router>
+            <ErrorBoundary>
             <Routes>
               <Route path="/" element={<MainLayout />}>
                 <Route index element={<HomePage />} />
@@ -125,6 +127,7 @@ function App() {
                 />
               </Route>
             </Routes>
+            </ErrorBoundary>
           </Router>
         </AuthProvider>
       </CartProvider>
