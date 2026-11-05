@@ -270,6 +270,6 @@ export default function ProductsPage() {
 )}
       
       </section>
-    </main>
+    </div>
   );
 }
