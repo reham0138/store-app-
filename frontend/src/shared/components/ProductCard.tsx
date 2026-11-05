@@ -46,6 +46,13 @@ function ProductCard({ product }: ProductCardProps) {
       <img
         src={product.thumbnail}
         alt={product.title}
+        loading="lazy"
+        width={320}
+        height={144}
+        onError={(event) => {
+          event.currentTarget.onerror = null;
+          event.currentTarget.src = "/brand/logo/the-crown-anchor-logo-black.png";
+        }}
         className="w-full h-36 object-cover rounded-md mb-3"
       />
 
@@ -55,7 +62,7 @@ function ProductCard({ product }: ProductCardProps) {
 
       <p className="text-sm text-text-slate mb-1">{product.brand}</p>
 
-      <p className="text-sm text-gray-500 mb-2">
+      <p className="text-sm text-text-slate mb-2">
         category: {product.category}
       </p>
 
@@ -69,7 +76,7 @@ function ProductCard({ product }: ProductCardProps) {
         </p>
       )}
 
-      <p className="mb-3 text-xs text-gray-500">
+      <p className="mb-3 text-xs text-text-slate">
         {stock} available at {selectedBranch?.name ?? "the selected branch"}
       </p>
 
