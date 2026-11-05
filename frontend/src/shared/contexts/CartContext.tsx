@@ -1,6 +1,5 @@
 import {
   createContext,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -23,7 +22,7 @@ import { useBranch } from "./useBranch";
 
 const STORAGE_KEY = "crown-anchor-cart";
 
-const CartContext = createContext<CartContextType | undefined>(
+export const CartContext = createContext<CartContextType | undefined>(
   undefined
 );
 
