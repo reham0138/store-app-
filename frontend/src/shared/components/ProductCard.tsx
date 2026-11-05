@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import type { StoreProduct } from "../types/cart";
-import { useCart } from "../contexts/CartContext";
+import { useCart } from "../hooks/useCart";
 import { useBranch } from "../contexts/useBranch";
 import {
   formatPrice,
