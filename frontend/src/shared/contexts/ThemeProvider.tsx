@@ -1,4 +1,5 @@
-import { createContext, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ThemeContext } from "./theme-context";
 import type { ReactNode } from "react";
 
 export type Theme = "light" | "dark";
