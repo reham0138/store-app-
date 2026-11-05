@@ -7,11 +7,12 @@ import {
   LogOut,
   MapPin,
   Menu,
+  X,
   ShoppingCart,
   ShoppingBag,
   UserRound,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import DashboardSidebar from "./dashboard/DashboardSidebar";
 import type { DashboardSidebarItem } from "./dashboard/DashboardSidebar";
@@ -22,12 +23,6 @@ export default function NavBar() {
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation();
-
-  useEffect(() => {
-    setIsOpen(false);
-  }, [location.pathname]);
-
   useEffect(() => {
     if (!isOpen) return;
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -89,7 +84,7 @@ export default function NavBar() {
           aria-expanded={isOpen}
           className="inline-flex size-10 items-center justify-center rounded-lg text-brand-navy hover:bg-surface-cream"
         >
-          <Menu size={21} aria-hidden="true" />
+          {isOpen ? <X size={21} aria-hidden="true" /> : <Menu size={21} aria-hidden="true" />}
         </button>
         <Link to="/" className="ms-3 font-semibold text-brand-navy">The Crown &amp; Anchor</Link>
       </header>
