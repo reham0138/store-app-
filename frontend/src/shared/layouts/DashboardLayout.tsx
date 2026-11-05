@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Outlet } from "react-router-dom";
 import { Menu } from "lucide-react";
@@ -21,6 +21,15 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  useEffect(() => {
+    if (!isSidebarOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsSidebarOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isSidebarOpen]);
+
   return (
     <div className="flex min-h-screen bg-surface-cream">
       <DashboardSidebar
@@ -37,6 +46,8 @@ export default function DashboardLayout({
             type="button"
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open dashboard navigation"
+            aria-controls="store-sidebar"
+            aria-expanded={isSidebarOpen}
             className="m-2 inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-brand-navy hover:bg-surface-cream lg:hidden"
           >
             <Menu aria-hidden="true" size={20} />

@@ -2,14 +2,14 @@ import { Link } from "react-router-dom";
 
 import { Package } from "lucide-react";
 
-import { getOrders } from "../shared/utils/orderStorage";
+import { useOrders } from "../shared/hooks/useOrders";
 
 import { formatPrice } from "../shared/utils/pricing";
 
 import OrderStatus from "../shared/components/OrderStatus";
 
 export default function OrdersPage() {
-  const orders = getOrders();
+  const orders = useOrders();
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
@@ -42,7 +42,7 @@ export default function OrdersPage() {
           </h2>
 
           <p className="mt-2 text-sm text-text-slate">
-            Your orders will appear here after checkout.
+            Orders are saved on this device and browser. Orders placed in another browser or on another device will not appear here.
           </p>
 
           <Link

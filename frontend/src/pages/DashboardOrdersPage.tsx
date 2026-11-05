@@ -9,7 +9,7 @@ import {
 } from "../shared/components/dashboard";
 import type { DashboardTableColumn } from "../shared/components/dashboard";
 import OrderStatus from "../shared/components/OrderStatus";
-import { getOrders } from "../shared/utils/orderStorage";
+import { useOrders } from "../shared/hooks/useOrders";
 import { formatPrice } from "../shared/utils/pricing";
 import type { Order } from "../shared/types/order";
 
@@ -50,7 +50,7 @@ const orderColumns: DashboardTableColumn<Order>[] = [
 ];
 
 export default function DashboardOrdersPage() {
-  const orders = getOrders();
+  const orders = useOrders();
 
   return (
     <section className="mx-auto grid min-w-0 w-full max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:px-8">

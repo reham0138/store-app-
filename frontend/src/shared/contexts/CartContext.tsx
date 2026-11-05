@@ -1,6 +1,4 @@
 import {
-  createContext,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -20,12 +18,9 @@ import {
   getProductStock,
 } from "../utils/pricing";
 import { useBranch } from "./useBranch";
+import { CartContext } from "./cart-context";
 
 const STORAGE_KEY = "crown-anchor-cart";
-
-const CartContext = createContext<CartContextType | undefined>(
-  undefined
-);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -254,13 +249,3 @@ export function CartProvider({ children }: CartProviderProps) {
   );
 }
 
-// Custom Hook
-export function useCart() {
-  const context = useContext(CartContext);
-
-  if (!context) {
-    throw new Error("useCart must be used inside CartProvider");
-  }
-
-  return context;
-}

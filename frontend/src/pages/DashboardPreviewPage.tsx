@@ -31,9 +31,8 @@ import { Select } from "../shared/components/Select";
 import type { StoreProduct } from "../shared/types/cart";
 import { getProducts } from "../shared/services/product.service";
 import { saveProducts } from "../shared/utils/productStorage";
-import { getOrders } from "../shared/utils/orderStorage";
+import { useOrders } from "../shared/hooks/useOrders";
 import { formatPrice } from "../shared/utils/pricing";
-import type { Order } from "../shared/types/order";
 
 type StockFilter = "all" | "in-stock" | "low-stock" | "out-of-stock";
 
@@ -73,7 +72,7 @@ function toFormValues(product: StoreProduct): ProductFormValues {
 
 export default function DashboardPreviewPage() {
   const [products, setProducts] = useState<StoreProduct[]>([]);
-  const [orders] = useState<Order[]>(getOrders);
+  const orders = useOrders();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -236,6 +235,13 @@ export default function DashboardPreviewPage() {
           <img
             src={product.thumbnail}
             alt=""
+            loading="lazy"
+            width={40}
+            height={40}
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = "/brand/logo/the-crown-anchor-logo-black.png";
+            }}
             className="size-10 shrink-0 rounded-lg object-cover"
           />
           <div className="min-w-0">
