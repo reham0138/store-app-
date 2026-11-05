@@ -1,164 +1,106 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ClipboardList,
   LayoutDashboard,
   House,
   LogIn,
   LogOut,
-  Menu,
   MapPin,
+  Menu,
   ShoppingCart,
   ShoppingBag,
   UserRound,
-  X,
 } from "lucide-react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
+import DashboardSidebar from "./dashboard/DashboardSidebar";
+import type { DashboardSidebarItem } from "./dashboard/DashboardSidebar";
 import { useAuth } from "../hooks/useAuth";
-import { useCart } from "../contexts/CartContext";
-
-const navigationLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-    isActive
-      ? "bg-surface-cream text-brand-navy"
-      : "text-brand-navy hover:bg-surface-cream"
-  }`;
+import { useCart } from "../hooks/useCart";
 
 export default function NavBar() {
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
 
-  function closeMenu() {
-    setIsMenuOpen(false);
-  }
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isOpen]);
+
+  const items: DashboardSidebarItem[] = [
+    { label: "Home", path: "/", icon: <House size={18} />, end: true },
+    { label: "Products", path: "/products", icon: <ShoppingBag size={18} /> },
+    { label: "Branches", path: "/branches", icon: <MapPin size={18} /> },
+    { label: "Cart", path: "/cart", icon: <ShoppingCart size={18} />, badge: totalItems },
+    { label: "Orders", path: "/orders", icon: <ClipboardList size={18} /> },
+    { label: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={18} /> },
+  ];
+
+  const footer = user ? (
+    <div className="mt-2 border-t border-white/10 pt-3">
+      <p className="px-3 py-2 text-xs text-white/70">Signed in as</p>
+      <p className="truncate px-3 text-sm font-semibold text-white">{user.name}</p>
+      <button
+        type="button"
+        onClick={() => { logout(); setIsOpen(false); }}
+        className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white"
+      >
+        <LogOut size={18} aria-hidden="true" /> Sign out
+      </button>
+    </div>
+  ) : (
+    <div className="mt-2 grid gap-1 border-t border-white/10 pt-3">
+      <Link to="/login" onClick={() => setIsOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/85 hover:bg-white/10">
+        <LogIn size={18} aria-hidden="true" /> Sign in
+      </Link>
+      <Link to="/register" onClick={() => setIsOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/85 hover:bg-white/10">
+        <UserRound size={18} aria-hidden="true" /> Register
+      </Link>
+    </div>
+  );
 
   return (
-    <header className="relative z-20 border-b border-border-subtle bg-surface-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-        <Link
-          to="/"
-          onClick={closeMenu}
-          className="flex min-w-0 items-center gap-3"
-          aria-label="The Crown & Anchor home"
+    <>
+      <DashboardSidebar
+        items={items}
+        title="Store navigation"
+        subtitle="Browse The Crown & Anchor"
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        footer={footer}
+        navigationLabel="Store navigation"
+      />
+      <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center border-b border-border-subtle bg-surface-white px-4 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setIsOpen((open) => !open)}
+          aria-label={isOpen ? "Close store navigation" : "Open store navigation"}
+          aria-controls="store-sidebar"
+          aria-expanded={isOpen}
+          className="inline-flex size-10 items-center justify-center rounded-lg text-brand-navy hover:bg-surface-cream"
         >
-          <img
-            src="/brand/logo/the-crown-anchor-logo-black.png"
-            alt=""
-            className="size-12 shrink-0 object-contain"
-          />
-          <span className="min-w-0">
-            <span className="block truncate font-semibold text-brand-navy">
-              The Crown &amp; Anchor
-            </span>
-            <span className="hidden text-xs tracking-[0.16em] text-text-slate sm:block">
-              MORE THAN JUST A STORE
-            </span>
-          </span>
-        </Link>
-
-        <div className="flex items-center">
-          <nav
-            id="primary-navigation"
-            aria-label="Main navigation"
-            className={`${isMenuOpen ? "flex" : "hidden"} absolute left-0 right-0 top-full flex-col gap-1 border-b border-border-subtle bg-surface-white p-3 shadow-lg md:static md:flex md:flex-row md:items-center md:gap-1 md:border-0 md:p-0 md:shadow-none`}
-          >
-            <NavLink to="/" end onClick={closeMenu} className={navigationLinkClass}>
-              <House aria-hidden="true" size={18} />
-              Home
-            </NavLink>
-            <NavLink to="/products" onClick={closeMenu} className={navigationLinkClass}>
-              <ShoppingBag aria-hidden="true" size={18} />
-              Products
-            </NavLink>
-            <NavLink to="/branches" onClick={closeMenu} className={navigationLinkClass}>
-              <MapPin aria-hidden="true" size={18} />
-              Branches
-            </NavLink>
-            <NavLink
-              to="/cart"
-              onClick={closeMenu}
-              className={navigationLinkClass}
-              aria-label={`Shopping cart, ${totalItems} items`}
-            >
-              <span className="relative">
-                <ShoppingCart aria-hidden="true" size={20} />
-                {totalItems > 0 && (
-                  <span className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full bg-brand-gold text-xs font-bold text-brand-navy">
-                    {totalItems}
-                  </span>
-                )}
-              </span>
-              Cart
-            </NavLink>
-            <NavLink to="/orders" onClick={closeMenu} className={navigationLinkClass}>
-              <ClipboardList aria-hidden="true" size={18} />
-              Orders
-            </NavLink>
-            <NavLink
-              to="/dashboard"
-              onClick={closeMenu}
-              className={navigationLinkClass}
-            >
-              <LayoutDashboard aria-hidden="true" size={18} />
-              Dashboard
-            </NavLink>
-
-            {user ? (
-              <div className="flex flex-col gap-1 border-t border-border-subtle pt-2 md:flex-row md:border-0 md:pt-0">
-                <span className="px-3 py-2 text-sm text-text-slate md:hidden">
-                  Signed in as {user.name}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    logout();
-                    closeMenu();
-                  }}
-                  className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-brand-navy hover:bg-surface-cream"
-                >
-                  <LogOut aria-hidden="true" size={18} />
-                  Sign out
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1 border-t border-border-subtle pt-2 md:flex-row md:border-0 md:pt-0">
-                <NavLink
-                  to="/login"
-                  onClick={closeMenu}
-                  className={navigationLinkClass}
-                >
-                  <LogIn aria-hidden="true" size={18} />
-                  Sign in
-                </NavLink>
-                <NavLink
-                  to="/register"
-                  onClick={closeMenu}
-                  className={navigationLinkClass}
-                >
-                  <UserRound aria-hidden="true" size={18} />
-                  Register
-                </NavLink>
-              </div>
-            )}
-          </nav>
-
-          <button
-            type="button"
-            className="inline-flex size-10 items-center justify-center rounded-lg text-brand-navy hover:bg-surface-cream md:hidden"
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            aria-controls="primary-navigation"
-            aria-expanded={isMenuOpen}
-            onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
-          >
-            {isMenuOpen ? (
-              <X aria-hidden="true" size={22} />
-            ) : (
-              <Menu aria-hidden="true" size={22} />
-            )}
-          </button>
-        </div>
-      </div>
-    </header>
+          <Menu size={21} aria-hidden="true" />
+        </button>
+        <Link to="/" className="ms-3 font-semibold text-brand-navy">The Crown &amp; Anchor</Link>
+      </header>
+      {isOpen && (
+        <button
+          type="button"
+          onClick={() => setIsOpen(false)}
+          aria-label="Close store navigation"
+          className="fixed inset-0 z-30 bg-brand-navy/50 lg:hidden"
+        />
+      )}
+    </>
   );
 }
