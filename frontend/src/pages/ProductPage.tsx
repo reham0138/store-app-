@@ -108,7 +108,7 @@ export default function ProductsPage() {
   }, [products, search, selectedCategory, sortBy, branchId]);
 
   return (
-    <main className="min-h-screen bg-surface-cream">
+    <div className="min-h-screen bg-page">
       {/* Page Header */}
       <section className="bg-brand-navy px-4 py-14 text-white sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
