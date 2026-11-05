@@ -1,22 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { ThemeContext } from "./theme-context";
 import type { ReactNode } from "react";
+import { ThemeContext } from "./theme-context";
 
 export type Theme = "light" | "dark";
-
-export interface ThemeContextValue {
-  theme: Theme;
-  toggleTheme: () => void;
-}
-
-export const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 function getInitialTheme(): Theme {
   try {
     const stored = localStorage.getItem("theme");
     if (stored === "light" || stored === "dark") return stored;
   } catch {
-    // Storage can be disabled; use the operating-system preference.
+    // Fall back to the preference applied by the pre-hydration script.
   }
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
@@ -30,12 +23,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem("theme", theme);
     } catch {
-      // The theme remains active for this session even when storage is unavailable.
+      // Keep the selected theme active for this session.
     }
   }, [theme]);
 
   const value = useMemo(
-    () => ({ theme, toggleTheme: () => setTheme((current) => current === "dark" ? "light" : "dark") }),
+    () => ({
+      theme,
+      toggleTheme: () => setTheme((current) => current === "dark" ? "light" : "dark"),
+    }),
     [theme],
   );
 
