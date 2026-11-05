@@ -62,6 +62,7 @@ export default function CheckoutPage() {
     notes: "",
   });
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
+  const [saveError, setSaveError] = useState("");
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -132,7 +133,11 @@ export default function CheckoutPage() {
       createdAt: new Date().toISOString(),
     };
 
-    saveOrder(order);
+    setSaveError("");
+    if (!saveOrder(order)) {
+      setSaveError("We couldn’t save your order in this browser. Check browser storage settings and try again.");
+      return;
+    }
 
     clearCart();
 
@@ -194,6 +199,12 @@ export default function CheckoutPage() {
           Complete your shipping and payment information.
         </p>
       </header>
+
+      {saveError && (
+        <p className="mb-6 rounded-lg border border-status-error/30 bg-status-error/10 p-4 text-sm text-status-error" role="alert">
+          {saveError}
+        </p>
+      )}
 
       {cartNotice && (
         <div
