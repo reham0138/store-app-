@@ -19,6 +19,7 @@ import {
   getProductStock,
 } from "../utils/pricing";
 import { useBranch } from "./useBranch";
+import { CartContext } from "./cart-context";
 
 const STORAGE_KEY = "crown-anchor-cart";
 
