@@ -19,21 +19,13 @@ export default function DashboardTopbar({
   return (
     <div className="flex min-h-16 flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6">
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-brand-navy">
-          {displayName}
-        </p>
-        {branchName && (
-          <p className="truncate text-xs text-text-slate">{branchName}</p>
-        )}
+        <p className="truncate text-sm font-semibold text-brand-navy">{displayName}</p>
+        {branchName && <p className="truncate text-xs text-text-slate">{branchName}</p>}
       </div>
-
       <div className="flex items-center gap-2">
         <ThemeToggle />
-      {actions && (
-        <div className="flex items-center gap-2">
-          {actions}
-        </div>
-      )}
+        {actions && <div className="flex items-center gap-2">{actions}</div>}
+      </div>
     </div>
   );
 }
