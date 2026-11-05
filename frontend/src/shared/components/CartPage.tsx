@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 
-import { useCart } from "../contexts/CartContext";
+import { useCart } from "../hooks/useCart";
 
 import CartItem from "../components/CartItem";
 import CartSummary from "../components/CartSummary";
