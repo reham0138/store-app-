@@ -235,6 +235,13 @@ export default function DashboardPreviewPage() {
           <img
             src={product.thumbnail}
             alt=""
+            loading="lazy"
+            width={40}
+            height={40}
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = "/brand/logo/the-crown-anchor-logo-black.png";
+            }}
             className="size-10 shrink-0 rounded-lg object-cover"
           />
           <div className="min-w-0">
