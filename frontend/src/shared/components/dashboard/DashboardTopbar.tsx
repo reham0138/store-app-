@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import ThemeToggle from "../ThemeToggle";
 
 interface DashboardTopbarProps {
   userName?: string;
@@ -26,6 +27,8 @@ export default function DashboardTopbar({
         )}
       </div>
 
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
       {actions && (
         <div className="flex items-center gap-2">
           {actions}
