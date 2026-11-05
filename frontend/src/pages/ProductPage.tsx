@@ -156,7 +156,7 @@ export default function ProductsPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search by product name or brand..."
-              className="h-11 w-full rounded-xl border border-border-subtle bg-white pl-10 pr-4 text-sm outline-none transition focus:border-brand-gold"
+              className="h-11 w-full rounded-xl border border-border-subtle bg-surface-white pl-10 pr-4 text-sm outline-none transition focus:border-brand-gold"
             />
           </div>
 
@@ -172,7 +172,7 @@ export default function ProductsPage() {
                 setSortBy(event.target.value as SortOption)
               }
               aria-label="Sort products"
-              className="h-11 w-full appearance-none rounded-xl border border-border-subtle bg-white pl-9 pr-4 text-sm outline-none focus:border-brand-gold"
+              className="h-11 w-full appearance-none rounded-xl border border-border-subtle bg-surface-white pl-9 pr-4 text-sm outline-none focus:border-brand-gold"
             >
               <option value="default">Sort: Default</option>
               <option value="price-low">Price: Low to High</option>
@@ -191,7 +191,7 @@ export default function ProductsPage() {
               className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                 selectedCategory === "all"
                   ? "bg-brand-navy text-white"
-                  : "border border-border-subtle bg-white text-text-slate hover:border-brand-navy"
+                  : "border border-border-subtle bg-surface-white text-text-slate hover:border-brand-navy"
               }`}
             >
               All
@@ -223,7 +223,7 @@ export default function ProductsPage() {
 
         {/* Error State */}
         {!pageLoading && pageError && (
-          <div className="rounded-xl border border-status-error/20 bg-white px-6 py-12 text-center">
+          <div className="rounded-xl border border-status-error/20 bg-surface-white px-6 py-12 text-center">
             <p className="font-medium text-status-error">{pageError}</p>
 
             <button
@@ -238,7 +238,7 @@ export default function ProductsPage() {
 
         {/* Empty State */}
         {!pageLoading && !pageError && filteredProducts.length === 0 && (
-          <div className="rounded-xl border border-border-subtle bg-white px-6 py-16 text-center">
+          <div className="rounded-xl border border-border-subtle bg-surface-white px-6 py-16 text-center">
             <h3 className="font-semibold text-brand-navy">
               No products found
             </h3>
