@@ -19,6 +19,8 @@ interface DashboardSidebarProps {
   onClose?: () => void;
   footer?: ReactNode;
   navigationLabel?: string;
+  side?: "left" | "right";
+  desktopPersistent?: boolean;
 }
 
 export default function DashboardSidebar({
@@ -29,13 +31,29 @@ export default function DashboardSidebar({
   onClose,
   footer,
   navigationLabel = "Dashboard navigation",
+  side = "left",
+  desktopPersistent = true,
 }: DashboardSidebarProps) {
+  const sidePosition = side === "right"
+    ? "end-0 border-s"
+    : "start-0 border-e";
+  const closedPosition = side === "right"
+    ? "translate-x-full"
+    : "-translate-x-full rtl:translate-x-full";
+  const desktopPosition = desktopPersistent
+    ? "lg:sticky lg:top-0 lg:h-screen lg:translate-x-0"
+    : "";
+
   return (
     <aside
       id="store-sidebar"
+      aria-label={navigationLabel}
+      aria-hidden={!isOpen && !desktopPersistent}
       className={[
-        "fixed inset-y-0 start-0 z-40 flex w-64 shrink-0 flex-col border-e border-white/10 bg-brand-navy text-white transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
-        isOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full",
+        "fixed inset-y-0 z-40 flex w-64 shrink-0 flex-col border-white/10 bg-brand-navy text-white transition-transform duration-200",
+        sidePosition,
+        desktopPosition,
+        isOpen ? "translate-x-0" : closedPosition,
       ].join(" ")}
     >
       <div className="border-b border-white/10 px-5 py-5">
@@ -48,7 +66,7 @@ export default function DashboardSidebar({
               <span className="mt-1 block text-[10px] tracking-[0.13em] text-white/65">MORE THAN JUST A STORE</span>
             </span>
           </NavLink>
-          <button type="button" onClick={onClose} aria-label="Close navigation" className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white lg:hidden">
+          <button type="button" onClick={onClose} aria-label="Close navigation" className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white">
             <X aria-hidden="true" size={18} />
           </button>
         </div>
