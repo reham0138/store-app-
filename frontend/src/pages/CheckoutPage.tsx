@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 
 import { ArrowLeft, MapPin, CreditCard } from "lucide-react";
 
-import { useCart } from "../shared/contexts/CartContext";
+import { useCart } from "../shared/hooks/useCart";
 
 import {
   formatPrice,
