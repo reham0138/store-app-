@@ -66,7 +66,7 @@ export default function DashboardSidebar({
               <span className="mt-1 block text-[10px] tracking-[0.13em] text-white/65">MORE THAN JUST A STORE</span>
             </span>
           </NavLink>
-          <button type="button" onClick={onClose} aria-label="Close navigation" className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white">
+          <button type="button" onClick={onClose} aria-label="Close navigation" className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white lg:hidden">
             <X aria-hidden="true" size={18} />
           </button>
         </div>
