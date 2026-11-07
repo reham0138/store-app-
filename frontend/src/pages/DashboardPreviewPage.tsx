@@ -1,4 +1,5 @@
 import {
+  ArrowRight,
   AlertTriangle,
   CircleDollarSign,
   ClipboardList,
@@ -33,6 +34,8 @@ import { getProducts } from "../shared/services/product.service";
 import { saveProducts } from "../shared/utils/productStorage";
 import { useOrders } from "../shared/hooks/useOrders";
 import { formatPrice } from "../shared/utils/pricing";
+import OrderStatus from "../shared/components/OrderStatus";
+import type { Order } from "../shared/types/order";
 
 type StockFilter = "all" | "in-stock" | "low-stock" | "out-of-stock";
 
@@ -150,6 +153,26 @@ export default function DashboardPreviewPage() {
       pendingOrders: orders.filter((order) => order.status === "pending").length,
     };
   }, [products, orders]);
+
+  const recentOrders = useMemo(
+    () =>
+      [...orders]
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )
+        .slice(0, 5),
+    [orders],
+  );
+
+  const stockAlerts = useMemo(
+    () =>
+      products
+        .filter((product) => product.stock <= 10)
+        .sort((a, b) => a.stock - b.stock)
+        .slice(0, 5),
+    [products],
+  );
 
   function openAddForm() {
     setEditingProductId(null);
@@ -296,6 +319,69 @@ export default function DashboardPreviewPage() {
     },
   ];
 
+  const recentOrderColumns: DashboardTableColumn<Order>[] = [
+    {
+      key: "order",
+      header: "Order",
+      render: (order) => (
+        <span className="font-medium text-brand-navy">{order.id}</span>
+      ),
+    },
+    {
+      key: "customer",
+      header: "Customer",
+      render: (order) =>
+        order.shippingAddress.fullName || "Unnamed customer",
+    },
+    {
+      key: "date",
+      header: "Date",
+      render: (order) => new Date(order.createdAt).toLocaleDateString(),
+    },
+    {
+      key: "total",
+      header: "Total",
+      render: (order) => formatPrice(order.total),
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (order) => <OrderStatus status={order.status} />,
+    },
+  ];
+
+  const stockAlertColumns: DashboardTableColumn<StoreProduct>[] = [
+    {
+      key: "product",
+      header: "Product",
+      render: (product) => (
+        <div className="min-w-36">
+          <p className="font-medium text-brand-navy">{product.title}</p>
+          <p className="text-xs text-text-slate">{product.brand}</p>
+        </div>
+      ),
+    },
+    {
+      key: "stock",
+      header: "Units left",
+      render: (product) => product.stock,
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (product) => {
+        const status = getStockStatus(product.stock);
+        return (
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusClass(status)}`}
+          >
+            {status}
+          </span>
+        );
+      },
+    },
+  ];
+
   return (
     <section className="mx-auto grid min-w-0 w-full max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:px-8">
       <DashboardPageHeader
@@ -345,6 +431,70 @@ export default function DashboardPreviewPage() {
           trendType="negative"
           icon={<AlertTriangle size={20} />}
         />
+      </div>
+
+      <div className="grid min-w-0 gap-8 xl:grid-cols-[1.4fr_1fr]">
+        <DashboardCard
+          title="Recent orders"
+          description="The latest orders placed across your store."
+          actions={
+            <Link
+              to="/dashboard/admin/orders"
+              className="inline-flex items-center gap-2 text-sm font-medium text-brand-navy hover:text-brand-gold"
+            >
+              View all
+              <ArrowRight aria-hidden="true" size={16} />
+            </Link>
+          }
+        >
+          {recentOrders.length > 0 ? (
+            <DashboardTable
+              columns={recentOrderColumns}
+              rows={recentOrders}
+              getRowKey={(order) => order.id}
+            />
+          ) : (
+            <DashboardEmptyState
+              title="No orders yet"
+              description="Orders created during checkout will appear here."
+              icon={<ClipboardList size={22} />}
+            />
+          )}
+        </DashboardCard>
+
+        <DashboardCard
+          title="Stock alerts"
+          description="Products with 10 or fewer units available."
+          actions={
+            <Link
+              to="/dashboard/admin/inventory"
+              className="inline-flex items-center gap-2 text-sm font-medium text-brand-navy hover:text-brand-gold"
+            >
+              Manage inventory
+              <ArrowRight aria-hidden="true" size={16} />
+            </Link>
+          }
+        >
+          {isLoading ? (
+            <p className="py-8 text-center text-sm text-text-slate">
+              Loading inventory...
+            </p>
+          ) : loadError ? (
+            <FormError message={loadError} />
+          ) : stockAlerts.length > 0 ? (
+            <DashboardTable
+              columns={stockAlertColumns}
+              rows={stockAlerts}
+              getRowKey={(product) => String(product.id)}
+            />
+          ) : (
+            <DashboardEmptyState
+              title="Stock levels look good"
+              description="Products with low or empty stock will appear here."
+              icon={<PackageSearch size={22} />}
+            />
+          )}
+        </DashboardCard>
       </div>
 
       <DashboardCard

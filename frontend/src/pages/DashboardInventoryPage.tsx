@@ -1,7 +1,10 @@
 import {
   AlertTriangle,
   Boxes,
+  Check,
   PackageSearch,
+  Pencil,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -19,9 +22,20 @@ import type { StoreProduct } from "../shared/types/cart";
 import { getProducts } from "../shared/services/product.service";
 import { formatPrice } from "../shared/utils/pricing";
 import { useAuth } from "../shared/hooks/useAuth";
+import Button from "../shared/components/Button";
+import { FormError } from "../shared/components/FormError";
+import { Input } from "../shared/components/Input";
+import { saveProducts, updateBranchProductStock } from "../shared/utils/productStorage";
 
 interface DashboardInventoryPageProps {
   branchScoped?: boolean;
+}
+
+interface InventoryRow {
+  product: StoreProduct;
+  totalStock: number;
+  branchStock: number;
+  status: "In stock" | "Low stock" | "Out of stock";
 }
 
 function getStockStatus(stock: number): "In stock" | "Low stock" | "Out of stock" {
@@ -40,6 +54,10 @@ export default function DashboardInventoryPage({
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [stockDraft, setStockDraft] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -103,12 +121,61 @@ export default function DashboardInventoryPage({
     };
   }, [rows, inventoryBranch]);
 
-  const inventoryColumns: DashboardTableColumn<{
-    product: StoreProduct;
-    totalStock: number;
-    branchStock: number;
-    status: "In stock" | "Low stock" | "Out of stock";
-  }>[] = [
+  function startEditing(row: InventoryRow) {
+    setEditingProductId(row.product.id);
+    setStockDraft(String(row.branchStock));
+    setActionError("");
+    setActionMessage("");
+  }
+
+  function cancelEditing() {
+    setEditingProductId(null);
+    setStockDraft("");
+    setActionError("");
+  }
+
+  function saveStock(productId: number) {
+    setActionError("");
+    setActionMessage("");
+
+    if (!branchScoped || !branchId) {
+      setActionError("A valid assigned branch is required to update stock.");
+      return;
+    }
+
+    if (!stockDraft.trim()) {
+      setActionError("Enter a stock quantity.");
+      return;
+    }
+
+    const stock = Number(stockDraft);
+    if (!Number.isInteger(stock) || stock < 0) {
+      setActionError("Stock must be a non-negative whole number.");
+      return;
+    }
+
+    try {
+      const updatedProducts = updateBranchProductStock(
+        products,
+        productId,
+        branchId,
+        stock,
+      );
+      saveProducts(updatedProducts);
+      setProducts(updatedProducts);
+      setEditingProductId(null);
+      setStockDraft("");
+      setActionMessage("Branch stock updated.");
+    } catch (saveError) {
+      setActionError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Unable to save the stock update.",
+      );
+    }
+  }
+
+  const inventoryColumns: DashboardTableColumn<InventoryRow>[] = [
     {
       key: "product",
       header: "Product",
@@ -164,6 +231,56 @@ export default function DashboardInventoryPage({
         </span>
       ),
     },
+    ...(branchScoped
+      ? [
+          {
+            key: "actions",
+            header: "Actions",
+            render: (row: InventoryRow) =>
+              editingProductId === row.product.id ? (
+                <div className="flex min-w-48 items-center gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={stockDraft}
+                    aria-label={`Stock quantity for ${row.product.title}`}
+                    onChange={(event) => {
+                      setStockDraft(event.target.value);
+                      setActionError("");
+                    }}
+                    className="w-24"
+                  />
+                  <Button
+                    variant="secondary"
+                    onClick={() => saveStock(row.product.id)}
+                    className="inline-flex items-center gap-1"
+                  >
+                    <Check aria-hidden="true" size={15} />
+                    Save
+                  </Button>
+                  <Button
+                    variant="tertiary"
+                    onClick={cancelEditing}
+                    className="inline-flex items-center gap-1"
+                  >
+                    <X aria-hidden="true" size={15} />
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="tertiary"
+                  onClick={() => startEditing(row)}
+                  className="inline-flex items-center gap-2 whitespace-nowrap"
+                >
+                  <Pencil aria-hidden="true" size={15} />
+                  Update stock
+                </Button>
+              ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -236,6 +353,13 @@ export default function DashboardInventoryPage({
 
         {!isLoading && error && (
           <p className="py-8 text-center text-sm text-status-error">{error}</p>
+        )}
+
+        {actionError && <FormError message={actionError} />}
+        {actionMessage && (
+          <p className="mb-4 text-sm text-status-success" role="status">
+            {actionMessage}
+          </p>
         )}
 
         {!isLoading && !error && branchScoped && !inventoryBranch && (

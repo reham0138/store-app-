@@ -8,9 +8,11 @@ export function useOrders() {
     const refresh = () => setOrders(getOrders());
     window.addEventListener("focus", refresh);
     window.addEventListener("storage", refresh);
+    window.addEventListener("orders-updated", refresh);
     return () => {
       window.removeEventListener("focus", refresh);
       window.removeEventListener("storage", refresh);
+      window.removeEventListener("orders-updated", refresh);
     };
   }, []);
 

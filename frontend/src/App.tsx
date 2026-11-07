@@ -36,6 +36,7 @@ import ErrorBoundary from "./shared/components/ErrorBoundary";
 import DashboardProductsPage from "./pages/DashboardProductsPage";
 import DashboardInventoryPage from "./pages/DashboardInventoryPage";
 import DashboardReportsPage from "./pages/DashboardReportsPage";
+import DashboardBranchOverviewPage from "./pages/DashboardBranchOverviewPage";
 import { ProtectedRoute } from "./shared/components/ProtectedRoute";
 import { useAuth } from "./shared/hooks/useAuth";
 import { useBranch } from "./shared/contexts/useBranch";
@@ -71,10 +72,15 @@ const adminSidebarItems = [
 
 const branchManagerSidebarItems = [
   {
-    label: "Inventory",
+    label: "Overview",
     path: "/dashboard/branch",
-    icon: <Boxes size={18} />,
+    icon: <LayoutDashboard size={18} />,
     end: true,
+  },
+  {
+    label: "Inventory",
+    path: "/dashboard/branch/inventory",
+    icon: <Boxes size={18} />,
   },
   {
     label: "Orders",
@@ -164,8 +170,9 @@ function App() {
                     />
                   }
                 >
+                  <Route index element={<DashboardBranchOverviewPage />} />
                   <Route
-                    index
+                    path="inventory"
                     element={<DashboardInventoryPage branchScoped />}
                   />
                   <Route
