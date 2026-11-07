@@ -8,6 +8,7 @@ import { FormError } from '../shared/components/FormError.tsx'
 import { PasswordField } from '../shared/components/PasswordField.tsx'
 import { SubmitButton } from '../shared/components/SubmitButton.tsx'
 import { TextField } from '../shared/components/TextField.tsx'
+import { getDashboardPath } from '../shared/utils/dashboardRoute.ts'
 import {
   MIN_PASSWORD_LENGTH,
   MAX_EMAIL_LENGTH,
@@ -35,7 +36,7 @@ export default function RegisterPage() {
   const [formError, setFormError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  if (user) return <Navigate to="/" replace />
+  if (user) return <Navigate to={getDashboardPath(user.role) ?? '/'} replace />
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -57,7 +58,7 @@ export default function RegisterPage() {
       if (error instanceof AuthError && error.code === 'EMAIL_TAKEN') {
         setErrors({ email: error.message })
       } else {
-        setFormError('حدث خطأ غير متوقع، حاول مرة أخرى')
+        setFormError('Something went wrong. Please try again.')
       }
       setSubmitting(false)
     }
@@ -65,13 +66,13 @@ export default function RegisterPage() {
 
   return (
     <AuthCard
-      title="إنشاء حساب"
-      subtitle="سجّل بياناتك لتبدأ التسوّق وتتابع طلباتك"
+      title="Create an account"
+      subtitle="Enter your details to start shopping and track your orders."
       footer={
         <>
-          لديك حساب بالفعل؟{' '}
+          Already have an account?{' '}
           <Link to="/login" className="font-semibold text-brand-navy underline">
-            سجّل الدخول
+            Sign in
           </Link>
         </>
       }
@@ -79,7 +80,7 @@ export default function RegisterPage() {
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         {formError && <FormError message={formError} />}
         <TextField
-          label="الاسم"
+          label="Name"
           maxLength={MAX_NAME_LENGTH}
           autoComplete="name"
           value={name}
@@ -91,7 +92,7 @@ export default function RegisterPage() {
           error={errors.name}
         />
         <TextField
-          label="البريد الإلكتروني"
+          label="Email address"
           type="email"
           dir="ltr"
           maxLength={MAX_EMAIL_LENGTH}
@@ -106,9 +107,9 @@ export default function RegisterPage() {
           error={errors.email}
         />
         <PasswordField
-          label="كلمة المرور"
+          label="Password"
           autoComplete="new-password"
-          placeholder={`${MIN_PASSWORD_LENGTH} أحرف على الأقل`}
+          placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
           value={password}
           onChange={(e) => {
             setPassword(e.target.value)
@@ -122,7 +123,7 @@ export default function RegisterPage() {
           error={errors.password}
         />
         <PasswordField
-          label="تأكيد كلمة المرور"
+          label="Confirm password"
           autoComplete="new-password"
           value={confirm}
           onChange={(e) => {
@@ -132,7 +133,7 @@ export default function RegisterPage() {
           }}
           error={errors.confirm}
         />
-        <SubmitButton loading={submitting}>إنشاء الحساب</SubmitButton>
+        <SubmitButton loading={submitting}>Create account</SubmitButton>
       </form>
     </AuthCard>
   )

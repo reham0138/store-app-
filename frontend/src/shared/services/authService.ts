@@ -1,4 +1,4 @@
-import type { LoginInput, RegisterInput, User } from '../types/auth.ts'
+import type { LoginInput, RegisterInput, User, UserRole } from '../types/auth.ts'
 
 /*
  * خدمة مصادقة وهمية (localStorage).
@@ -49,7 +49,13 @@ function writeUsers(users: StoredUser[]): void {
 }
 
 function toPublicUser(stored: StoredUser): User {
-  return { id: stored.id, name: stored.name, email: stored.email, role: stored.role }
+  return {
+    id: stored.id,
+    name: stored.name,
+    email: stored.email,
+    role: stored.role,
+    ...(stored.branchId ? { branchId: stored.branchId } : {}),
+  }
 }
 
 async function login({ email, password }: LoginInput): Promise<User> {
@@ -58,7 +64,7 @@ async function login({ email, password }: LoginInput): Promise<User> {
     (u) => u.email === normalizeEmail(email) && u.password === password,
   )
   if (!found) {
-    throw new AuthError('INVALID_CREDENTIALS', 'البريد الإلكتروني أو كلمة المرور غير صحيحة')
+    throw new AuthError('INVALID_CREDENTIALS', 'The email or password is incorrect.')
   }
   localStorage.setItem(SESSION_KEY, found.id)
   return toPublicUser(found)
@@ -69,7 +75,7 @@ async function register({ name, email, password }: RegisterInput): Promise<User>
   const users = readUsers()
   const normalized = normalizeEmail(email)
   if (users.some((u) => u.email === normalized)) {
-    throw new AuthError('EMAIL_TAKEN', 'هذا البريد الإلكتروني مسجّل مسبقاً')
+    throw new AuthError('EMAIL_TAKEN', 'An account with this email already exists.')
   }
   const created: StoredUser = {
     id: crypto.randomUUID(),
@@ -81,6 +87,26 @@ async function register({ name, email, password }: RegisterInput): Promise<User>
   writeUsers([...users, created])
   localStorage.setItem(SESSION_KEY, created.id)
   return toPublicUser(created)
+}
+
+function loginAsRole(role: Exclude<UserRole, 'customer'>): User {
+  if (!import.meta.env.DEV) {
+    throw new Error('Development role access is not available in production.')
+  }
+
+  const isAdmin = role === 'admin'
+  const mockUser: StoredUser = {
+    id: `development-${role}`,
+    name: isAdmin ? 'Development Admin' : 'Development Branch Manager',
+    email: isAdmin ? 'admin@development.local' : 'manager@development.local',
+    role,
+    ...(isAdmin ? {} : { branchId: 'damascus' }),
+    password: '',
+  }
+  const users = readUsers().filter((user) => user.id !== mockUser.id)
+  writeUsers([...users, mockUser])
+  localStorage.setItem(SESSION_KEY, mockUser.id)
+  return toPublicUser(mockUser)
 }
 
 function logout(): void {
@@ -99,4 +125,4 @@ function getCurrentUser(): User | null {
   }
 }
 
-export const authService = { login, register, logout, getCurrentUser }
+export const authService = { login, register, loginAsRole, logout, getCurrentUser }

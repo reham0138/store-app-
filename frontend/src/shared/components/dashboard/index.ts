@@ -1,4 +1,5 @@
 export { default as DashboardCard } from "./DashboardCard";
+export { default as DashboardChart } from "./DashboardChart";
 export { default as DashboardEmptyState } from "./DashboardEmptyState";
 export { default as DashboardPageHeader } from "./DashboardPageHeader";
 export { default as DashboardSidebar } from "./DashboardSidebar";
@@ -11,4 +12,8 @@ export type {
   DashboardSidebarItem,
 } from "./DashboardSidebar";
 export type { DashboardTableColumn } from "./DashboardTable";
+export type {
+  DashboardChartDatum,
+  DashboardChartView,
+} from "./DashboardChart";
 export type { ProductFormValues } from "./ProductForm";

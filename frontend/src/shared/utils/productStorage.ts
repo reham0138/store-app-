@@ -57,3 +57,45 @@ export function getStoredProducts(): StoreProduct[] | null {
 export function saveProducts(products: StoreProduct[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
 }
+
+export function updateBranchProductStock(
+  products: StoreProduct[],
+  productId: number,
+  branchId: string,
+  stock: number,
+): StoreProduct[] {
+  if (!branchId.trim()) {
+    throw new Error("A branch must be selected to update stock.");
+  }
+  if (!Number.isInteger(stock) || stock < 0) {
+    throw new Error("Stock must be a non-negative whole number.");
+  }
+
+  const product = products.find((item) => item.id === productId);
+  if (!product) {
+    throw new Error("The selected product could not be found.");
+  }
+
+  const branchInventory = product.branchInventory ?? [];
+  const existingBranchInventory = branchInventory.find(
+    (inventory) => inventory.branchId === branchId,
+  );
+  const updatedBranchInventory = existingBranchInventory
+    ? branchInventory.map((inventory) =>
+        inventory.branchId === branchId ? { ...inventory, stock } : inventory,
+      )
+    : [...branchInventory, { branchId, price: product.price, stock }];
+
+  return products.map((item) =>
+    item.id === productId
+      ? {
+          ...item,
+          branchInventory: updatedBranchInventory,
+          stock: updatedBranchInventory.reduce(
+            (total, inventory) => total + inventory.stock,
+            0,
+          ),
+        }
+      : item,
+  );
+}

@@ -87,11 +87,35 @@ export function getOrders(): Order[] {
 export function saveOrder(order: Order): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([order, ...getOrders()]));
+    window.dispatchEvent(new Event("orders-updated"));
     return true;
   } catch (error) {
     console.error("Unable to save order to browser storage.", error);
     return false;
   }
+}
+
+export function updateOrderStatus(
+  orderId: string,
+  status: OrderStatus,
+  branchId?: string,
+): void {
+  const orders = getOrders();
+  const orderIndex = orders.findIndex((order) => order.id === orderId);
+  if (orderIndex < 0) {
+    throw new Error("This order could not be found in saved orders.");
+  }
+
+  const order = orders[orderIndex];
+  if (branchId !== undefined && order.branch?.id !== branchId) {
+    throw new Error("You can only update orders from your assigned branch.");
+  }
+
+  const updatedOrders = orders.map((existingOrder) =>
+    existingOrder.id === orderId ? { ...existingOrder, status } : existingOrder,
+  );
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedOrders));
+  window.dispatchEvent(new Event("orders-updated"));
 }
 
 export function getOrderById(id: string): Order | undefined {

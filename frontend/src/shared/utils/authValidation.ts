@@ -6,34 +6,34 @@ export const MAX_EMAIL_LENGTH = 254
 
 export function validateName(value: string): string | undefined {
   const name = value.trim()
-  if (name.length < 2) return 'الرجاء إدخال الاسم (حرفين على الأقل)'
+  if (name.length < 2) return 'Enter a name with at least 2 characters.'
   if (name.length > MAX_NAME_LENGTH) {
-    return `الاسم يجب ألا يتجاوز ${MAX_NAME_LENGTH} حرفاً`
+    return `Name must be ${MAX_NAME_LENGTH} characters or fewer.`
   }
   return undefined
 }
 
 export function validateEmail(value: string): string | undefined {
   const email = value.trim()
-  if (!email) return 'الرجاء إدخال البريد الإلكتروني'
+  if (!email) return 'Enter your email address.'
   if (email.length > MAX_EMAIL_LENGTH) {
-    return `البريد الإلكتروني يجب ألا يتجاوز ${MAX_EMAIL_LENGTH} حرفاً`
+    return `Email must be ${MAX_EMAIL_LENGTH} characters or fewer.`
   }
-  if (!EMAIL_PATTERN.test(email)) return 'صيغة البريد الإلكتروني غير صحيحة'
+  if (!EMAIL_PATTERN.test(email)) return 'Enter a valid email address.'
   return undefined
 }
 
 export function validatePassword(value: string): string | undefined {
-  if (!value.trim()) return 'الرجاء إدخال كلمة المرور'
+  if (!value.trim()) return 'Enter your password.'
   if (value.length < MIN_PASSWORD_LENGTH) {
-    return `كلمة المرور يجب أن تكون ${MIN_PASSWORD_LENGTH} أحرف على الأقل`
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`
   }
   return undefined
 }
 
 export function validateConfirm(password: string, confirm: string): string | undefined {
-  if (!confirm.trim()) return 'الرجاء تأكيد كلمة المرور'
-  if (confirm !== password) return 'كلمتا المرور غير متطابقتين'
+  if (!confirm.trim()) return 'Confirm your password.'
+  if (confirm !== password) return 'Passwords do not match.'
   return undefined
 }
 

@@ -18,6 +18,7 @@ import DashboardSidebar from "./dashboard/DashboardSidebar";
 import type { DashboardSidebarItem } from "./dashboard/DashboardSidebar";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
+import { getDashboardPath } from "../utils/dashboardRoute";
 
 export default function NavBar() {
   const { totalItems } = useCart();
@@ -44,8 +45,15 @@ export default function NavBar() {
     { label: "Branches", path: "/branches", icon: <MapPin size={18} /> },
     { label: "Cart", path: "/cart", icon: <ShoppingCart size={18} />, badge: totalItems },
     { label: "Orders", path: "/orders", icon: <ClipboardList size={18} /> },
-    { label: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={18} /> },
   ];
+  const dashboardPath = user ? getDashboardPath(user.role) : null;
+  if (dashboardPath) {
+    items.push({
+      label: user?.role === "admin" ? "Admin dashboard" : "Branch dashboard",
+      path: dashboardPath,
+      icon: <LayoutDashboard size={18} />,
+    });
+  }
 
   const footer = user ? (
     <div className="mt-2 border-t border-white/10 pt-3">
