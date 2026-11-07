@@ -12,6 +12,11 @@ import OrderStatus from "../shared/components/OrderStatus";
 import { useOrders } from "../shared/hooks/useOrders";
 import { formatPrice } from "../shared/utils/pricing";
 import type { Order } from "../shared/types/order";
+import { useAuth } from "../shared/hooks/useAuth";
+
+interface DashboardOrdersPageProps {
+  branchScoped?: boolean;
+}
 
 const orderColumns: DashboardTableColumn<Order>[] = [
   {
@@ -49,18 +54,28 @@ const orderColumns: DashboardTableColumn<Order>[] = [
   },
 ];
 
-export default function DashboardOrdersPage() {
+export default function DashboardOrdersPage({
+  branchScoped = false,
+}: DashboardOrdersPageProps) {
   const orders = useOrders();
+  const { user } = useAuth();
+  const visibleOrders = branchScoped
+    ? orders.filter((order) => order.branch?.id === user?.branchId)
+    : orders;
 
   return (
     <section className="mx-auto grid min-w-0 w-full max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:px-8">
       <DashboardPageHeader
-        subTitle="Manager dashboard"
+        subTitle={branchScoped ? "Branch manager dashboard" : "Admin dashboard"}
         title="Orders"
-        description="Review all orders currently stored for the store."
+        description={
+          branchScoped
+            ? "Review orders placed through your assigned branch."
+            : "Review all orders currently stored for the store."
+        }
         actions={
           <Link
-            to="/dashboard"
+            to={branchScoped ? "/dashboard/branch" : "/dashboard/admin"}
             className="inline-flex items-center rounded-lg border border-border-subtle bg-surface-white px-4 py-2 text-sm font-medium text-brand-navy transition hover:bg-surface-cream"
           >
             Back to overview
@@ -69,16 +84,20 @@ export default function DashboardOrdersPage() {
       />
 
       <DashboardCard title="All orders">
-        {orders.length > 0 ? (
+        {visibleOrders.length > 0 ? (
           <DashboardTable
             columns={orderColumns}
-            rows={orders}
+            rows={visibleOrders}
             getRowKey={(order) => order.id}
           />
         ) : (
           <DashboardEmptyState
             title="No orders yet"
-            description="Orders created during checkout will appear here."
+            description={
+              branchScoped
+                ? "Orders for this branch will appear here."
+                : "Orders created during checkout will appear here."
+            }
             icon={<ClipboardList size={22} />}
           />
         )}

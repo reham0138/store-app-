@@ -299,13 +299,13 @@ export default function DashboardPreviewPage() {
   return (
     <section className="mx-auto grid min-w-0 w-full max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:px-8">
       <DashboardPageHeader
-        subTitle="Manager dashboard"
+        subTitle="Admin dashboard"
         title="Store overview"
         description="Manage catalog products and monitor store inventory."
         actions={
           <>
             <Link
-              to="/dashboard/orders"
+              to="/dashboard/admin/orders"
               className="inline-flex items-center gap-2 rounded-lg border border-border-subtle bg-surface-white px-4 py-2 text-sm font-medium text-brand-navy transition hover:bg-surface-cream"
             >
               <ClipboardList aria-hidden="true" size={16} />

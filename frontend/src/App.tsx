@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import {
   BrowserRouter as Router,
+  Navigate,
   Route,
   Routes,
 } from "react-router-dom";
@@ -28,40 +29,85 @@ import OrdersPage from "./pages/OrdersPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
 import ProductsPage from "./pages/ProductPage";
 import DashboardOrdersPage from "./pages/DashboardOrdersPage";
-import DashboardPlaceholderPage from "./pages/DashboardPlaceholderPage";
 import DashboardPreviewPage from "./pages/DashboardPreviewPage";
 import DashboardLayout from "./shared/layouts/DashboardLayout";
 import { DashboardTopbar } from "./shared/components/dashboard";
 import ErrorBoundary from "./shared/components/ErrorBoundary";
+import DashboardProductsPage from "./pages/DashboardProductsPage";
+import DashboardInventoryPage from "./pages/DashboardInventoryPage";
+import DashboardReportsPage from "./pages/DashboardReportsPage";
+import { ProtectedRoute } from "./shared/components/ProtectedRoute";
+import { useAuth } from "./shared/hooks/useAuth";
+import { useBranch } from "./shared/contexts/useBranch";
 
-const dashboardSidebarItems = [
+const adminSidebarItems = [
   {
     label: "Overview",
-    path: "/dashboard",
+    path: "/dashboard/admin",
     icon: <LayoutDashboard size={18} />,
     end: true,
   },
   {
     label: "Orders",
-    path: "/dashboard/orders",
+    path: "/dashboard/admin/orders",
     icon: <ClipboardList size={18} />,
   },
   {
     label: "Products",
-    path: "/dashboard/products",
+    path: "/dashboard/admin/products",
     icon: <Package size={18} />,
   },
   {
     label: "Inventory",
-    path: "/dashboard/inventory",
+    path: "/dashboard/admin/inventory",
     icon: <Boxes size={18} />,
   },
   {
     label: "Reports",
-    path: "/dashboard/reports",
+    path: "/dashboard/admin/reports",
     icon: <FileText size={18} />,
   },
 ];
+
+const branchManagerSidebarItems = [
+  {
+    label: "Inventory",
+    path: "/dashboard/branch",
+    icon: <Boxes size={18} />,
+    end: true,
+  },
+  {
+    label: "Orders",
+    path: "/dashboard/branch/orders",
+    icon: <ClipboardList size={18} />,
+  },
+];
+
+function DashboardEntryRedirect() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: "/dashboard" }} />;
+  }
+  if (user.role === "admin") {
+    return <Navigate to="/dashboard/admin" replace />;
+  }
+  if (user.role === "branchManager") {
+    return <Navigate to="/dashboard/branch" replace />;
+  }
+  return <Navigate to="/" replace />;
+}
+
+function BranchManagerDashboardTopbar() {
+  const { user } = useAuth();
+  const { branches } = useBranch();
+  const branchName = branches.find((branch) => branch.id === user?.branchId)?.name
+    ?? "Branch not assigned";
+
+  return (
+    <DashboardTopbar branchName={branchName} />
+  );
+}
 
 function App() {
   return (
@@ -86,45 +132,47 @@ function App() {
                 <Route path="login" element={<LoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
               </Route>
-              {/* Re-enable the ProtectedRoute wrapper when dashboard access should be restricted. */}
-              <Route
-                path="dashboard"
-                element={
-                  <DashboardLayout
-                    sidebarItems={dashboardSidebarItems}
-                    topbar={<DashboardTopbar />}
+              <Route path="dashboard" element={<DashboardEntryRedirect />} />
+              <Route element={<ProtectedRoute roles={["admin"]} />}>
+                <Route
+                  path="dashboard/admin"
+                  element={
+                    <DashboardLayout
+                      sidebarItems={adminSidebarItems}
+                      sidebarTitle="Admin dashboard"
+                      sidebarSubtitle="Store-wide management"
+                      topbar={<DashboardTopbar />}
+                    />
+                  }
+                >
+                  <Route index element={<DashboardPreviewPage />} />
+                  <Route path="orders" element={<DashboardOrdersPage />} />
+                  <Route path="products" element={<DashboardProductsPage />} />
+                  <Route path="inventory" element={<DashboardInventoryPage />} />
+                  <Route path="reports" element={<DashboardReportsPage />} />
+                </Route>
+              </Route>
+              <Route element={<ProtectedRoute roles={["branchManager"]} />}>
+                <Route
+                  path="dashboard/branch"
+                  element={
+                    <DashboardLayout
+                      sidebarItems={branchManagerSidebarItems}
+                      sidebarTitle="Branch dashboard"
+                      sidebarSubtitle="Branch operations"
+                      topbar={<BranchManagerDashboardTopbar />}
+                    />
+                  }
+                >
+                  <Route
+                    index
+                    element={<DashboardInventoryPage branchScoped />}
                   />
-                }
-              >
-                <Route index element={<DashboardPreviewPage />} />
-                <Route path="orders" element={<DashboardOrdersPage />} />
-                <Route
-                  path="products"
-                  element={
-                    <DashboardPlaceholderPage
-                      title="Products"
-                      description="Manage the store product catalog."
-                    />
-                  }
-                />
-                <Route
-                  path="inventory"
-                  element={
-                    <DashboardPlaceholderPage
-                      title="Inventory"
-                      description="Review stock levels across the store."
-                    />
-                  }
-                />
-                <Route
-                  path="reports"
-                  element={
-                    <DashboardPlaceholderPage
-                      title="Reports"
-                      description="View store performance reports."
-                    />
-                  }
-                />
+                  <Route
+                    path="orders"
+                    element={<DashboardOrdersPage branchScoped />}
+                  />
+                </Route>
               </Route>
             </Routes>
             </ErrorBoundary>
