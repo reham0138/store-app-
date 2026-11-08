@@ -3,22 +3,49 @@ import type { StoreProduct } from "../types/cart";
 
 const MODEL_ID = "Xenova/multilingual-e5-small";
 
-type EmbeddingExtractor = Awaited<
-  ReturnType<typeof pipeline<"feature-extraction">>
->;
+interface TensorLike {
+  data: { fill(value: bigint): void };
+  clone(): TensorLike;
+}
 
-let extractorPromise: Promise<EmbeddingExtractor> | null = null;
+interface E5ModelInputs {
+  attention_mask: TensorLike;
+  [key: string]: unknown;
+}
 
-const productEmbeddingCache = new Map<string, number[]>();
+interface E5Tokenizer {
+  prepare_model_inputs: (inputs: E5ModelInputs) => E5ModelInputs;
+}
 
-function getExtractor(): Promise<EmbeddingExtractor> {
+async function createExtractor() {
+  const extractor = await pipeline("feature-extraction", MODEL_ID, {
+    dtype: "q8",
+  });
+
+  // This E5 ONNX export expects token_type_ids although its tokenizer
+  // does not create them automatically. The model uses all-zero token types.
+  const tokenizer = extractor.tokenizer as unknown as E5Tokenizer;
+  tokenizer.prepare_model_inputs = (inputs) => {
+    const tokenTypeIds = inputs.attention_mask.clone();
+    tokenTypeIds.data.fill(0n);
+
+    return {
+      ...inputs,
+      token_type_ids: tokenTypeIds,
+    };
+  };
+
+  return extractor;
+}
+
+let extractorPromise: ReturnType<typeof createExtractor> | null = null;
+
+function getExtractor(): ReturnType<typeof createExtractor> {
   if (!extractorPromise) {
-    extractorPromise = pipeline("feature-extraction", MODEL_ID).catch(
-      (error: unknown) => {
-        extractorPromise = null;
-        throw error;
-      },
-    );
+    extractorPromise = createExtractor().catch((error: unknown) => {
+      extractorPromise = null;
+      throw error;
+    });
   }
 
   return extractorPromise;
@@ -57,6 +84,8 @@ function getProductText(product: StoreProduct): string {
 function getProductCacheKey(product: StoreProduct): string {
   return `${product.id}:${product.title}:${product.description}`;
 }
+
+const productEmbeddingCache = new Map<string, number[]>();
 
 async function getProductEmbedding(product: StoreProduct): Promise<number[]> {
   const cacheKey = getProductCacheKey(product);
