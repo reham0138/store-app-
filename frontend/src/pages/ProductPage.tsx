@@ -124,9 +124,15 @@ export default function ProductsPage() {
         const { searchProductsSemantically } = await import(
           "../shared/services/semanticSearch.service"
         );
+        if (!branchId) {
+          setFilteredProducts([]);
+          return;
+        }
+
         const rankedResults = await searchProductsSemantically(
           search,
           categoryProducts,
+          branchId,
         );
 
         if (!isActive) return;
