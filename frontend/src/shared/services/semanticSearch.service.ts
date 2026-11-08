@@ -51,14 +51,23 @@ function getExtractor(): ReturnType<typeof createExtractor> {
   return extractorPromise;
 }
 
-async function createEmbedding(text: string): Promise<number[]> {
+async function createEmbeddings(texts: string[]): Promise<number[][]> {
   const extractor = await getExtractor();
-  const output = await extractor(text, {
+  const output = await extractor(texts, {
     pooling: "mean",
     normalize: true,
   });
 
-  return Array.from(output.data as Float32Array);
+  const values = Array.from(output.data as Float32Array);
+  const embeddingSize = output.dims[output.dims.length - 1];
+
+  if (!embeddingSize || values.length !== texts.length * embeddingSize) {
+    throw new Error("The embedding model returned an unexpected output shape.");
+  }
+
+  return texts.map((_, index) =>
+    values.slice(index * embeddingSize, (index + 1) * embeddingSize),
+  );
 }
 
 function cosineSimilarity(left: number[], right: number[]): number {
@@ -87,18 +96,6 @@ function getProductCacheKey(product: StoreProduct): string {
 
 const productEmbeddingCache = new Map<string, number[]>();
 
-async function getProductEmbedding(product: StoreProduct): Promise<number[]> {
-  const cacheKey = getProductCacheKey(product);
-  const cachedEmbedding = productEmbeddingCache.get(cacheKey);
-
-  if (cachedEmbedding) return cachedEmbedding;
-
-  const embedding = await createEmbedding(getProductText(product));
-  productEmbeddingCache.set(cacheKey, embedding);
-
-  return embedding;
-}
-
 export interface SemanticSearchResult {
   product: StoreProduct;
   score: number;
@@ -115,18 +112,34 @@ export async function searchProductsSemantically(
   const normalizedQuery = query.trim();
   if (!normalizedQuery || products.length === 0) return [];
 
-  const queryEmbedding = await createEmbedding(`query: ${normalizedQuery}`);
+  const [queryEmbedding] = await createEmbeddings([
+    `query: ${normalizedQuery}`,
+  ]);
 
-  const results = await Promise.all(
-    products.map(async (product) => {
-      const productEmbedding = await getProductEmbedding(product);
-
-      return {
-        product,
-        score: cosineSimilarity(queryEmbedding, productEmbedding),
-      };
-    }),
+  const missingProducts = products.filter(
+    (product) => !productEmbeddingCache.has(getProductCacheKey(product)),
   );
+
+  if (missingProducts.length > 0) {
+    const newEmbeddings = await createEmbeddings(
+      missingProducts.map(getProductText),
+    );
+
+    missingProducts.forEach((product, index) => {
+      productEmbeddingCache.set(
+        getProductCacheKey(product),
+        newEmbeddings[index],
+      );
+    });
+  }
+
+  const results = products.map((product) => ({
+    product,
+    score: cosineSimilarity(
+      queryEmbedding,
+      productEmbeddingCache.get(getProductCacheKey(product)) ?? [],
+    ),
+  }));
 
   return results.sort((a, b) => b.score - a.score);
 }
