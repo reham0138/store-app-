@@ -25,6 +25,17 @@ location is requested only after the user chooses **Use my location**. Visit
 `/branch-test` to try searching, switching, and resetting branches with
 isolated sample data.
 
+## Semantic search
+
+Product search on the product page searches by meaning, in Arabic and English, using the shared [semantic-search-engine](https://github.com/reham0138/semantic-search-engine) service (the delivery app uses the same service). Products are filtered by stock in the selected branch first, then sent to `POST /search/store-products`. To use it locally:
+
+1. Clone and start the service by following **Run it** in its README. In short: `pip install -r requirements.txt`, then `python -m uvicorn app.main:app --port 8000`. The first start downloads a ~470 MB model.
+2. Keep it running and start this frontend with `npm run dev`.
+
+The frontend calls `http://127.0.0.1:8000` by default. To use another address, create `frontend/.env.local` containing `VITE_SEARCH_API_URL=http://your-host:8000`. No API keys are needed. Never put secrets in `VITE_` variables, because they end up in browser code.
+
+If the service is not running, the product page shows a notice and falls back to exact text matches.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
