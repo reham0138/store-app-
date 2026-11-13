@@ -229,6 +229,21 @@ export default function DashboardReportsPage() {
       header: "Units left",
       render: ({ stock }) => stock,
     },
+    {
+      key: "status",
+      header: "Status",
+      render: ({ stock }) => (
+        <span
+          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+            stock <= 0
+              ? "bg-status-error/10 text-status-error"
+              : "bg-status-warning/10 text-status-warning"
+          }`}
+        >
+          {stock <= 0 ? "Out of stock" : "Low stock"}
+        </span>
+      ),
+    },
   ];
 
   const orderColumns: DashboardTableColumn<Order>[] = [

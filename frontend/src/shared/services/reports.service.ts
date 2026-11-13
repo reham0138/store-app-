@@ -39,15 +39,16 @@ export interface ReportBranchSales {
 }
 
 export interface DashboardReport {
+  /** ALL orders in scope, including cancelled (v2.3 §6). */
   totalOrders: number;
   /** Sum of order totals with status != "cancelled". */
   revenue: number;
-  /** revenue / number of non-cancelled orders. */
+  /** revenue / number of non-cancelled orders (0 if none). */
   averageOrderValue: number;
   /** Count of branch/product stock pairs at 0. */
   outOfStockCount: number;
   ordersByStatus: Record<OrderStatus, number>;
-  /** 0 < stock <= 5. */
+  /** stock <= 5 (includes 0), lowest stock first, max 20 items. */
   lowStockProducts: ReportLowStockProduct[];
   topProducts: ReportTopProduct[];
   /** Last 30 days. */
@@ -55,11 +56,14 @@ export interface DashboardReport {
   salesByCategory: ReportSalesCategory[];
   /** Last 5 orders, newest first. */
   recentOrders: Order[];
+  /** Present only on /reports/branch (v2.3 §6). */
+  branch?: { id: string; name: string };
   /** Present only on /reports/summary without ?branchId=. */
   byBranch?: ReportBranchSales[];
 }
 
 const LOW_STOCK_MAX = 5;
+const LOW_STOCK_LIMIT = 20;
 const SALES_DAYS = 30;
 const TOP_PRODUCTS_LIMIT = 5;
 const RECENT_ORDERS_LIMIT = 5;
@@ -120,8 +124,9 @@ function buildReport(
   const pairs = stockPairs(products, branchId);
   const outOfStockCount = pairs.filter((p) => p.stock <= 0).length;
   const lowStockProducts = pairs
-    .filter((p) => p.stock > 0 && p.stock <= LOW_STOCK_MAX)
-    .sort((a, b) => a.stock - b.stock);
+    .filter((p) => p.stock <= LOW_STOCK_MAX)
+    .sort((a, b) => a.stock - b.stock)
+    .slice(0, LOW_STOCK_LIMIT);
 
   // Top products by units sold across non-cancelled orders.
   const soldByProduct = new Map<string, { title: string; quantitySold: number }>();
@@ -210,14 +215,22 @@ function buildReport(
   return report;
 }
 
-async function mockReport(branchId?: string, includeByBranch = false): Promise<DashboardReport> {
+async function mockReport(
+  branchId?: string,
+  includeByBranch = false,
+  includeBranchInfo = false,
+): Promise<DashboardReport> {
   const [ordersResult, products, branches] = await Promise.all([
     ordersService.list({ page: 1, limit: 10000 }),
     getProducts(),
     getBranches(),
   ]);
-  void branches; // branch names are resolved by the pages via branches.service
-  return buildReport(ordersResult.items, products, branchId, includeByBranch);
+  const report = buildReport(ordersResult.items, products, branchId, includeByBranch);
+  if (includeBranchInfo && branchId) {
+    const branch = branches.find((b) => b.id === branchId);
+    if (branch) report.branch = { id: branch.id, name: branch.name };
+  }
+  return report;
 }
 
 async function mockAdminReport(branchId?: string): Promise<DashboardReport> {
@@ -226,7 +239,8 @@ async function mockAdminReport(branchId?: string): Promise<DashboardReport> {
 
 async function mockBranchReport(): Promise<DashboardReport> {
   const branchId = authService.getCurrentUser()?.branchId;
-  return mockReport(branchId);
+  // A manager without an assigned branch sees an empty report, not all orders.
+  return mockReport(branchId ?? "__unassigned__", false, true);
 }
 
 async function apiReport(path: string): Promise<DashboardReport> {

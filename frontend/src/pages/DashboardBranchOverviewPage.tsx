@@ -23,7 +23,6 @@ import { FormError } from "../shared/components/FormError";
 import { useAuth } from "../shared/hooks/useAuth";
 import { reportsService } from "../shared/services/reports.service";
 import type { DashboardReport, ReportLowStockProduct } from "../shared/services/reports.service";
-import { getBranches } from "../shared/services/branches.service";
 import type { Order } from "../shared/types/order";
 import { formatPrice } from "../shared/utils/pricing";
 import { shortOrderId } from "../shared/utils/orderId";
@@ -33,7 +32,6 @@ export default function DashboardBranchOverviewPage() {
   const { user } = useAuth();
   const branchId = user?.branchId;
   const [report, setReport] = useState<DashboardReport | null>(null);
-  const [branchName, setBranchName] = useState("Branch not assigned");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -42,14 +40,8 @@ export default function DashboardBranchOverviewPage() {
 
     async function loadReport() {
       try {
-        const [data, branches] = await Promise.all([
-          reportsService.branch(),
-          getBranches(),
-        ]);
-        if (!isMounted) return;
-        setReport(data);
-        const name = branches.find((branch) => branch.id === branchId)?.name;
-        if (name) setBranchName(name);
+        const data = await reportsService.branch();
+        if (isMounted) setReport(data);
       } catch (error) {
         if (isMounted) {
           setLoadError(
@@ -66,6 +58,10 @@ export default function DashboardBranchOverviewPage() {
       isMounted = false;
     };
   }, [branchId]);
+
+  const branchName =
+    report?.branch?.name ??
+    (branchId ? "Assigned branch" : "Branch not assigned");
 
   const revenueByDay = useMemo(
     () =>
