@@ -6,8 +6,11 @@ import {
   saveBranchOperationalStatus,
 } from "../utils/branchStatusStorage";
 
-interface BranchesResponse {
-  branches: Branch[];
+interface BranchListResponse {
+  items: Branch[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 async function fetchMockBranches(): Promise<Branch[]> {
@@ -20,11 +23,11 @@ async function fetchMockBranches(): Promise<Branch[]> {
     typeof data !== "object" ||
     data === null ||
     !("branches" in data) ||
-    !Array.isArray((data as BranchesResponse).branches)
+    !Array.isArray((data as { branches: Branch[] }).branches)
   ) {
     throw new Error("Branch data has an invalid format.");
   }
-  const branches = (data as BranchesResponse).branches;
+  const branches = (data as { branches: Branch[] }).branches;
   let statuses: Record<string, BranchOperationalStatus> = {};
   try {
     statuses = getBranchOperationalStatuses();
@@ -33,33 +36,40 @@ async function fetchMockBranches(): Promise<Branch[]> {
   }
   return branches.map((branch) => ({
     ...branch,
-    operationalStatus: statuses[branch.id],
+    operationalStatus: statuses[branch.id] ?? branch.operationalStatus ?? "open",
   }));
 }
 
 export async function getBranches(): Promise<Branch[]> {
   if (USE_MOCK) return fetchMockBranches();
   try {
-    const { data } = await apiClient.get<Branch[] | { items: Branch[] }>("/branches");
-    return Array.isArray(data) ? data : data.items;
+    const { data } = await apiClient.get<BranchListResponse>("/branches");
+    return data.items;
   } catch (error) {
-    throw new ApiError(normalizeError(error, "Failed to load branches.").message);
+    const normalized = normalizeError(error, "Failed to load branches.");
+    throw new ApiError(normalized.message, normalized.code, normalized.status);
   }
 }
 
 export async function updateBranchStatus(
   branchId: string,
   status: BranchOperationalStatus,
-): Promise<void> {
+): Promise<Branch> {
   if (USE_MOCK) {
     saveBranchOperationalStatus(branchId, status);
-    return;
+    const branches = await fetchMockBranches();
+    const updated = branches.find((branch) => branch.id === branchId);
+    if (!updated) throw new ApiError("Branch not found.", "NOT_FOUND", 404);
+    return updated;
   }
   try {
-    await apiClient.patch(`/branches/${branchId}/status`, {
-      operationalStatus: status,
-    });
+    const { data } = await apiClient.patch<Branch>(
+      `/branches/${branchId}/status`,
+      { operationalStatus: status },
+    );
+    return data;
   } catch (error) {
-    throw new ApiError(normalizeError(error, "Failed to update branch status.").message);
+    const normalized = normalizeError(error, "Failed to update branch status.");
+    throw new ApiError(normalized.message, normalized.code, normalized.status);
   }
 }
