@@ -42,10 +42,11 @@ import type { ProductInput } from "../shared/services/product.service";
 import { getBranches } from "../shared/services/branches.service";
 import type { Branch } from "../shared/types/type";
 import { reportsService } from "../shared/services/reports.service";
-import type { DashboardReport } from "../shared/services/reports.service";
+import type { DashboardReport, ReportLowStockProduct } from "../shared/services/reports.service";
 import { formatPrice } from "../shared/utils/pricing";
 import OrderStatus from "../shared/components/OrderStatus";
 import { normalizeError } from "../shared/api/errors";
+import { shortOrderId } from "../shared/utils/orderId";
 
 type StockFilter = "all" | "in-stock" | "low-stock" | "out-of-stock";
 
@@ -161,22 +162,17 @@ export default function DashboardPreviewPage() {
   }, [products, search, selectedCategory, stockFilter]);
 
   const stats = useMemo(() => {
-    const lowStock = products.filter(
-      (product) => getStockStatus(product.stock) === "Low stock",
-    ).length;
-    const outOfStock = products.filter((product) => product.stock <= 0).length;
-
     return {
       totalProducts: products.length,
-      lowStock,
-      outOfStock,
-      orderRevenue: report?.totals.orderRevenue ?? 0,
-      pendingOrders: report?.totals.pendingOrders ?? 0,
+      lowStock: report?.lowStockProducts.length ?? 0,
+      outOfStock: report?.outOfStockCount ?? 0,
+      orderRevenue: report?.revenue ?? 0,
+      pendingOrders: report?.ordersByStatus.pending ?? 0,
     };
   }, [products, report]);
 
   const recentOrders = report?.recentOrders ?? [];
-  const stockAlerts = report?.stockAlerts ?? [];
+  const stockAlerts = report?.lowStockProducts ?? [];
 
   function openAddForm() {
     setEditingProductId(null);
@@ -338,7 +334,9 @@ export default function DashboardPreviewPage() {
       key: "order",
       header: "Order",
       render: (order) => (
-        <span className="font-medium text-brand-navy">{order.id}</span>
+        <span className="font-medium text-brand-navy" title={order.id}>
+          {shortOrderId(order.id)}
+        </span>
       ),
     },
     {
@@ -364,27 +362,26 @@ export default function DashboardPreviewPage() {
     },
   ];
 
-  const stockAlertColumns: DashboardTableColumn<StoreProduct>[] = [
+  const stockAlertColumns: DashboardTableColumn<ReportLowStockProduct>[] = [
     {
       key: "product",
       header: "Product",
-      render: (product) => (
+      render: ({ title }) => (
         <div className="min-w-36">
-          <p className="font-medium text-brand-navy">{product.title}</p>
-          <p className="text-xs text-text-slate">{product.brand}</p>
+          <p className="font-medium text-brand-navy">{title}</p>
         </div>
       ),
     },
     {
       key: "stock",
       header: "Units left",
-      render: (product) => product.stock,
+      render: ({ stock }) => stock,
     },
     {
       key: "status",
       header: "Status",
-      render: (product) => {
-        const status = getStockStatus(product.stock);
+      render: ({ stock }) => {
+        const status = getStockStatus(stock);
         return (
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusClass(status)}`}
@@ -478,7 +475,7 @@ export default function DashboardPreviewPage() {
 
         <DashboardCard
           title="Stock alerts"
-          description="Products with 10 or fewer units available."
+          description="Products with 5 or fewer units at any branch."
           actions={
             <Link
               to="/dashboard/admin/inventory"
@@ -499,7 +496,7 @@ export default function DashboardPreviewPage() {
             <DashboardTable
               columns={stockAlertColumns}
               rows={stockAlerts}
-              getRowKey={(product) => product.id}
+              getRowKey={({ productId, branchId }) => `${productId}:${branchId}`}
             />
           ) : (
             <DashboardEmptyState

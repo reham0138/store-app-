@@ -22,21 +22,18 @@ import OrderStatus from "../shared/components/OrderStatus";
 import { FormError } from "../shared/components/FormError";
 import { useAuth } from "../shared/hooks/useAuth";
 import { reportsService } from "../shared/services/reports.service";
-import type { DashboardReport } from "../shared/services/reports.service";
-import type { StoreProduct } from "../shared/types/cart";
+import type { DashboardReport, ReportLowStockProduct } from "../shared/services/reports.service";
+import { getBranches } from "../shared/services/branches.service";
 import type { Order } from "../shared/types/order";
 import { formatPrice } from "../shared/utils/pricing";
+import { shortOrderId } from "../shared/utils/orderId";
 import { normalizeError } from "../shared/api/errors";
-
-interface BranchStockAlert {
-  product: StoreProduct;
-  stock: number;
-}
 
 export default function DashboardBranchOverviewPage() {
   const { user } = useAuth();
   const branchId = user?.branchId;
   const [report, setReport] = useState<DashboardReport | null>(null);
+  const [branchName, setBranchName] = useState("Branch not assigned");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -45,8 +42,14 @@ export default function DashboardBranchOverviewPage() {
 
     async function loadReport() {
       try {
-        const data = await reportsService.branch();
-        if (isMounted) setReport(data);
+        const [data, branches] = await Promise.all([
+          reportsService.branch(),
+          getBranches(),
+        ]);
+        if (!isMounted) return;
+        setReport(data);
+        const name = branches.find((branch) => branch.id === branchId)?.name;
+        if (name) setBranchName(name);
       } catch (error) {
         if (isMounted) {
           setLoadError(
@@ -58,61 +61,66 @@ export default function DashboardBranchOverviewPage() {
       }
     }
 
-    void loadReport();
+    queueMicrotask(() => void loadReport());
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [branchId]);
 
-  const orders = report?.orders ?? [];
-  const branchName =
-    report?.branches.find((branch) => branch.id === branchId)?.name ??
-    "Branch not assigned";
-
-  const branchOrders = orders;
   const revenueByDay = useMemo(
     () =>
-      (report?.revenueByDay ?? []).map(({ label, value }) => ({
-        label,
-        value,
-        displayValue: formatPrice(value),
+      (report?.salesByDay ?? []).map(({ date, revenue }) => ({
+        label: date.slice(5), // MM-DD
+        value: revenue,
+        displayValue: formatPrice(revenue),
       })),
     [report],
   );
   const orderStatusCounts = useMemo(
     () =>
-      (report?.orderStatusCounts ?? []).map(({ status, count }) => ({
+      Object.entries(report?.ordersByStatus ?? {}).map(([status, count]) => ({
         label: status.charAt(0).toUpperCase() + status.slice(1),
         value: count,
       })),
     [report],
   );
-  const topProducts = report?.topProducts ?? [];
-  const inventoryStockLevels = report?.stockLevels ?? [];
-  const stockAlerts = useMemo<BranchStockAlert[]>(
+  const topProducts = useMemo(
     () =>
-      (report?.stockAlerts ?? []).map((product) => ({
-        product,
-        stock: product.stock,
+      (report?.topProducts ?? []).map((p) => ({
+        label: p.title,
+        value: p.quantitySold,
       })),
     [report],
   );
-  const stats = useMemo(() => {
-    const totals = report?.totals;
-    return {
-      revenue: totals?.orderRevenue ?? 0,
-      totalOrders: totals?.totalOrders ?? 0,
-      pendingOrders: totals?.pendingOrders ?? 0,
-      stockAlerts: (totals?.lowStock ?? 0) + (totals?.outOfStock ?? 0),
-    };
-  }, [report]);
+  const salesByCategory = useMemo(
+    () =>
+      (report?.salesByCategory ?? []).map((c) => ({
+        label: c.category,
+        value: c.revenue,
+        displayValue: formatPrice(c.revenue),
+      })),
+    [report],
+  );
+  const stockAlerts = report?.lowStockProducts ?? [];
+  const stockAlertCount =
+    (report?.lowStockProducts.length ?? 0) + (report?.outOfStockCount ?? 0);
+
+  const stats = {
+    revenue: report?.revenue ?? 0,
+    totalOrders: report?.totalOrders ?? 0,
+    pendingOrders: report?.ordersByStatus.pending ?? 0,
+    averageOrderValue: report?.averageOrderValue ?? 0,
+    outOfStockCount: report?.outOfStockCount ?? 0,
+  };
 
   const recentOrderColumns: DashboardTableColumn<Order>[] = [
     {
       key: "order",
       header: "Order",
       render: (order) => (
-        <span className="font-medium text-brand-navy">{order.id}</span>
+        <span className="font-medium text-brand-navy" title={order.id}>
+          {shortOrderId(order.id)}
+        </span>
       ),
     },
     {
@@ -132,14 +140,13 @@ export default function DashboardBranchOverviewPage() {
       render: (order) => <OrderStatus status={order.status} />,
     },
   ];
-  const stockAlertColumns: DashboardTableColumn<BranchStockAlert>[] = [
+  const stockAlertColumns: DashboardTableColumn<ReportLowStockProduct>[] = [
     {
       key: "product",
       header: "Product",
-      render: ({ product }) => (
+      render: ({ title }) => (
         <div className="min-w-36">
-          <p className="font-medium text-brand-navy">{product.title}</p>
-          <p className="text-xs text-text-slate">{product.category}</p>
+          <p className="font-medium text-brand-navy">{title}</p>
         </div>
       ),
     },
@@ -164,12 +171,7 @@ export default function DashboardBranchOverviewPage() {
       ),
     },
   ];
-  const recentOrders = [...branchOrders]
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )
-    .slice(0, 5);
+  const recentOrders = report?.recentOrders ?? [];
 
   return (
     <section className="mx-auto grid min-w-0 w-full max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:px-8">
@@ -218,9 +220,9 @@ export default function DashboardBranchOverviewPage() {
         />
         <StatCard
           label="Stock alerts"
-          value={String(stats.stockAlerts)}
-          description="Products at 10 units or less"
-          trendType={stats.stockAlerts > 0 ? "negative" : "positive"}
+          value={String(stockAlertCount)}
+          description={`${stats.outOfStockCount} out of stock · low stock ≤ 5 units`}
+          trendType={stockAlertCount > 0 ? "negative" : "positive"}
           icon={<AlertTriangle size={20} />}
         />
       </div>
@@ -235,7 +237,7 @@ export default function DashboardBranchOverviewPage() {
       <div className="grid gap-8 xl:grid-cols-2">
         <DashboardCard
           title="Revenue trend"
-          description="Daily revenue for the last seven days, excluding cancelled orders."
+          description="Daily revenue for the last 30 days, excluding cancelled orders."
         >
           <DashboardChart
             data={revenueByDay}
@@ -262,22 +264,14 @@ export default function DashboardBranchOverviewPage() {
           />
         </DashboardCard>
         <DashboardCard
-          title="Inventory health"
-          description="Count of product listings by stock level at this branch."
+          title="Sales by category"
+          description="Revenue per category in non-cancelled orders."
         >
-          {isLoading ? (
-            <p className="py-8 text-center text-sm text-text-slate">
-              Loading inventory...
-            </p>
-          ) : loadError ? (
-            <FormError message={loadError} />
-          ) : (
-            <DashboardChart
-              data={inventoryStockLevels}
-              availableViews={["bar", "donut"]}
-              emptyMessage="Assign a branch to view its inventory health."
-            />
-          )}
+          <DashboardChart
+            data={salesByCategory}
+            availableViews={["bar", "donut"]}
+            emptyMessage="Categories will appear after orders are placed."
+          />
         </DashboardCard>
       </div>
 
@@ -312,7 +306,7 @@ export default function DashboardBranchOverviewPage() {
 
         <DashboardCard
           title="Stock alerts"
-          description="Products that may need replenishment at your branch."
+          description="Products with 5 or fewer units at your branch."
           actions={
             <Link
               to="/dashboard/branch/inventory"
@@ -333,12 +327,12 @@ export default function DashboardBranchOverviewPage() {
             <DashboardTable
               columns={stockAlertColumns}
               rows={stockAlerts}
-              getRowKey={({ product }) => String(product.id)}
+              getRowKey={({ productId }) => productId}
             />
           ) : (
             <DashboardEmptyState
-              title="No stock alerts"
-              description="Low and out-of-stock products will appear here."
+              title="No low-stock products"
+              description="Products with 5 or fewer units will appear here."
               icon={<AlertTriangle size={22} />}
             />
           )}

@@ -1,152 +1,232 @@
-import type { Order } from "../types/order";
+import type { Order, OrderStatus } from "../types/order";
 import type { StoreProduct } from "../types/cart";
-import type { Branch } from "../types/type";
 import { apiClient, USE_MOCK, ApiError, normalizeError } from "../api/index.ts";
 import { ordersService } from "./orders.service";
 import { getProducts } from "./product.service";
 import { getBranches } from "./branches.service";
 import { authService } from "./authService";
-import {
-  getRevenueByDay,
-  getOrderStatusCounts,
-  getTopProducts,
-  getInventoryStockLevels,
-  type DashboardMetric,
-} from "../utils/dashboardMetrics";
-const LOW_STOCK_THRESHOLD = 5;
 
-function getStockStatus(stock: number): "In stock" | "Low stock" | "Out of stock" {
-  if (stock <= 0) return "Out of stock";
-  if (stock <= LOW_STOCK_THRESHOLD) return "Low stock";
-  return "In stock";
+/** Contract §6: GET /reports/summary | /reports/branch response shape. */
+export interface ReportLowStockProduct {
+  productId: string;
+  title: string;
+  branchId: string;
+  stock: number;
 }
 
-export interface BranchSalesRow {
-  branchId: string;
-  branchName: string;
+export interface ReportTopProduct {
+  productId: string;
+  title: string;
+  quantitySold: number;
+}
+
+export interface ReportSalesDay {
+  date: string; // YYYY-MM-DD
+  orders: number;
   revenue: number;
-  orderCount: number;
-  activity: "Active" | "No recent sales";
+}
+
+export interface ReportSalesCategory {
+  category: string;
+  quantitySold: number;
+  revenue: number;
+}
+
+export interface ReportBranchSales {
+  branchId: string;
+  totalOrders: number;
+  revenue: number;
 }
 
 export interface DashboardReport {
-  orders: Order[];
-  products: StoreProduct[];
-  branches: Branch[];
-  revenueByDay: DashboardMetric[];
-  orderStatusCounts: { status: string; count: number }[];
-  topProducts: DashboardMetric[];
-  stockLevels: DashboardMetric[];
+  totalOrders: number;
+  /** Sum of order totals with status != "cancelled". */
+  revenue: number;
+  /** revenue / number of non-cancelled orders. */
+  averageOrderValue: number;
+  /** Count of branch/product stock pairs at 0. */
+  outOfStockCount: number;
+  ordersByStatus: Record<OrderStatus, number>;
+  /** 0 < stock <= 5. */
+  lowStockProducts: ReportLowStockProduct[];
+  topProducts: ReportTopProduct[];
+  /** Last 30 days. */
+  salesByDay: ReportSalesDay[];
+  salesByCategory: ReportSalesCategory[];
+  /** Last 5 orders, newest first. */
   recentOrders: Order[];
-  stockAlerts: StoreProduct[];
-  totals: {
-    totalOrders: number;
-    pendingOrders: number;
-    orderRevenue: number;
-    totalProducts: number;
-    lowStock: number;
-    outOfStock: number;
-  };
-  branchSales: BranchSalesRow[];
+  /** Present only on /reports/summary without ?branchId=. */
+  byBranch?: ReportBranchSales[];
+}
+
+const LOW_STOCK_MAX = 5;
+const SALES_DAYS = 30;
+const TOP_PRODUCTS_LIMIT = 5;
+const RECENT_ORDERS_LIMIT = 5;
+
+function emptyStatusCounts(): Record<OrderStatus, number> {
+  return { pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0 };
+}
+
+function dayKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+interface StockPair {
+  productId: string;
+  title: string;
+  branchId: string;
+  stock: number;
+}
+
+function stockPairs(products: StoreProduct[], branchId?: string): StockPair[] {
+  const pairs: StockPair[] = [];
+  for (const product of products) {
+    for (const inv of product.branchInventory ?? []) {
+      if (branchId && inv.branchId !== branchId) continue;
+      pairs.push({
+        productId: product.id,
+        title: product.title,
+        branchId: inv.branchId,
+        stock: inv.stock,
+      });
+    }
+  }
+  return pairs;
 }
 
 function buildReport(
   orders: Order[],
   products: StoreProduct[],
-  branches: Branch[],
   branchId?: string,
+  includeByBranch = false,
 ): DashboardReport {
   const scopedOrders = branchId
-    ? orders.filter((order) => order.branch?.id === branchId)
+    ? orders.filter((order) => (order.branchId ?? order.branch?.id) === branchId)
     : orders;
-  const scopedProducts = branchId
-    ? products.map((product) => ({
-        ...product,
-        stock:
-          product.branchInventory?.find((i) => i.branchId === branchId)?.stock ?? 0,
-      }))
-    : products;
-
   const activeOrders = scopedOrders.filter((order) => order.status !== "cancelled");
-  const orderRevenue = activeOrders.reduce((sum, order) => sum + order.total, 0);
+
+  const revenue = activeOrders.reduce((sum, order) => sum + order.total, 0);
+  const averageOrderValue = activeOrders.length ? revenue / activeOrders.length : 0;
+
+  const ordersByStatus = emptyStatusCounts();
+  for (const order of scopedOrders) {
+    ordersByStatus[order.status] += 1;
+  }
+
+  const pairs = stockPairs(products, branchId);
+  const outOfStockCount = pairs.filter((p) => p.stock <= 0).length;
+  const lowStockProducts = pairs
+    .filter((p) => p.stock > 0 && p.stock <= LOW_STOCK_MAX)
+    .sort((a, b) => a.stock - b.stock);
+
+  // Top products by units sold across non-cancelled orders.
+  const soldByProduct = new Map<string, { title: string; quantitySold: number }>();
+  for (const order of activeOrders) {
+    for (const item of order.items) {
+      const entry = soldByProduct.get(item.productId) ?? {
+        title: item.title,
+        quantitySold: 0,
+      };
+      entry.quantitySold += item.quantity;
+      soldByProduct.set(item.productId, entry);
+    }
+  }
+  const topProducts: ReportTopProduct[] = [...soldByProduct.entries()]
+    .map(([productId, v]) => ({ productId, title: v.title, quantitySold: v.quantitySold }))
+    .sort((a, b) => b.quantitySold - a.quantitySold)
+    .slice(0, TOP_PRODUCTS_LIMIT);
+
+  // Sales per day, last 30 days (non-cancelled).
+  const dayMap = new Map<string, { orders: number; revenue: number }>();
+  const today = new Date();
+  for (let i = SALES_DAYS - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    dayMap.set(dayKey(d), { orders: 0, revenue: 0 });
+  }
+  for (const order of activeOrders) {
+    const key = dayKey(new Date(order.createdAt));
+    const entry = dayMap.get(key);
+    if (entry) {
+      entry.orders += 1;
+      entry.revenue += order.total;
+    }
+  }
+  const salesByDay: ReportSalesDay[] = [...dayMap.entries()].map(([date, v]) => ({
+    date,
+    orders: v.orders,
+    revenue: v.revenue,
+  }));
+
+  // Sales by category (non-cancelled), sorted by revenue desc.
+  const catMap = new Map<string, { quantitySold: number; revenue: number }>();
+  for (const order of activeOrders) {
+    for (const item of order.items) {
+      const category = item.category ?? "Uncategorized";
+      const entry = catMap.get(category) ?? { quantitySold: 0, revenue: 0 };
+      entry.quantitySold += item.quantity;
+      entry.revenue += item.unitPrice * item.quantity;
+      catMap.set(category, entry);
+    }
+  }
+  const salesByCategory: ReportSalesCategory[] = [...catMap.entries()]
+    .map(([category, v]) => ({ category, ...v }))
+    .sort((a, b) => b.revenue - a.revenue);
 
   const recentOrders = [...scopedOrders]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+    .slice(0, RECENT_ORDERS_LIMIT);
 
-  const stockAlerts = [...scopedProducts]
-    .filter((product) => product.stock <= 10)
-    .sort((a, b) => a.stock - b.stock)
-    .slice(0, 5);
-
-  const branchSales = branches.map((branch) => {
-    const startDate = new Date();
-    startDate.setHours(0, 0, 0, 0);
-    startDate.setDate(startDate.getDate() - 29);
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 30);
-
-    const branchOrders = orders.filter((order) => {
-      const orderDate = new Date(order.createdAt).getTime();
-      return (
-        order.branch?.id === branch.id &&
-        order.status !== "cancelled" &&
-        orderDate >= startDate.getTime() &&
-        orderDate < endDate.getTime()
-      );
-    });
-
-    return {
-      branchId: branch.id,
-      branchName: branch.name,
-      revenue: branchOrders.reduce((total, order) => total + order.total, 0),
-      orderCount: branchOrders.length,
-      activity: (branchOrders.length > 0 ? "Active" : "No recent sales") as
-        | "Active"
-        | "No recent sales",
-    };
-  });
-
-  return {
-    orders: scopedOrders,
-    products: scopedProducts,
-    branches,
-    revenueByDay: getRevenueByDay(scopedOrders),
-    orderStatusCounts: getOrderStatusCounts(scopedOrders),
-    topProducts: getTopProducts(scopedOrders),
-    stockLevels: getInventoryStockLevels(scopedProducts, branchId),
+  const report: DashboardReport = {
+    totalOrders: scopedOrders.length,
+    revenue,
+    averageOrderValue,
+    outOfStockCount,
+    ordersByStatus,
+    lowStockProducts,
+    topProducts,
+    salesByDay,
+    salesByCategory,
     recentOrders,
-    stockAlerts,
-    totals: {
-      totalOrders: scopedOrders.length,
-      pendingOrders: scopedOrders.filter((order) => order.status === "pending").length,
-      orderRevenue,
-      totalProducts: scopedProducts.length,
-      lowStock: scopedProducts.filter((p) => getStockStatus(p.stock) === "Low stock").length,
-      outOfStock: scopedProducts.filter((p) => p.stock <= 0).length,
-    },
-    branchSales,
   };
+
+  if (includeByBranch) {
+    const branchIds = [...new Set(orders.map((o) => o.branchId ?? o.branch?.id).filter(Boolean))] as string[];
+    report.byBranch = branchIds.map((id) => {
+      const branchOrders = orders.filter((o) => (o.branchId ?? o.branch?.id) === id);
+      const branchActive = branchOrders.filter((o) => o.status !== "cancelled");
+      return {
+        branchId: id,
+        totalOrders: branchOrders.length,
+        revenue: branchActive.reduce((sum, o) => sum + o.total, 0),
+      };
+    });
+  }
+
+  return report;
 }
 
-async function mockAdminReport(): Promise<DashboardReport> {
-  const [orders, products, branches] = await Promise.all([
-    ordersService.list({ page: 1, limit: 1000 }).then((r) => r.items),
+async function mockReport(branchId?: string, includeByBranch = false): Promise<DashboardReport> {
+  const [ordersResult, products, branches] = await Promise.all([
+    ordersService.list({ page: 1, limit: 10000 }),
     getProducts(),
     getBranches(),
   ]);
-  return buildReport(orders, products, branches);
+  void branches; // branch names are resolved by the pages via branches.service
+  return buildReport(ordersResult.items, products, branchId, includeByBranch);
+}
+
+async function mockAdminReport(branchId?: string): Promise<DashboardReport> {
+  return mockReport(branchId, !branchId);
 }
 
 async function mockBranchReport(): Promise<DashboardReport> {
-  const user = authService.getCurrentUser();
-  const branchId = user?.branchId;
-  const [orders, products, branches] = await Promise.all([
-    ordersService.list({ page: 1, limit: 1000 }).then((r) => r.items),
-    getProducts(),
-    getBranches(),
-  ]);
-  return buildReport(orders, products, branches, branchId);
+  const branchId = authService.getCurrentUser()?.branchId;
+  return mockReport(branchId);
 }
 
 async function apiReport(path: string): Promise<DashboardReport> {
@@ -160,9 +240,11 @@ async function apiReport(path: string): Promise<DashboardReport> {
 }
 
 export const reportsService = {
-  /** Admin store-wide report. */
-  admin(): Promise<DashboardReport> {
-    return USE_MOCK ? mockAdminReport() : apiReport("/reports/summary");
+  /** Admin store-wide report. Optional branchId scopes the whole report. */
+  admin(branchId?: string): Promise<DashboardReport> {
+    if (USE_MOCK) return mockAdminReport(branchId);
+    const query = branchId ? `?branchId=${encodeURIComponent(branchId)}` : "";
+    return apiReport(`/reports/summary${query}`);
   },
   /** Branch-manager report scoped to the JWT branch (manager never sends branchId). */
   branch(): Promise<DashboardReport> {
