@@ -1,0 +1,45 @@
+{
+  "brand": {
+    "name": "The Crown & Anchor",
+    "tagline": "MORE THAN JUST A STORE"
+  },
+  "colors": {
+    "brand-navy": "#0B2D4A",
+    "brand-gold": "#D4AF37",
+    "surface-cream": "#F8F7F4",
+    "text-slate": "#64748B",
+    "text-main": "#1F2937",
+    "surface-white": "#FFFFFF",
+    "border-subtle": "#E5E7EB",
+    "status-success": "#15803D",
+    "status-error": "#B91C1C",
+    "status-warning": "#A16207",
+    "status-info": "#1D4ED8"
+  },
+  "fonts": {
+    "arabic": {
+      "preferred": "Cairo",
+      "fallback": [
+        "system-ui",
+        "sans-serif"
+      ]
+    },
+    "latin": {
+      "preferred": "Inter",
+      "fallback": [
+        "system-ui",
+        "sans-serif"
+      ]
+    }
+  },
+  "iconLibrary": "lucide-react",
+  "directions": {
+    "ar": "rtl",
+    "en": "ltr"
+  },
+  "breakpointsGuideline": {
+    "mobile": "320-639px",
+    "tablet": "640-1023px",
+    "desktop": "1024px+"
+  }
+}

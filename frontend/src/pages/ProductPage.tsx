@@ -1,0 +1,359 @@
+
+import { useEffect, useMemo, useState } from "react";
+import { Search, SlidersHorizontal } from "lucide-react";
+
+import { getProducts } from "../shared/services/product.service";
+import type { StoreProduct } from "../shared/types/cart";
+import ProductCard from "../shared/components/ProductCard";
+import { useBranch } from "../shared/contexts/useBranch";
+import { getProductPrice, getProductStock } from "../shared/utils/pricing";
+
+type SortOption = "default" | "price-low" | "price-high" | "rating";
+
+export default function ProductsPage() {
+  const {
+    selectedBranch,
+    isLoading: branchesLoading,
+    error: branchError,
+  } = useBranch();
+  const branchId = selectedBranch?.id;
+  const [products, setProducts] = useState<StoreProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [sortBy, setSortBy] = useState<SortOption>("default");
+  const pageLoading = loading || branchesLoading;
+  const pageError =
+    branchError ??
+    (!branchesLoading && !selectedBranch
+      ? "No branches are currently available."
+      : error);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProducts() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getProducts();
+
+        if (isMounted) {
+          setProducts(data);
+        }
+      } catch {
+        if (isMounted) {
+          setError("We couldn't load the products. Please try again.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const categories = useMemo(
+    () => [...new Set(products.map((product) => product.category))],
+    [products],
+  );
+
+  const [filteredProducts, setFilteredProducts] = useState<StoreProduct[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+
+  useEffect(() => {
+    let isActive = true;
+
+    const timeoutId = window.setTimeout(async () => {
+      const availableProducts = products.filter(
+        (product) => getProductStock(product, branchId) > 0,
+      );
+
+      const categoryProducts =
+        selectedCategory === "all"
+          ? availableProducts
+          : availableProducts.filter(
+              (product) => product.category === selectedCategory,
+            );
+
+      if (!search.trim()) {
+        let result = [...categoryProducts];
+
+        switch (sortBy) {
+          case "price-low":
+            result.sort(
+              (a, b) =>
+                getProductPrice(a, branchId) - getProductPrice(b, branchId),
+            );
+            break;
+          case "price-high":
+            result.sort(
+              (a, b) =>
+                getProductPrice(b, branchId) - getProductPrice(a, branchId),
+            );
+            break;
+          case "rating":
+            result.sort((a, b) => b.rating - a.rating);
+            break;
+        }
+
+        if (isActive) {
+          setFilteredProducts(result);
+          setSearchError("");
+          setIsSearching(false);
+        }
+        return;
+      }
+
+      try {
+        if (isActive) {
+          setIsSearching(true);
+          setSearchError("");
+        }
+
+        const { searchProductsSemantically } = await import(
+          "../shared/services/semanticSearch.service"
+        );
+        if (!branchId) {
+          setFilteredProducts([]);
+          return;
+        }
+
+        const rankedResults = await searchProductsSemantically(
+          search,
+          categoryProducts,
+          branchId,
+        );
+
+        if (!isActive) return;
+
+        let result = rankedResults.map(({ product }) => product);
+
+        switch (sortBy) {
+          case "price-low":
+            result.sort(
+              (a, b) =>
+                getProductPrice(a, branchId) - getProductPrice(b, branchId),
+            );
+            break;
+          case "price-high":
+            result.sort(
+              (a, b) =>
+                getProductPrice(b, branchId) - getProductPrice(a, branchId),
+            );
+            break;
+          case "rating":
+            result.sort((a, b) => b.rating - a.rating);
+            break;
+        }
+
+        setFilteredProducts(result);
+      } catch (error) {
+        if (!isActive) return;
+
+        console.error("Semantic product search failed:", error);
+        setSearchError(
+          "Smart search couldn't start. Check your connection and try again.",
+        );
+
+        const term = search.trim().toLocaleLowerCase();
+        setFilteredProducts(
+          categoryProducts.filter((product) =>
+            `${product.title} ${product.description}`
+              .toLocaleLowerCase()
+              .includes(term),
+          ),
+        );
+      } finally {
+        if (isActive) setIsSearching(false);
+      }
+    }, search.trim() ? 450 : 0);
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [products, search, selectedCategory, sortBy, branchId]);
+
+  return (
+    <div className="min-h-screen bg-page">
+      {/* Page Header */}
+      <section className="bg-brand-navy px-4 py-14 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-brand-gold">
+            The Crown & Anchor
+          </p>
+
+          <h1 className="text-3xl font-bold sm:text-4xl">
+            Explore Our Products
+          </h1>
+
+          <p className="mt-3 max-w-xl text-sm leading-6 text-white/75 sm:text-base">
+            Discover quality products selected for your everyday needs.
+          </p>
+        </div>
+      </section>
+
+      {/* Products Section */}
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        {/* Section Heading */}
+        <div className="mb-6 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+          <div>
+            <h2 className="text-xl font-bold text-brand-navy">
+              All Products
+            </h2>
+
+            <p className="mt-1 text-sm text-text-slate">
+              {pageLoading
+                ? "Loading products..."
+                : isSearching
+                  ? "Understanding your search..."
+                  : `${filteredProducts.length} products found`}
+            </p>
+          </div>
+        </div>
+
+        {/* Search and Sort */}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row">
+          <div className="relative flex-1">
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-slate"
+            />
+
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search products by meaning (Arabic or English)..."
+              className="h-11 w-full rounded-xl border border-border-subtle bg-surface-white pl-10 pr-4 text-sm outline-none transition focus:border-brand-gold"
+            />
+          </div>
+
+          <div className="relative sm:w-56">
+            <SlidersHorizontal
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-slate"
+            />
+
+            <select
+              value={sortBy}
+              onChange={(event) =>
+                setSortBy(event.target.value as SortOption)
+              }
+              aria-label="Sort products"
+              className="h-11 w-full appearance-none rounded-xl border border-border-subtle bg-surface-white pl-9 pr-4 text-sm outline-none focus:border-brand-gold"
+            >
+              <option value="default">Sort: Default</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="rating">Highest Rated</option>
+            </select>
+          </div>
+        </div>
+
+        {searchError && (
+          <p className="mb-4 text-sm text-amber-700" role="status">{searchError} Showing exact text matches instead.</p>
+        )}
+
+        {/* Categories */}
+        {!pageLoading && !pageError && (
+          <div className="mb-8 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory("all")}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                selectedCategory === "all"
+                  ? "bg-brand-navy text-white"
+                  : "border border-border-subtle bg-surface-white text-text-slate hover:border-brand-navy"
+              }`}
+            >
+              All
+            </button>
+
+            {categories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setSelectedCategory(category)}
+                className={`rounded-full px-4 py-2 text-sm font-medium capitalize transition ${
+                  selectedCategory === category
+                    ? "bg-brand-navy text-white"
+                    : "border border-border-subtle bg-white text-text-slate hover:border-brand-navy"
+                }`}
+              >
+                {category.replaceAll("-", " ")}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Loading State */}
+        {(pageLoading || isSearching) && (
+          <p className="py-16 text-center text-sm text-text-slate">
+            {isSearching ? "Understanding your search..." : "Loading products and branch inventory..."}
+          </p>
+        )}
+
+        {/* Error State */}
+        {!pageLoading && pageError && (
+          <div className="rounded-xl border border-status-error/20 bg-surface-white px-6 py-12 text-center">
+            <p className="font-medium text-status-error">{pageError}</p>
+
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-lg bg-brand-navy px-5 py-2 text-sm text-white"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!pageLoading && !pageError && filteredProducts.length === 0 && (
+          <div className="rounded-xl border border-border-subtle bg-surface-white px-6 py-16 text-center">
+            <h3 className="font-semibold text-brand-navy">
+              No products found
+            </h3>
+
+            <p className="mt-2 text-sm text-text-slate">
+              Try another search term or category.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setSelectedCategory("all");
+              }}
+              className="mt-4 text-sm font-semibold text-brand-navy underline"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
+
+        {/* Product Cards */}
+{!pageLoading && !pageError && filteredProducts.length > 0 && (
+  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    {filteredProducts.map((product) => (
+      <ProductCard key={product.id} product={product} />
+    ))}
+  </div>
+)}
+      
+      </section>
+    </div>
+  );
+}

@@ -1,0 +1,29 @@
+{
+  "branches": [
+    {
+      "id": "damascus",
+      "name": "Damascus",
+      "code": "DAM",
+      "address": "Damascus, Syria",
+      "latitude": 33.5138,
+      "longitude": 36.2765,
+      "isDefault": true
+    },
+    {
+      "id": "homs",
+      "name": "Homs",
+      "code": "HOM",
+      "address": "Homs, Syria",
+      "latitude": 34.7324,
+      "longitude": 36.7137
+    },
+    {
+      "id": "latakia",
+      "name": "Latakia",
+      "code": "LAT",
+      "address": "Latakia, Syria",
+      "latitude": 35.5317,
+      "longitude": 35.7901
+    }
+  ]
+}
