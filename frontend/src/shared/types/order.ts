@@ -28,9 +28,8 @@ export interface OrderItem {
   productId: string;
   title: string;
   thumbnail: string;
-  /** Optional snapshot kept for mock reports; the contract item shape is
-   *  { productId, title, thumbnail, unitPrice, quantity }. */
-  category?: string;
+  /** Snapshot of the product category at order time (contract §4 v2.3). */
+  category: string;
   unitPrice: number;
   quantity: number;
 }

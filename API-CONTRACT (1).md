@@ -159,7 +159,7 @@ A closed branch cannot receive orders (`POST /orders` → `409 BRANCH_CLOSED`). 
 - `branchId`: if given, `price` and `stock` in each item reflect that branch
 - `sort`: `default` | `price-low` | `price-high` | `rating`
 - `limit`: default 40, max 100 (clients page through results with `page`; they never assume everything fits in one response)
-- `stockStatus`: `in` | `low` | `out` — requires `branchId`; filters by that branch's stock (`low` = 0 < stock <= 5, `out` = 0, `in` = > 0). Used by the inventory dashboards.
+- `stockStatus`: `in` | `low` | `out` — requires `branchId` (otherwise `400 VALIDATION_ERROR`); filters by that branch's stock (`low` = 0 < stock <= 5, `out` = 0, `in` = > 0). Used by the inventory dashboards.
 
 ### Product object
 ```ts
@@ -253,7 +253,7 @@ Validation: `items` non-empty, no duplicate productIds, `quantity` integer 1–9
 2. Load each product and the branch's inventory entry; recompute unit price, `subtotal`, `deliveryFee` ($5 flat when items exist), `total`.
 3. For each item, decrement stock atomically (see §3).
 4. **If any item fails midway, restore the stock of the items already decremented** (compensation), then return `409 INSUFFICIENT_STOCK` with `details`.
-5. Create the order with `status: "pending"`, `userId` from the JWT, and a snapshot of the branch `{id, name}` and of each item (title, thumbnail, unitPrice).
+5. Create the order with `status: "pending"`, `userId` from the JWT, and a snapshot of the branch `{id, name}` and of each item (title, thumbnail, category, unitPrice).
 6. Store `branchId` as a direct indexed field on the order too (used by reports).
 
 ### Order object
@@ -261,7 +261,7 @@ Validation: `items` non-empty, no duplicate productIds, `quantity` integer 1–9
 {
   id: string;
   userId: string;
-  items: { productId: string; title: string; thumbnail: string; unitPrice: number; quantity: number }[];
+  items: { productId: string; title: string; thumbnail: string; category: string; unitPrice: number; quantity: number }[];
   branch: { id: string; name: string };
   shippingAddress: { fullName: string; phone: string; city: string; street: string; building?: string; notes?: string };
   paymentMethod: "cash" | "card";
@@ -335,18 +335,19 @@ The backend computes all dashboard numbers (Mongo aggregation). The frontend onl
 Both return the same shape:
 ```ts
 {
-  totalOrders: number;
+  totalOrders: number;                              // ALL orders, including cancelled (revenue and averageOrderValue exclude cancelled)
   revenue: number;                                  // sum of totals of orders with status != "cancelled"
   averageOrderValue: number;                        // revenue / number of non-cancelled orders
   outOfStockCount: number;                          // products with stock 0 (in the branch; in summary: branch/product pairs)
   ordersByStatus: Record<"pending"|"processing"|"shipped"|"delivered"|"cancelled", number>;
-  lowStockProducts: { productId: string; title: string; branchId: string; stock: number }[]; // 0 < stock <= 5
+  lowStockProducts: { productId: string; title: string; branchId: string; stock: number }[]; // stock <= 5 (includes 0), lowest stock first, max 20 items
   topProducts: { productId: string; title: string; quantitySold: number }[];                  // top 5, non-cancelled
   salesByDay: { date: string; orders: number; revenue: number }[]                             // last 30 days
   salesByCategory: { category: string; quantitySold: number; revenue: number }[];             // non-cancelled, sorted by revenue desc
   recentOrders: Order[]                                                                       // last 5 orders (same Order object as §4)
 }
 ```
+`/reports/branch` also includes `branch: { id: string; name: string }`.
 `/reports/summary` without `branchId` also includes `byBranch: { branchId: string; totalOrders: number; revenue: number }[]`.
 
 ---
@@ -412,6 +413,11 @@ Both return the same shape:
 14. No `PATCH /reviews/:id`: the frontend always calls `POST /products/:id/reviews` (create or update, upsert).
 15. Dashboards display the values returned by `/reports/*` and never recompute stats from orders/products on the client.
 16. Lists always use `{ items, total, page, limit }` (never a bare array).
+17. Order items snapshot `category` too, so `salesByCategory` is a plain aggregation on orders (no join with products).
+18. `lowStockProducts` includes items with stock 0, so out-of-stock products appear in the alerts table; `outOfStockCount` stays as a separate number.
+19. Counting rule everywhere (top level and `byBranch`): `totalOrders` counts all orders; `revenue` and `averageOrderValue` exclude `cancelled`.
+20. `GET /branches` returns all branches inside the list envelope (no pagination params needed).
+21. Card payments are a demo only (no payment provider in v1).
 
 ## 10. Still open (decide before the related module starts)
 

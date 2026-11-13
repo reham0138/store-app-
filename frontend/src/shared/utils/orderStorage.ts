@@ -65,7 +65,10 @@ function migrateLegacyOrder(value: Record<string, unknown>): Order | null {
         productId: String(product.id ?? ""),
         title: typeof product.title === "string" ? product.title : "Product",
         thumbnail: typeof product.thumbnail === "string" ? product.thumbnail : "",
-        category: typeof product.category === "string" ? product.category : "",
+        category:
+          typeof product.category === "string" && product.category
+            ? product.category
+            : "Uncategorized",
         unitPrice: isFiniteNumber(product.price)
           ? product.price
           : isFiniteNumber(raw.unitPrice)
@@ -74,7 +77,8 @@ function migrateLegacyOrder(value: Record<string, unknown>): Order | null {
         quantity: isFiniteNumber(raw.quantity) ? raw.quantity : 0,
       });
     } else if (isOrderItem(raw)) {
-      items.push(raw as unknown as Order["items"][number]);
+      const item = raw as unknown as Order["items"][number];
+      items.push({ ...item, category: item.category || "Uncategorized" });
     }
   }
 
@@ -110,7 +114,16 @@ export function getOrders(): Order[] {
     }
     const orders = parsed
       .map((value) => {
-        if (isOrder(value)) return value;
+        if (isOrder(value)) {
+          // Backfill category on items saved before it became required.
+          return {
+            ...value,
+            items: value.items.map((item) => ({
+              ...item,
+              category: item.category || "Uncategorized",
+            })),
+          };
+        }
         if (isRecord(value)) return migrateLegacyOrder(value);
         return null;
       })
