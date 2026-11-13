@@ -41,7 +41,7 @@ function scopeOrdersForUser(orders: Order[], user: User | null): Order[] {
   if (!user) return [];
   if (user.role === "admin") return orders;
   if (user.role === "branchManager") {
-    return orders.filter((order) => order.branch?.id === user.branchId);
+    return orders.filter((order) => (order.branchId ?? order.branch?.id) === user.branchId);
   }
   return orders.filter((order) => order.userId === user.id);
 }
@@ -49,8 +49,12 @@ function scopeOrdersForUser(orders: Order[], user: User | null): Order[] {
 function canSeeOrder(order: Order, user: User | null): boolean {
   if (!user) return false;
   if (user.role === "admin") return true;
-  if (user.role === "branchManager") return order.branch?.id === user.branchId;
+  if (user.role === "branchManager") return orderBranchId(order) === user.branchId;
   return order.userId === user.id;
+}
+
+function orderBranchId(order: Order): string | undefined {
+  return order.branchId ?? order.branch?.id;
 }
 
 function assertValidTransition(from: OrderStatus, to: OrderStatus): void {
@@ -217,7 +221,7 @@ async function mockGetOrder(id: string): Promise<Order> {
 
 /** Restore quantities to branch stock when an order is cancelled (mock). */
 async function mockRestoreStock(order: Order): Promise<void> {
-  const branchId = order.branch?.id;
+  const branchId = orderBranchId(order);
   if (!branchId) return;
   try {
     const products = await getProducts({ limit: 100 });
@@ -251,7 +255,7 @@ async function mockUpdateOrderStatus(id: string, status: OrderStatus): Promise<O
   if (!order || !canSeeOrder(order, user)) {
     throw new ApiError("Order not found.", "NOT_FOUND", 404);
   }
-  if (user?.role === "branchManager" && order.branch?.id !== user.branchId) {
+  if (user?.role === "branchManager" && orderBranchId(order) !== user.branchId) {
     throw new ApiError("You can only update orders from your assigned branch.", "FORBIDDEN", 403);
   }
   assertValidTransition(order.status, status);

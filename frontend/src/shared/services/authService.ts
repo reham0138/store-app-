@@ -105,6 +105,9 @@ async function mockLogin({ email, password }: LoginInput): Promise<User> {
 
 async function mockRegister({ name, email, password }: RegisterInput): Promise<User> {
   await wait(FAKE_DELAY_MS)
+  if (password.length < 8 || password.length > 72) {
+    throw new Error('Password must be between 8 and 72 characters.')
+  }
   const users = readUsers()
   const normalized = normalizeEmail(email)
   if (users.some((u) => u.email === normalized)) {
@@ -189,7 +192,7 @@ async function apiRegister(input: RegisterInput): Promise<User> {
     if (normalized.code === 'EMAIL_TAKEN' || normalized.status === 409) {
       throw new AuthError('EMAIL_TAKEN', 'An account with this email already exists.')
     }
-    throw new AuthError('INVALID_CREDENTIALS', normalized.message)
+    throw new Error(normalized.message)
   }
 }
 

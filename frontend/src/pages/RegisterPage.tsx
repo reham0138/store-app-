@@ -58,7 +58,11 @@ export default function RegisterPage() {
       if (error instanceof AuthError && error.code === 'EMAIL_TAKEN') {
         setErrors({ email: error.message })
       } else {
-        setFormError('Something went wrong. Please try again.')
+        setFormError(
+          error instanceof Error && error.message
+            ? error.message
+            : 'Something went wrong. Please try again.',
+        )
       }
       setSubmitting(false)
     }
