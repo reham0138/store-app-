@@ -194,6 +194,14 @@ function buildParams(query?: ProductQuery) {
 
 /** Server-driven product list: always returns the {items,total,page,limit} envelope. */
 export async function listProducts(query?: ProductQuery): Promise<ProductListResponse> {
+  // Contract v2.3: stockStatus is branch-scoped — branchId is required.
+  if (query?.stockStatus && !query?.branchId) {
+    throw new ApiError(
+      "stockStatus requires branchId.",
+      "VALIDATION_ERROR",
+      400,
+    );
+  }
   const page = Math.max(1, query?.page ?? 1);
   const limit = Math.min(100, Math.max(1, query?.limit ?? 40));
   if (USE_MOCK) {
