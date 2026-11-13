@@ -55,6 +55,22 @@ const SEED_USERS: StoredUser[] = [
     branchId: 'damascus',
   },
   {
+    id: 'mock-manager-homs',
+    name: 'Homs Manager',
+    email: 'manager-homs@crown-anchor.dev',
+    password: 'manager12345',
+    role: 'branchManager',
+    branchId: 'homs',
+  },
+  {
+    id: 'mock-manager-latakia',
+    name: 'Latakia Manager',
+    email: 'manager-latakia@crown-anchor.dev',
+    password: 'manager12345',
+    role: 'branchManager',
+    branchId: 'latakia',
+  },
+  {
     id: 'mock-customer',
     name: 'Customer Demo',
     email: 'customer@crown-anchor.dev',

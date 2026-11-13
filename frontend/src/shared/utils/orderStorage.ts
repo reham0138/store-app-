@@ -2,6 +2,89 @@ import type { Order, OrderStatus } from "../types/order";
 
 const STORAGE_KEY = "crown-anchor-orders";
 
+// ---------- Mock seed orders (one batch per branch, mock mode only) ----------
+
+function daysAgoIso(days: number, hourOffset = 0): string {
+  const d = new Date(Date.now() - days * 86_400_000 + hourOffset * 3_600_000);
+  return d.toISOString();
+}
+
+interface SeedItem {
+  productId: string;
+  title: string;
+  thumbnail: string;
+  category: string;
+  unitPrice: number;
+  quantity: number;
+}
+
+function seedOrder(
+  id: string,
+  branchId: string,
+  branchName: string,
+  status: Order["status"],
+  createdAt: string,
+  items: SeedItem[],
+): Order {
+  const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+  const deliveryFee = 5;
+  return {
+    id,
+    userId: "mock-customer",
+    branchId,
+    items,
+    branch: { id: branchId, name: branchName },
+    shippingAddress: {
+      fullName: "Customer Demo",
+      phone: "+963 000 000 000",
+      city: branchName,
+      street: "Main Street 1",
+    },
+    paymentMethod: "cash",
+    subtotal: Math.round(subtotal * 100) / 100,
+    deliveryFee,
+    total: Math.round((subtotal + deliveryFee) * 100) / 100,
+    status,
+    createdAt,
+  };
+}
+
+const SEED_ORDERS: Order[] = [
+  // Damascus — busiest branch
+  seedOrder("seed-dam-1", "damascus", "Damascus", "delivered", daysAgoIso(2), [
+    { productId: "1", title: "Phone X Pro", thumbnail: "https://picsum.photos/seed/prod1-thumb/300/300", category: "smartphones", unitPrice: 719.97, quantity: 1 },
+    { productId: "18", title: "Vanilla Amber 100ml", thumbnail: "https://picsum.photos/seed/prod18-thumb/300/300", category: "fragrances", unitPrice: 59, quantity: 2 },
+  ]),
+  seedOrder("seed-dam-2", "damascus", "Damascus", "processing", daysAgoIso(5), [
+    { productId: "3", title: "Budget Phone Lite", thumbnail: "https://picsum.photos/seed/prod3-thumb/300/300", category: "smartphones", unitPrice: 184.37, quantity: 2 },
+  ]),
+  seedOrder("seed-dam-3", "damascus", "Damascus", "shipped", daysAgoIso(9), [
+    { productId: "30", title: "Adjustable Dumbbells", thumbnail: "https://picsum.photos/seed/prod30-thumb/300/300", category: "sports-accessories", unitPrice: 79, quantity: 1 },
+    { productId: "36", title: "Smart Watch Fit", thumbnail: "https://picsum.photos/seed/prod36-thumb/300/300", category: "mens-watches", unitPrice: 109, quantity: 1 },
+  ]),
+  seedOrder("seed-dam-4", "damascus", "Damascus", "pending", daysAgoIso(12), [
+    { productId: "6", title: "Camera Phone Pro", thumbnail: "https://picsum.photos/seed/prod6-thumb/300/300", category: "smartphones", unitPrice: 849, quantity: 1 },
+  ]),
+  // Homs — mid volume, includes a cancelled order
+  seedOrder("seed-hom-1", "homs", "Homs", "delivered", daysAgoIso(3), [
+    { productId: "3", title: "Budget Phone Lite", thumbnail: "https://picsum.photos/seed/prod3-thumb/300/300", category: "smartphones", unitPrice: 175.42, quantity: 1 },
+    { productId: "18", title: "Vanilla Amber 100ml", thumbnail: "https://picsum.photos/seed/prod18-thumb/300/300", category: "fragrances", unitPrice: 59, quantity: 1 },
+  ]),
+  seedOrder("seed-hom-2", "homs", "Homs", "delivered", daysAgoIso(14), [
+    { productId: "30", title: "Adjustable Dumbbells", thumbnail: "https://picsum.photos/seed/prod30-thumb/300/300", category: "sports-accessories", unitPrice: 79, quantity: 2 },
+  ]),
+  seedOrder("seed-hom-3", "homs", "Homs", "cancelled", daysAgoIso(20), [
+    { productId: "1", title: "Phone X Pro", thumbnail: "https://picsum.photos/seed/prod1-thumb/300/300", category: "smartphones", unitPrice: 685.02, quantity: 1 },
+  ]),
+  // Latakia — smallest branch
+  seedOrder("seed-lat-1", "latakia", "Latakia", "delivered", daysAgoIso(6), [
+    { productId: "36", title: "Smart Watch Fit", thumbnail: "https://picsum.photos/seed/prod36-thumb/300/300", category: "mens-watches", unitPrice: 109, quantity: 1 },
+  ]),
+  seedOrder("seed-lat-2", "latakia", "Latakia", "pending", daysAgoIso(18), [
+    { productId: "18", title: "Vanilla Amber 100ml", thumbnail: "https://picsum.photos/seed/prod18-thumb/300/300", category: "fragrances", unitPrice: 59, quantity: 3 },
+  ]),
+];
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -106,7 +189,13 @@ function migrateLegacyOrder(value: Record<string, unknown>): Order | null {
 export function getOrders(): Order[] {
   try {
     const savedOrders = localStorage.getItem(STORAGE_KEY);
-    if (!savedOrders) return [];
+    if (!savedOrders) {
+      // First run in mock mode: seed one batch of orders per branch so each
+      // manager dashboard shows different numbers. Existing data is never
+      // overwritten — once the key exists the seeds are ignored.
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_ORDERS));
+      return SEED_ORDERS;
+    }
     const parsed: unknown = JSON.parse(savedOrders);
     if (!Array.isArray(parsed)) {
       console.warn("Saved orders data is invalid; ignoring it.");
