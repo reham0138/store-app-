@@ -494,18 +494,22 @@ export default function CheckoutPage() {
             ))}
 
             <div className="border-t border-border-subtle pt-4">
+              <p className="mb-3 text-xs text-text-slate">
+                Estimated totals — the final amount is set by the server when
+                you place the order.
+              </p>
               <div className="flex justify-between text-sm">
-                <span className="text-text-slate">Subtotal</span>
+                <span className="text-text-slate">Estimated subtotal</span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
 
               <div className="mt-3 flex justify-between text-sm">
-                <span className="text-text-slate">Delivery</span>
+                <span className="text-text-slate">Estimated delivery</span>
                 <span>{formatPrice(deliveryFee)}</span>
               </div>
 
               <div className="mt-4 flex justify-between border-t border-border-subtle pt-4 font-semibold text-brand-navy">
-                <span>Total</span>
+                <span>Estimated total</span>
                 <span>{formatPrice(total)}</span>
               </div>
             </div>
