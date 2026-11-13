@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import type { StoreProduct } from "../types/cart";
 import { useCart } from "../hooks/useCart";
 import { useBranch } from "../contexts/useBranch";
@@ -9,6 +10,8 @@ import {
   getProductRegularPrice,
   getProductStock,
 } from "../utils/pricing";
+import ProductRating from "./ProductRating";
+import { getProductReviews } from "../utils/reviewStorage";
 interface ProductCardProps {
   product: StoreProduct;
 }
@@ -20,6 +23,7 @@ function ProductCard({ product }: ProductCardProps) {
   const quantityInCart =
     items.find((item) => item.product.id === product.id)?.quantity ?? 0;
   const hasReachedStockLimit = quantityInCart >= stock;
+  const reviewCount = getProductReviews(product.id).length;
   const [isAdded, setIsAdded] = useState(false);
   const addButtonLabel =
     stock <= 0
@@ -43,42 +47,48 @@ function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div className="border border-border-subtle rounded-lg p-4 text-center bg-surface-white shadow-sm hover:shadow-md transition-shadow">
-      <img
-        src={product.thumbnail}
-        alt={product.title}
-        loading="lazy"
-        width={320}
-        height={144}
-        onError={(event) => {
-          event.currentTarget.onerror = null;
-          event.currentTarget.src = "/brand/logo/the-crown-anchor-logo-black.png";
-        }}
-        className="w-full h-36 object-cover rounded-md mb-3"
-      />
+      <Link to={`/products/${product.id}`} className="block">
+        <img
+          src={product.thumbnail}
+          alt={product.title}
+          loading="lazy"
+          width={320}
+          height={144}
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = "/brand/logo/the-crown-anchor-logo-black.png";
+          }}
+          className="w-full h-36 object-cover rounded-md mb-3"
+        />
 
-      <h3 className="font-semibold text-lg text-brand-navy mb-1">
-        {product.title}
-      </h3>
+        <h3 className="font-semibold text-lg text-brand-navy mb-1">
+          {product.title}
+        </h3>
 
-      <p className="text-sm text-text-slate mb-1">{product.brand}</p>
+        <p className="text-sm text-text-slate mb-1">{product.brand}</p>
 
-      <p className="text-sm text-text-slate mb-2">
-        category: {product.category}
-      </p>
-
-      <p className="font-bold text-brand-navy mb-1">
-        {formatPrice(getProductPrice(product, branchId))}
-      </p>
-
-      {product.discountPercentage > 0 && (
-        <p className="text-xs text-text-slate line-through mb-3">
-          {formatPrice(getProductRegularPrice(product, branchId))}
+        <p className="text-sm text-text-slate mb-2">
+          category: {product.category}
         </p>
-      )}
 
-      <p className="mb-3 text-xs text-text-slate">
-        {stock} available at {selectedBranch?.name ?? "the selected branch"}
-      </p>
+        <div className="mb-2">
+          <ProductRating rating={product.rating} reviewCount={reviewCount} />
+        </div>
+
+        <p className="font-bold text-brand-navy mb-1">
+          {formatPrice(getProductPrice(product, branchId))}
+        </p>
+
+        {product.discountPercentage > 0 && (
+          <p className="text-xs text-text-slate line-through mb-3">
+            {formatPrice(getProductRegularPrice(product, branchId))}
+          </p>
+        )}
+
+        <p className="mb-3 text-xs text-text-slate">
+          {stock} available at {selectedBranch?.name ?? "the selected branch"}
+        </p>
+      </Link>
 
       <button
         onClick={handleAddToCart}

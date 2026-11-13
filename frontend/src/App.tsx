@@ -28,6 +28,7 @@ import CheckoutPage from "./pages/CheckoutPage";
 import OrdersPage from "./pages/OrdersPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
 import ProductsPage from "./pages/ProductPage";
+import ProductDetailsPage from "./pages/ProductDetailsPage";
 import DashboardOrdersPage from "./pages/DashboardOrdersPage";
 import DashboardPreviewPage from "./pages/DashboardPreviewPage";
 import DashboardLayout from "./shared/layouts/DashboardLayout";
@@ -126,6 +127,7 @@ function App() {
               <Route path="/" element={<MainLayout />}>
                 <Route index element={<HomePage />} />
                 <Route path="products" element={<ProductsPage />} />
+                <Route path="products/:productId" element={<ProductDetailsPage />} />
                 <Route path="branches" element={<BranchesPage />} />
                 <Route path="branch-test" element={<BranchesPage />} />
                 <Route path="cart" element={<CartPage />} />
