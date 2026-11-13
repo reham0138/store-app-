@@ -13,6 +13,8 @@ import { formatPrice, getProductPrice } from "../shared/utils/pricing";
 import { useBranch } from "../shared/contexts/useBranch";
 import { normalizeError } from "../shared/api/errors";
 
+const REVIEWS_PAGE_SIZE = 10;
+
 export default function ProductDetailsPage() {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
@@ -20,11 +22,14 @@ export default function ProductDetailsPage() {
   const { selectedBranch } = useBranch();
   const [product, setProduct] = useState<StoreProduct | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
+  const [reviewsPage, setReviewsPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [rating, setRating] = useState("5");
   const [comment, setComment] = useState("");
-  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editingReview, setEditingReview] = useState<ProductReview | null>(null);
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -33,7 +38,7 @@ export default function ProductDetailsPage() {
     try {
       const [found, reviewData] = await Promise.all([
         getProduct(productId),
-        reviewsService.list(productId),
+        reviewsService.list(productId, 1, REVIEWS_PAGE_SIZE),
       ]);
       if (!found) {
         setError("Product not found.");
@@ -43,6 +48,8 @@ export default function ProductDetailsPage() {
         setError("");
       }
       setReviews(reviewData.items);
+      setReviewsTotal(reviewData.total);
+      setReviewsPage(1);
     } catch (loadError) {
       setError(normalizeError(loadError, "Unable to load product.").message);
     } finally {
@@ -54,10 +61,24 @@ export default function ProductDetailsPage() {
     queueMicrotask(() => void loadData());
   }, [loadData]);
 
-  const averageRating = useMemo(() => {
-    if (!product || reviews.length === 0) return product?.rating ?? 0;
-    return reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
-  }, [product, reviews]);
+  async function loadMoreReviews() {
+    if (!productId || loadingMore) return;
+    const nextPage = reviewsPage + 1;
+    setLoadingMore(true);
+    try {
+      const data = await reviewsService.list(productId, nextPage, REVIEWS_PAGE_SIZE);
+      setReviews((prev) => {
+        const seen = new Set(prev.map((r) => r.id));
+        return [...prev, ...data.items.filter((r) => !seen.has(r.id))];
+      });
+      setReviewsTotal(data.total);
+      setReviewsPage(nextPage);
+    } catch (loadError) {
+      setFormError(normalizeError(loadError, "Unable to load more reviews.").message);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const myReview = useMemo(
     () => reviews.find((review) => review.userId === user?.id) ?? null,
@@ -67,7 +88,7 @@ export default function ProductDetailsPage() {
   function resetForm() {
     setRating("5");
     setComment("");
-    setEditingReviewId(null);
+    setEditingReview(null);
     setFormError("");
   }
 
@@ -85,21 +106,19 @@ export default function ProductDetailsPage() {
       setFormError("Please write a comment for your review.");
       return;
     }
+    if (trimmedComment.length > 500) {
+      setFormError("Comment must be 500 characters or fewer.");
+      return;
+    }
 
     setSubmitting(true);
     setFormError("");
     try {
-      if (editingReviewId) {
-        await reviewsService.update(editingReviewId, {
-          rating: parsedRating,
-          comment: trimmedComment,
-        });
-      } else {
-        await reviewsService.upsert(product.id, {
-          rating: parsedRating,
-          comment: trimmedComment,
-        });
-      }
+      // POST upserts the user's single review for this product.
+      await reviewsService.upsert(product.id, {
+        rating: parsedRating,
+        comment: trimmedComment,
+      });
       resetForm();
       await loadData();
     } catch (submitError) {
@@ -111,7 +130,7 @@ export default function ProductDetailsPage() {
 
   function startEditing(review: ProductReview) {
     if (!user || review.userId !== user.id) return;
-    setEditingReviewId(review.id);
+    setEditingReview(review);
     setRating(String(review.rating));
     setComment(review.comment ?? "");
     setFormError("");
@@ -123,7 +142,7 @@ export default function ProductDetailsPage() {
     setFormError("");
     try {
       await reviewsService.remove(review.id);
-      if (editingReviewId === review.id) resetForm();
+      if (editingReview?.id === review.id) resetForm();
       await loadData();
     } catch (deleteError) {
       setFormError(normalizeError(deleteError, "Unable to delete review.").message);
@@ -142,7 +161,10 @@ export default function ProductDetailsPage() {
         <p className="text-status-error">{error || "Product not found."}</p>
         <button
           type="button"
-          onClick={() => void loadData()}
+          onClick={() => {
+            setLoading(true);
+            void loadData();
+          }}
           className="mt-4 inline-flex text-sm font-semibold text-brand-navy underline"
         >
           Try again
@@ -153,6 +175,8 @@ export default function ProductDetailsPage() {
       </section>
     );
   }
+
+  const hasMoreReviews = reviews.length < reviewsTotal;
 
   return (
     <div className="min-h-screen bg-page">
@@ -167,7 +191,7 @@ export default function ProductDetailsPage() {
             <p className="text-sm text-text-slate">{product.brand} · {product.category}</p>
             <h1 className="mt-2 text-3xl font-bold text-brand-navy">{product.title}</h1>
             <div className="mt-4">
-              <ProductRating rating={averageRating} reviewCount={product.reviewCount ?? reviews.length} />
+              <ProductRating rating={product.rating} reviewCount={product.reviewCount ?? 0} />
             </div>
             <p className="mt-5 leading-7 text-text-slate">{product.description}</p>
             <p className="mt-6 text-2xl font-bold text-brand-navy">
@@ -179,7 +203,7 @@ export default function ProductDetailsPage() {
         <section className="mt-10 grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
           <div>
             <h2 className="text-2xl font-bold text-brand-navy">Customer reviews</h2>
-            <p className="mt-1 text-sm text-text-slate">{reviews.length} review{reviews.length === 1 ? "" : "s"}</p>
+            <p className="mt-1 text-sm text-text-slate">{reviewsTotal} review{reviewsTotal === 1 ? "" : "s"}</p>
             <div className="mt-5 space-y-4">
               {reviews.length === 0 && (
                 <p className="rounded-xl border border-border-subtle bg-surface-white p-6 text-sm text-text-slate">No reviews yet. Be the first to share your experience.</p>
@@ -203,12 +227,22 @@ export default function ProductDetailsPage() {
                   )}
                 </article>
               ))}
+              {hasMoreReviews && (
+                <button
+                  type="button"
+                  onClick={() => void loadMoreReviews()}
+                  disabled={loadingMore}
+                  className="w-full rounded-xl border border-border-subtle bg-surface-white px-4 py-3 text-sm font-semibold text-brand-navy transition hover:bg-surface-cream disabled:opacity-60"
+                >
+                  {loadingMore ? "Loading..." : "Load more reviews"}
+                </button>
+              )}
             </div>
           </div>
 
           <div className="h-fit rounded-xl border border-border-subtle bg-surface-white p-6">
             <h2 className="text-xl font-bold text-brand-navy">
-              {editingReviewId ? "Edit your review" : myReview ? "Update your review" : "Write a review"}
+              {editingReview || myReview ? "Update your review" : "Write a review"}
             </h2>
             {!user ? (
               <p className="mt-3 text-sm text-text-slate">
@@ -224,14 +258,14 @@ export default function ProductDetailsPage() {
                 </label>
                 <label className="block text-sm font-medium text-brand-navy">
                   Comment
-                  <textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={5} maxLength={1000} placeholder="Tell other shoppers about this product..." className="mt-2 w-full rounded-lg border border-border-subtle p-3 text-sm outline-none focus:border-brand-gold" />
+                  <textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={5} maxLength={500} placeholder="Tell other shoppers about this product..." className="mt-2 w-full rounded-lg border border-border-subtle p-3 text-sm outline-none focus:border-brand-gold" />
                 </label>
                 {formError && <p className="text-sm text-status-error" role="alert">{formError}</p>}
                 <div className="flex gap-3">
                   <button type="submit" disabled={submitting} className="rounded-lg bg-brand-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
-                    {submitting ? "Saving…" : editingReviewId ? "Save changes" : "Publish review"}
+                    {submitting ? "Saving…" : editingReview || myReview ? "Update review" : "Publish review"}
                   </button>
-                  {editingReviewId && <button type="button" onClick={resetForm} className="rounded-lg border border-border-subtle px-4 py-2 text-sm font-semibold text-text-slate">Cancel</button>}
+                  {editingReview && <button type="button" onClick={resetForm} className="rounded-lg border border-border-subtle px-4 py-2 text-sm font-semibold text-text-slate">Cancel</button>}
                 </div>
               </form>
             )}
