@@ -13,7 +13,13 @@ import {
   getInventoryStockLevels,
   type DashboardMetric,
 } from "../utils/dashboardMetrics";
-import { getStockStatus } from "./inventory.service";
+const LOW_STOCK_THRESHOLD = 5;
+
+function getStockStatus(stock: number): "In stock" | "Low stock" | "Out of stock" {
+  if (stock <= 0) return "Out of stock";
+  if (stock <= LOW_STOCK_THRESHOLD) return "Low stock";
+  return "In stock";
+}
 
 export interface BranchSalesRow {
   branchId: string;

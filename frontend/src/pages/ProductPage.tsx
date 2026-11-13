@@ -59,9 +59,11 @@ export default function ProductsPage() {
   }, [searchInput]);
 
   // Keep the input in sync when the URL changes externally (e.g. back button).
-  useEffect(() => {
+  const [prevSearch, setPrevSearch] = useState(search);
+  if (prevSearch !== search) {
+    setPrevSearch(search);
     setSearchInput(search);
-  }, [search]);
+  }
 
   function updateParams(updates: Record<string, string | null>) {
     setSearchParams((prev) => {
