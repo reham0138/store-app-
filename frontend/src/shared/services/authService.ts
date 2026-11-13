@@ -192,7 +192,7 @@ async function apiRegister(input: RegisterInput): Promise<User> {
     if (normalized.code === 'EMAIL_TAKEN' || normalized.status === 409) {
       throw new AuthError('EMAIL_TAKEN', 'An account with this email already exists.')
     }
-    throw new Error(normalized.message)
+    throw new Error(normalized.message, { cause: error })
   }
 }
 
