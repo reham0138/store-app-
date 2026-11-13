@@ -26,9 +26,11 @@ export default function NavBar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
-  useEffect(() => {
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  if (prevPathname !== location.pathname) {
+    setPrevPathname(location.pathname);
     setIsOpen(false);
-  }, [location.pathname]);
+  }
 
   useEffect(() => {
     if (!isOpen) return;

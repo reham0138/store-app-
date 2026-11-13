@@ -20,10 +20,10 @@ import {
 import type {
   PaymentMethod,
   ShippingAddress,
-  Order,
 } from "../shared/types/order";
 
-import { saveOrder } from "../shared/utils/orderStorage";
+import { ordersService } from "../shared/services/orders.service";
+import { normalizeError } from "../shared/api/errors";
 
 interface CheckoutFieldErrors {
   fullName?: string;
@@ -63,6 +63,7 @@ export default function CheckoutPage() {
   });
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
   const [saveError, setSaveError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -85,10 +86,18 @@ export default function CheckoutPage() {
     setFieldErrors((previous) => ({ ...previous, phone: undefined }));
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submitting) return;
 
     if (branchesLoading || branchError || !selectedBranch) return;
+
+    if (selectedBranch.operationalStatus === "closed") {
+      setSaveError(
+        `Branch "${selectedBranch.name}" is currently closed and cannot take orders.`,
+      );
+      return;
+    }
 
     const nextErrors: CheckoutFieldErrors = {
       fullName:
@@ -109,41 +118,40 @@ export default function CheckoutPage() {
       return;
     }
 
-    const order: Order = {
-      id: `ORD-${Date.now()}`,
-      items: items.map((item) => ({
-        ...item,
-        product: { ...item.product },
-      })),
-      branch: { id: selectedBranch.id, name: selectedBranch.name },
-      shippingAddress: {
-        ...address,
-        fullName: address.fullName.trim(),
-        phone: address.phone.trim(),
-        city: address.city.trim(),
-        street: address.street.trim(),
-        building: address.building?.trim(),
-        notes: address.notes?.trim(),
-      },
-      paymentMethod,
-      subtotal,
-      deliveryFee,
-      total,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    };
-
+    setSubmitting(true);
     setSaveError("");
-    if (!saveOrder(order)) {
-      setSaveError("We couldn’t save your order in this browser. Check browser storage settings and try again.");
-      return;
+    try {
+      const order = await ordersService.createOrder({
+        branchId: selectedBranch.id,
+        items: items.map((item) => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+        })),
+        shippingAddress: {
+          ...address,
+          fullName: address.fullName.trim(),
+          phone: address.phone.trim(),
+          city: address.city.trim(),
+          street: address.street.trim(),
+          building: address.building?.trim(),
+          notes: address.notes?.trim(),
+        },
+        paymentMethod,
+      });
+
+      clearCart();
+      navigate("/order-success", {
+        state: { orderId: order.id },
+      });
+    } catch (error) {
+      const normalized = normalizeError(error, "We couldn’t place your order. Please try again.");
+      setSaveError(normalized.message);
+      if (normalized.code === "INSUFFICIENT_STOCK") {
+        window.dispatchEvent(new Event("products-updated"));
+      }
+    } finally {
+      setSubmitting(false);
     }
-
-    clearCart();
-
-    navigate("/order-success", {
-      state: { orderId: order.id },
-    });
   };
 
   if (branchesLoading) {
@@ -488,9 +496,10 @@ export default function CheckoutPage() {
 
             <button
               type="submit"
-              className="mt-2 w-full rounded-lg bg-brand-navy px-4 py-3 font-medium text-white transition hover:bg-brand-navy/90"
+              disabled={submitting}
+              className="mt-2 w-full rounded-lg bg-brand-navy px-4 py-3 font-medium text-white transition hover:bg-brand-navy/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Place Order
+              {submitting ? "Placing order…" : "Place Order"}
             </button>
 
             <p className="text-center text-xs text-text-slate">

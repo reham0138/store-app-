@@ -1,15 +1,38 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Package } from "lucide-react";
 
-import { useOrders } from "../shared/hooks/useOrders";
+import { ordersService } from "../shared/services/orders.service";
+import type { Order } from "../shared/types/order";
+import { normalizeError } from "../shared/api/errors";
 
 import { formatPrice } from "../shared/utils/pricing";
 
 import OrderStatus from "../shared/components/OrderStatus";
 
 export default function OrdersPage() {
-  const orders = useOrders();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    ordersService
+      .getOrders()
+      .then((result) => {
+        if (isMounted) setOrders(result);
+      })
+      .catch((err) => {
+        if (isMounted) setError(normalizeError(err, "Couldn't load your orders.").message);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
@@ -28,7 +51,26 @@ export default function OrdersPage() {
         </p>
       </header>
 
-      {orders.length === 0 ? (
+      {loading && (
+        <p className="py-16 text-center text-sm text-text-slate" role="status">
+          Loading your orders…
+        </p>
+      )}
+
+      {!loading && error && (
+        <div className="rounded-xl border border-status-error/20 bg-surface-white px-6 py-12 text-center">
+          <p className="font-medium text-status-error">{error}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-lg bg-brand-navy px-5 py-2 text-sm text-white"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && orders.length === 0 && (
 
         <div className="rounded-xl border border-border-subtle bg-surface-white px-6 py-16 text-center">
 
@@ -42,7 +84,7 @@ export default function OrdersPage() {
           </h2>
 
           <p className="mt-2 text-sm text-text-slate">
-            Orders are saved on this device and browser. Orders placed in another browser or on another device will not appear here.
+            Orders you place will appear here and sync across your devices.
           </p>
 
           <Link
@@ -54,8 +96,9 @@ export default function OrdersPage() {
 
         </div>
 
-      ) : (
+      )}
 
+      {!loading && !error && orders.length > 0 && (
         <div className="grid gap-4">
 
           {orders.map((order) => (
@@ -142,7 +185,6 @@ export default function OrdersPage() {
           ))}
 
         </div>
-
       )}
 
     </section>

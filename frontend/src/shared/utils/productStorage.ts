@@ -18,7 +18,7 @@ function isStoreProduct(value: unknown): value is StoreProduct {
 
   const product = value as Record<string, unknown>;
   return (
-    typeof product.id === "number" &&
+    typeof product.id === "string" &&
     typeof product.title === "string" &&
     typeof product.description === "string" &&
     typeof product.category === "string" &&
@@ -60,7 +60,7 @@ export function saveProducts(products: StoreProduct[]): void {
 
 export function updateBranchProductStock(
   products: StoreProduct[],
-  productId: number,
+  productId: string,
   branchId: string,
   stock: number,
 ): StoreProduct[] {
@@ -97,5 +97,25 @@ export function updateBranchProductStock(
           ),
         }
       : item,
+  );
+}
+
+export function decrementBranchStock(
+  products: StoreProduct[],
+  productId: string,
+  branchId: string,
+  quantity: number,
+): StoreProduct[] {
+  return updateBranchProductStock(
+    products,
+    productId,
+    branchId,
+    Math.max(
+      0,
+      (products
+        .find((item) => item.id === productId)
+        ?.branchInventory?.find((inventory) => inventory.branchId === branchId)
+        ?.stock ?? 0) - quantity,
+    ),
   );
 }

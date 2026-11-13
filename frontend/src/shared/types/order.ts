@@ -1,5 +1,3 @@
-import type { CartItem } from "./cart";
-
 export type PaymentMethod = "cash" | "card";
 
 export type OrderStatus =
@@ -8,6 +6,14 @@ export type OrderStatus =
   | "shipped"
   | "delivered"
   | "cancelled";
+
+export const ORDER_STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
+  pending: ["processing", "cancelled"],
+  processing: ["shipped", "cancelled"],
+  shipped: ["delivered"],
+  delivered: [],
+  cancelled: [],
+};
 
 export interface ShippingAddress {
   fullName: string;
@@ -18,9 +24,19 @@ export interface ShippingAddress {
   notes?: string;
 }
 
+export interface OrderItem {
+  productId: string;
+  title: string;
+  thumbnail: string;
+  category: string;
+  unitPrice: number;
+  quantity: number;
+}
+
 export interface Order {
   id: string;
-  items: CartItem[];
+  userId?: string;
+  items: OrderItem[];
   branch?: {
     id: string;
     name: string;
@@ -35,4 +51,5 @@ export interface Order {
 
   status: OrderStatus;
   createdAt: string;
+  updatedAt?: string;
 }

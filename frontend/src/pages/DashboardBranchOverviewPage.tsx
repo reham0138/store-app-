@@ -21,54 +21,36 @@ import type { DashboardTableColumn } from "../shared/components/dashboard";
 import OrderStatus from "../shared/components/OrderStatus";
 import { FormError } from "../shared/components/FormError";
 import { useAuth } from "../shared/hooks/useAuth";
-import { useOrders } from "../shared/hooks/useOrders";
-import { getProducts } from "../shared/services/product.service";
+import { reportsService } from "../shared/services/reports.service";
+import type { DashboardReport } from "../shared/services/reports.service";
 import type { StoreProduct } from "../shared/types/cart";
 import type { Order } from "../shared/types/order";
-import { useBranch } from "../shared/contexts/useBranch";
-import {
-  getInventoryStockLevels,
-  getOrderStatusCounts,
-  getRevenueByDay,
-  getTopProducts,
-} from "../shared/utils/dashboardMetrics";
 import { formatPrice } from "../shared/utils/pricing";
+import { normalizeError } from "../shared/api/errors";
 
 interface BranchStockAlert {
   product: StoreProduct;
   stock: number;
 }
 
-function getBranchStock(product: StoreProduct, branchId: string): number {
-  return (
-    product.branchInventory?.find((inventory) => inventory.branchId === branchId)
-      ?.stock ?? 0
-  );
-}
-
 export default function DashboardBranchOverviewPage() {
   const { user } = useAuth();
-  const { branches } = useBranch();
-  const orders = useOrders();
   const branchId = user?.branchId;
-  const branchName =
-    branches.find((branch) => branch.id === branchId)?.name ??
-    "Branch not assigned";
-  const [products, setProducts] = useState<StoreProduct[]>([]);
+  const [report, setReport] = useState<DashboardReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadProducts() {
+    async function loadReport() {
       try {
-        const loadedProducts = await getProducts();
-        if (isMounted) setProducts(loadedProducts);
+        const data = await reportsService.branch();
+        if (isMounted) setReport(data);
       } catch (error) {
         if (isMounted) {
           setLoadError(
-            error instanceof Error ? error.message : "Failed to load branch data.",
+            normalizeError(error, "Failed to load branch data.").message,
           );
         }
       } finally {
@@ -76,75 +58,54 @@ export default function DashboardBranchOverviewPage() {
       }
     }
 
-    void loadProducts();
+    void loadReport();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const branchOrders = useMemo(
-    () =>
-      branchId
-        ? orders.filter((order) => order.branch?.id === branchId)
-        : [],
-    [orders, branchId],
-  );
+  const orders = report?.orders ?? [];
+  const branchName =
+    report?.branches.find((branch) => branch.id === branchId)?.name ??
+    "Branch not assigned";
+
+  const branchOrders = orders;
   const revenueByDay = useMemo(
     () =>
-      getRevenueByDay(branchOrders).map(({ label, value }) => ({
+      (report?.revenueByDay ?? []).map(({ label, value }) => ({
         label,
         value,
         displayValue: formatPrice(value),
       })),
-    [branchOrders],
+    [report],
   );
   const orderStatusCounts = useMemo(
     () =>
-      getOrderStatusCounts(branchOrders).map(({ status, count }) => ({
+      (report?.orderStatusCounts ?? []).map(({ status, count }) => ({
         label: status.charAt(0).toUpperCase() + status.slice(1),
         value: count,
       })),
-    [branchOrders],
+    [report],
   );
-  const topProducts = useMemo(
-    () => getTopProducts(branchOrders),
-    [branchOrders],
-  );
-  const inventoryStockLevels = useMemo(
-    () => (branchId ? getInventoryStockLevels(products, branchId) : []),
-    [products, branchId],
-  );
+  const topProducts = report?.topProducts ?? [];
+  const inventoryStockLevels = report?.stockLevels ?? [];
   const stockAlerts = useMemo<BranchStockAlert[]>(
     () =>
-      branchId
-        ? products
-            .map((product) => ({
-              product,
-              stock: getBranchStock(product, branchId),
-            }))
-            .filter(({ stock }) => stock <= 10)
-            .sort((a, b) => a.stock - b.stock)
-            .slice(0, 5)
-        : [],
-    [products, branchId],
+      (report?.stockAlerts ?? []).map((product) => ({
+        product,
+        stock: product.stock,
+      })),
+    [report],
   );
   const stats = useMemo(() => {
-    const activeOrders = branchOrders.filter(
-      (order) => order.status !== "cancelled",
-    );
-
+    const totals = report?.totals;
     return {
-      revenue: activeOrders.reduce((total, order) => total + order.total, 0),
-      totalOrders: branchOrders.length,
-      pendingOrders: branchOrders.filter(
-        (order) => order.status === "pending",
-      ).length,
-      stockAlerts: branchId
-        ? products.filter((product) => getBranchStock(product, branchId) <= 10)
-            .length
-        : 0,
+      revenue: totals?.orderRevenue ?? 0,
+      totalOrders: totals?.totalOrders ?? 0,
+      pendingOrders: totals?.pendingOrders ?? 0,
+      stockAlerts: (totals?.lowStock ?? 0) + (totals?.outOfStock ?? 0),
     };
-  }, [branchOrders, products, branchId]);
+  }, [report]);
 
   const recentOrderColumns: DashboardTableColumn<Order>[] = [
     {

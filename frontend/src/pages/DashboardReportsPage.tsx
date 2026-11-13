@@ -20,11 +20,8 @@ import type { DashboardTableColumn } from "../shared/components/dashboard";
 import OrderStatus from "../shared/components/OrderStatus";
 import { FormError } from "../shared/components/FormError";
 import { Select } from "../shared/components/Select";
-import { useBranch } from "../shared/contexts/useBranch";
-import { useOrders } from "../shared/hooks/useOrders";
 import type { Order } from "../shared/types/order";
-import type { StoreProduct } from "../shared/types/cart";
-import { getProducts } from "../shared/services/product.service";
+import type { Branch } from "../shared/types/type";
 import { formatPrice } from "../shared/utils/pricing";
 import {
   getInventoryStockLevels,
@@ -32,11 +29,10 @@ import {
   getRevenueByDay,
   getTopProducts,
 } from "../shared/utils/dashboardMetrics";
-import {
-  getBranchOperationalStatuses,
-  saveBranchOperationalStatus,
-} from "../shared/utils/branchStatusStorage";
-import type { BranchOperationalStatus } from "../shared/utils/branchStatusStorage";
+import { reportsService } from "../shared/services/reports.service";
+import type { DashboardReport } from "../shared/services/reports.service";
+import { getBranches, updateBranchStatus as updateBranchStatusApi } from "../shared/services/branches.service";
+import { normalizeError } from "../shared/api/errors";
 
 interface BranchSalesRow {
   branchId: string;
@@ -47,58 +43,43 @@ interface BranchSalesRow {
 }
 
 export default function DashboardReportsPage() {
-  const orders = useOrders();
-  const { branches, isLoading: isBranchesLoading, error: branchesError } = useBranch();
-  const [branchStatuses, setBranchStatuses] = useState<
-    Record<string, BranchOperationalStatus>
-  >({});
-  const [branchStatusError, setBranchStatusError] = useState("");
-  const [products, setProducts] = useState<StoreProduct[]>([]);
-  const [productsLoading, setProductsLoading] = useState(true);
-  const [productsError, setProductsError] = useState("");
+  const [report, setReport] = useState<DashboardReport | null>(null);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [statusError, setStatusError] = useState("");
+
+  const orders = useMemo(() => report?.orders ?? [], [report]);
+  const products = useMemo(() => report?.products ?? [], [report]);
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadProducts() {
+    async function loadAll() {
       try {
-        const loadedProducts = await getProducts();
-        if (isMounted) setProducts(loadedProducts);
+        const [reportData, branchData] = await Promise.all([
+          reportsService.admin(),
+          getBranches(),
+        ]);
+        if (isMounted) {
+          setReport(reportData);
+          setBranches(branchData);
+          setLoadError("");
+        }
       } catch (error) {
         if (isMounted) {
-          setProductsError(
-            error instanceof Error ? error.message : "Failed to load inventory.",
+          setLoadError(
+            normalizeError(error, "Failed to load report data.").message,
           );
         }
       } finally {
-        if (isMounted) setProductsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     }
 
-    void loadProducts();
+    void loadAll();
     return () => {
       isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    const refreshStatuses = () => {
-      try {
-        setBranchStatuses(getBranchOperationalStatuses());
-        setBranchStatusError("");
-      } catch (error) {
-        setBranchStatusError(
-          error instanceof Error ? error.message : "Unable to load branch statuses.",
-        );
-      }
-    };
-
-    refreshStatuses();
-    window.addEventListener("storage", refreshStatuses);
-    window.addEventListener("branch-status-updated", refreshStatuses);
-    return () => {
-      window.removeEventListener("storage", refreshStatuses);
-      window.removeEventListener("branch-status-updated", refreshStatuses);
     };
   }, []);
 
@@ -130,16 +111,18 @@ export default function DashboardReportsPage() {
     });
   }, [branches, orders]);
 
-  function updateBranchStatus(
+  async function updateBranchStatus(
     branchId: string,
-    status: BranchOperationalStatus | "",
+    status: "open" | "closed" | "",
   ) {
-    setBranchStatusError("");
+    if (status === "") return;
+    setStatusError("");
     try {
-      setBranchStatuses(saveBranchOperationalStatus(branchId, status));
+      await updateBranchStatusApi(branchId, status);
+      setBranches(await getBranches());
     } catch (error) {
-      setBranchStatusError(
-        error instanceof Error ? error.message : "Unable to save branch status.",
+      setStatusError(
+        normalizeError(error, "Unable to save branch status.").message,
       );
     }
   }
@@ -151,7 +134,7 @@ export default function DashboardReportsPage() {
     displayValue: formatPrice(branch.revenue),
   }));
 
-  function parseBranchStatus(value: string): BranchOperationalStatus | "" {
+  function parseBranchStatus(value: string): "open" | "closed" | "" {
     if (value === "open" || value === "closed") return value;
     return "";
   }
@@ -168,7 +151,7 @@ export default function DashboardReportsPage() {
       key: "operational-status",
       header: "Operating status",
       render: ({ branchId }) => {
-        const status = branchStatuses[branchId] ?? "";
+        const status = branches.find((branch) => branch.id === branchId)?.operationalStatus ?? "";
         return (
           <Select
             aria-label={`Set operating status for ${branches.find((branch) => branch.id === branchId)?.name ?? "branch"}`}
@@ -221,7 +204,7 @@ export default function DashboardReportsPage() {
 
     paidOrders.forEach((order) => {
       order.items.forEach((item) => {
-        const category = item.product.category;
+        const category = item.category;
         categoryTotals.set(
           category,
           (categoryTotals.get(category) ?? 0) + item.quantity,
@@ -284,8 +267,8 @@ export default function DashboardReportsPage() {
       .forEach((order) => {
         order.items.forEach((item) => {
           map.set(
-            item.product.category,
-            (map.get(item.product.category) ?? 0) + item.quantity,
+            item.category,
+            (map.get(item.category) ?? 0) + item.quantity,
           );
         });
       });
@@ -403,12 +386,12 @@ export default function DashboardReportsPage() {
           title="Inventory health"
           description="Count of product listings by stock level across branches."
         >
-          {productsLoading ? (
+          {isLoading ? (
             <p className="py-8 text-center text-sm text-text-slate">
               Loading inventory...
             </p>
-          ) : productsError ? (
-            <FormError message={productsError} />
+          ) : loadError ? (
+            <FormError message={loadError} />
           ) : (
             <DashboardChart
               data={inventoryStockLevels}
@@ -422,17 +405,17 @@ export default function DashboardReportsPage() {
         title="Branch performance"
         description="Compare sales from the last 30 days, review sales activity, and set each branch's operating status."
       >
-        {branchStatusError && (
+        {statusError && (
           <div className="mb-4">
-            <FormError message={branchStatusError} />
+            <FormError message={statusError} />
           </div>
         )}
-        {branchesError && (
+        {loadError && (
           <div className="mb-4">
-            <FormError message={branchesError} />
+            <FormError message={loadError} />
           </div>
         )}
-        {isBranchesLoading ? (
+        {isLoading ? (
           <p className="py-8 text-center text-sm text-text-slate">
             Loading branches...
           </p>
@@ -459,7 +442,8 @@ export default function DashboardReportsPage() {
               />
               <p className="mt-4 text-xs leading-5 text-text-slate">
                 Sales activity is based on non-cancelled orders in the last 30 days.
-                Operating status is set by an administrator and saved in this browser.
+                Operating status is set by an administrator and saved to the
+                backend.
               </p>
             </div>
           </div>

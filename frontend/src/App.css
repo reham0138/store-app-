@@ -12,30 +12,48 @@
   --color-status-error: #B91C1C;
   --color-status-warning: #A16207;
   --color-status-info: #1D4ED8;
-  --color-page: #F8F7F4;
+  --color-page: #F7F6F2;
   --color-surface-raised: #FFFFFF;
   --color-heading: #0B2D4A;
   --color-border-ui: #E5E7EB;
+  --color-focus-ring: #9A7B1F;
 
   --font-sans: "Inter", "Cairo", system-ui, sans-serif;
   --font-arabic: "Cairo", system-ui, sans-serif;
   --font-latin: "Inter", system-ui, sans-serif;
+
+  --shadow-2xs: 0 1px 2px rgb(11 45 74 / 5%);
+  --shadow-xs: 0 1px 2px rgb(11 45 74 / 6%), 0 2px 6px -2px rgb(11 45 74 / 8%);
+  --shadow-sm: 0 1px 2px rgb(11 45 74 / 5%), 0 6px 16px -6px rgb(11 45 74 / 10%);
+  --shadow-md: 0 2px 6px rgb(11 45 74 / 6%), 0 14px 30px -12px rgb(11 45 74 / 16%);
+  --shadow-lg: 0 4px 10px rgb(11 45 74 / 7%), 0 24px 48px -20px rgb(11 45 74 / 22%);
+  --shadow-xl: 0 8px 20px rgb(11 45 74 / 8%), 0 36px 72px -28px rgb(11 45 74 / 28%);
+  --shadow-card: 0 1px 2px rgb(11 45 74 / 4%), 0 12px 32px -16px rgb(11 45 74 / 14%);
 }
 
 .dark {
-  --color-page: #111A24;
-  --color-surface-raised: #1B2937;
+  --color-page: #0E1620;
+  --color-surface-raised: #18222E;
   --color-heading: #F2F5F8;
   --color-text-main: #E6EBF0;
-  --color-text-slate: #B4C0CC;
-  --color-border-ui: #354454;
-  --color-border-subtle: #354454;
-  --color-surface-cream: #111A24;
-  --color-surface-white: #1B2937;
+  --color-text-slate: #A9B6C4;
+  --color-border-ui: #2C3A4B;
+  --color-border-subtle: #2C3A4B;
+  --color-surface-cream: #0E1620;
+  --color-surface-white: #18222E;
   --color-status-success: #4ADE80;
   --color-status-error: #F87171;
   --color-status-warning: #FBBF24;
   --color-status-info: #60A5FA;
+  --color-focus-ring: #E3C86A;
+
+  --shadow-2xs: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 45%), 0 2px 8px -2px rgb(0 0 0 / 50%);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 45%), 0 8px 20px -8px rgb(0 0 0 / 55%);
+  --shadow-md: 0 2px 6px rgb(0 0 0 / 45%), 0 16px 32px -12px rgb(0 0 0 / 60%);
+  --shadow-lg: 0 4px 12px rgb(0 0 0 / 50%), 0 28px 56px -20px rgb(0 0 0 / 65%);
+  --shadow-xl: 0 8px 20px rgb(0 0 0 / 55%), 0 40px 80px -28px rgb(0 0 0 / 70%);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 45%), 0 16px 36px -14px rgb(0 0 0 / 60%);
 }
 
 .dark .text-brand-navy { color: var(--color-heading); }
@@ -65,6 +83,8 @@ body {
   min-height: 100vh;
   background: var(--color-page);
   color: var(--color-text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 
@@ -93,9 +113,115 @@ textarea {
   font: inherit;
 }
 
+::selection {
+  background: color-mix(in srgb, var(--color-brand-gold) 32%, transparent);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-subtle) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-subtle);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-slate);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: -0.015em;
+}
+
 :focus-visible {
-  outline: 3px solid var(--color-brand-gold);
+  outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
+}
+
+/* Cards that don't already carry a shadow utility get a soft, consistent one */
+:is(article, section, aside, div.rounded-xl, div.rounded-2xl).bg-surface-white:not([class*="shadow-"]) {
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 200ms ease;
+}
+
+:is(article, section, aside, div.rounded-xl, div.rounded-2xl).bg-surface-white:not([class*="shadow-"]):hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Primary CTAs get a subtle brand-tinted lift */
+main a.bg-brand-navy,
+main button.bg-brand-navy {
+  box-shadow: 0 8px 20px -8px rgb(11 45 74 / 50%);
+}
+
+main a.bg-brand-gold,
+main button.bg-brand-gold {
+  box-shadow: 0 8px 20px -8px rgb(160 130 30 / 55%);
+}
+
+/* Navy page headers get a subtle brand glow */
+section.bg-brand-navy {
+  background-image:
+    radial-gradient(50rem 22rem at 85% -20%, rgb(212 175 55 / 14%), transparent 60%),
+    radial-gradient(42rem 20rem at 0% 130%, rgb(255 255 255 / 5%), transparent 60%);
+}
+
+/* Product card: gentle lift + image zoom on hover */
+div:has(> img.h-36) {
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+
+img.h-36 {
+  transition: transform 450ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@media (hover: hover) {
+  div:has(> img.h-36):hover {
+    transform: translateY(-4px);
+  }
+
+  div:has(> img.h-36):hover img.h-36 {
+    transform: scale(1.07);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  div:has(> img.h-36),
+  img.h-36,
+  :is(article, section, aside, div.rounded-xl, div.rounded-2xl).bg-surface-white {
+    transition: none;
+  }
+
+  div:has(> img.h-36):hover {
+    transform: none;
+  }
+}
+
+.input:disabled,
+.select:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  background-color: var(--color-surface-cream);
 }
 
 .component-showcase {

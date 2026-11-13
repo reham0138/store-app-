@@ -1,5 +1,5 @@
 import { ClipboardList } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -10,18 +10,25 @@ import {
 } from "../shared/components/dashboard";
 import type { DashboardTableColumn } from "../shared/components/dashboard";
 import OrderStatus from "../shared/components/OrderStatus";
-import { useOrders } from "../shared/hooks/useOrders";
 import { formatPrice } from "../shared/utils/pricing";
-import type { Order } from "../shared/types/order";
-import { useAuth } from "../shared/hooks/useAuth";
+import type { Order, OrderStatus as OrderStatusValue } from "../shared/types/order";
+import { ORDER_STATUS_FLOW } from "../shared/types/order";
+import { ordersService } from "../shared/services/orders.service";
+import { normalizeError } from "../shared/api/errors";
 import { Select } from "../shared/components/Select";
 import { FormError } from "../shared/components/FormError";
-import { updateOrderStatus } from "../shared/utils/orderStorage";
-import type { OrderStatus as OrderStatusValue } from "../shared/types/order";
 
 interface DashboardOrdersPageProps {
   branchScoped?: boolean;
 }
+
+const statusLabels: Record<OrderStatusValue, string> = {
+  pending: "Pending",
+  processing: "Processing",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
 
 const orderColumns: DashboardTableColumn<Order>[] = [
   {
@@ -54,63 +61,75 @@ const orderColumns: DashboardTableColumn<Order>[] = [
   },
 ];
 
-const orderStatuses: { value: OrderStatusValue; label: string }[] = [
-  { value: "pending", label: "Pending" },
-  { value: "processing", label: "Processing" },
-  { value: "shipped", label: "Shipped" },
-  { value: "delivered", label: "Delivered" },
-  { value: "cancelled", label: "Cancelled" },
-];
-
 export default function DashboardOrdersPage({
   branchScoped = false,
 }: DashboardOrdersPageProps) {
-  const orders = useOrders();
-  const { user } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
-  const assignedBranchId = user?.branchId;
-  const visibleOrders = branchScoped
-    ? orders.filter(
-        (order) =>
-          Boolean(assignedBranchId) && order.branch?.id === assignedBranchId,
-      )
-    : orders;
+
+  const loadOrders = useCallback(async () => {
+    try {
+      const data = await ordersService.getOrders();
+      setOrders(data);
+      setError("");
+    } catch (loadError) {
+      setError(normalizeError(loadError, "Failed to load orders.").message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => void loadOrders());
+  }, [loadOrders]);
+
+  async function handleStatusChange(order: Order, status: OrderStatusValue) {
+    setActionError("");
+    setActionMessage("");
+    try {
+      await ordersService.updateOrderStatus(order.id, status);
+      setActionMessage(`Order ${order.id} updated to ${status}.`);
+      await loadOrders();
+    } catch (updateError) {
+      setActionError(normalizeError(updateError, "Unable to update order status.").message);
+    }
+  }
+
   const columns: DashboardTableColumn<Order>[] = [
     ...orderColumns,
     {
       key: "status",
       header: "Status",
-      render: (order) => (
-        <div className="flex min-w-40 items-center gap-2">
-          <OrderStatus status={order.status} />
-          <Select
-            aria-label={`Update status for order ${order.id}`}
-            value={order.status}
-            options={orderStatuses}
-            disabled={branchScoped && !user?.branchId}
-            onChange={(event) => {
-              const status = event.currentTarget.value as OrderStatusValue;
-              setActionError("");
-              setActionMessage("");
-              try {
-                updateOrderStatus(
-                  order.id,
-                  status,
-                  branchScoped ? user?.branchId ?? "" : undefined,
-                );
-                setActionMessage(`Order ${order.id} updated to ${status}.`);
-              } catch (error) {
-                setActionError(
-                  error instanceof Error
-                    ? error.message
-                    : "Unable to update order status.",
-                );
-              }
-            }}
-          />
-        </div>
-      ),
+      render: (order) => {
+        const nextStatuses = ORDER_STATUS_FLOW[order.status];
+        return (
+          <div className="flex min-w-40 items-center gap-2">
+            <OrderStatus status={order.status} />
+            {nextStatuses.length > 0 ? (
+              <Select
+                aria-label={`Update status for order ${order.id}`}
+                value={order.status}
+                options={[
+                  { value: order.status, label: `${statusLabels[order.status]} (current)` },
+                  ...nextStatuses.map((status) => ({
+                    value: status,
+                    label: `Move to ${statusLabels[status]}`,
+                  })),
+                ]}
+                onChange={(event) => {
+                  const status = event.currentTarget.value as OrderStatusValue;
+                  if (status !== order.status) void handleStatusChange(order, status);
+                }}
+              />
+            ) : (
+              <span className="text-xs text-text-slate">Final status</span>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -122,7 +141,7 @@ export default function DashboardOrdersPage({
         description={
           branchScoped
             ? "Review orders placed through your assigned branch."
-            : "Review all orders currently stored for the store."
+            : "Review all orders across the store."
         }
         actions={
           <Link
@@ -135,19 +154,37 @@ export default function DashboardOrdersPage({
       />
 
       <DashboardCard title="All orders">
+        {isLoading && (
+          <p className="py-12 text-center text-sm text-text-slate">
+            Loading orders...
+          </p>
+        )}
+        {!isLoading && error && (
+          <div className="py-8 text-center">
+            <p className="text-sm text-status-error">{error}</p>
+            <button
+              type="button"
+              onClick={() => void loadOrders()}
+              className="mt-3 rounded-lg bg-brand-navy px-4 py-2 text-sm text-white"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
         {actionError && <div className="mb-4"><FormError message={actionError} /></div>}
         {actionMessage && (
           <p className="mb-4 text-sm text-status-success" role="status">
             {actionMessage}
           </p>
         )}
-        {visibleOrders.length > 0 ? (
+        {!isLoading && !error && orders.length > 0 && (
           <DashboardTable
             columns={columns}
-            rows={visibleOrders}
+            rows={orders}
             getRowKey={(order) => order.id}
           />
-        ) : (
+        )}
+        {!isLoading && !error && orders.length === 0 && (
           <DashboardEmptyState
             title="No orders yet"
             description={

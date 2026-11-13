@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { CheckCircle2, Package } from "lucide-react";
 
-import { getOrderById } from "../shared/utils/orderStorage";
+import { ordersService } from "../shared/services/orders.service";
+import type { Order } from "../shared/types/order";
 
 import { formatPrice } from "../shared/utils/pricing";
 
@@ -10,12 +12,40 @@ export default function OrderSuccessPage() {
   const location = useLocation();
 
   const state = location.state as { orderId?: string } | null;
+  const orderId = state?.orderId;
 
-  const order = state?.orderId
-    ? getOrderById(state.orderId)
-    : undefined;
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(Boolean(orderId));
+  const [error, setError] = useState("");
 
-  if (!order) {
+  useEffect(() => {
+    if (!orderId) return;
+    let isMounted = true;
+    ordersService
+      .getOrder(orderId)
+      .then((found) => {
+        if (isMounted) setOrder(found);
+      })
+      .catch(() => {
+        if (isMounted) setError("We couldn't load your order.");
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [orderId]);
+
+  if (loading) {
+    return (
+      <p className="px-4 py-16 text-center text-text-slate" role="status">
+        Loading your order…
+      </p>
+    );
+  }
+
+  if (error || !order) {
     return (
       <section className="mx-auto max-w-2xl px-4 py-20 text-center">
 

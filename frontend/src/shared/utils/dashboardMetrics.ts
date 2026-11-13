@@ -65,18 +65,18 @@ export function getOrderStatusCounts(orders: Order[]) {
 
 export function getTopProducts(orders: Order[], limit = 5): DashboardMetric[] {
   const productTotals = new Map<
-    number,
-    { id: number; title: string; quantity: number }
+    string,
+    { id: string; title: string; quantity: number }
   >();
 
   orders
     .filter((order) => order.status !== "cancelled")
     .forEach((order) => {
-      order.items.forEach(({ product, quantity }) => {
-        const existing = productTotals.get(product.id);
-        productTotals.set(product.id, {
-          id: product.id,
-          title: product.title,
+      order.items.forEach(({ productId, title, quantity }) => {
+        const existing = productTotals.get(productId);
+        productTotals.set(productId, {
+          id: productId,
+          title,
           quantity: (existing?.quantity ?? 0) + quantity,
         });
       });

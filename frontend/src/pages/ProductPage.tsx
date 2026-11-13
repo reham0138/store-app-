@@ -67,122 +67,45 @@ export default function ProductsPage() {
     [products],
   );
 
-  const [filteredProducts, setFilteredProducts] = useState<StoreProduct[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState("");
+  const filteredProducts = useMemo(() => {
+    const availableProducts = products.filter(
+      (product) => getProductStock(product, branchId) > 0,
+    );
 
-  useEffect(() => {
-    let isActive = true;
+    const categoryProducts =
+      selectedCategory === "all"
+        ? availableProducts
+        : availableProducts.filter(
+            (product) => product.category === selectedCategory,
+          );
 
-    const timeoutId = window.setTimeout(async () => {
-      const availableProducts = products.filter(
-        (product) => getProductStock(product, branchId) > 0,
-      );
+    const term = search.trim().toLocaleLowerCase();
+    const searched = term
+      ? categoryProducts.filter((product) =>
+          `${product.title} ${product.brand} ${product.description}`
+            .toLocaleLowerCase()
+            .includes(term),
+        )
+      : categoryProducts;
 
-      const categoryProducts =
-        selectedCategory === "all"
-          ? availableProducts
-          : availableProducts.filter(
-              (product) => product.category === selectedCategory,
-            );
-
-      if (!search.trim()) {
-        let result = [...categoryProducts];
-
-        switch (sortBy) {
-          case "price-low":
-            result.sort(
-              (a, b) =>
-                getProductPrice(a, branchId) - getProductPrice(b, branchId),
-            );
-            break;
-          case "price-high":
-            result.sort(
-              (a, b) =>
-                getProductPrice(b, branchId) - getProductPrice(a, branchId),
-            );
-            break;
-          case "rating":
-            result.sort((a, b) => b.rating - a.rating);
-            break;
-        }
-
-        if (isActive) {
-          setFilteredProducts(result);
-          setSearchError("");
-          setIsSearching(false);
-        }
-        return;
-      }
-
-      try {
-        if (isActive) {
-          setIsSearching(true);
-          setSearchError("");
-        }
-
-        const { searchProductsSemantically } = await import(
-          "../shared/services/semanticSearch.service"
+    const result = [...searched];
+    switch (sortBy) {
+      case "price-low":
+        result.sort(
+          (a, b) => getProductPrice(a, branchId) - getProductPrice(b, branchId),
         );
-        if (!branchId) {
-          setFilteredProducts([]);
-          return;
-        }
-
-        const rankedResults = await searchProductsSemantically(
-          search,
-          categoryProducts,
-          branchId,
+        break;
+      case "price-high":
+        result.sort(
+          (a, b) => getProductPrice(b, branchId) - getProductPrice(a, branchId),
         );
+        break;
+      case "rating":
+        result.sort((a, b) => b.rating - a.rating);
+        break;
+    }
 
-        if (!isActive) return;
-
-        let result = rankedResults.map(({ product }) => product);
-
-        switch (sortBy) {
-          case "price-low":
-            result.sort(
-              (a, b) =>
-                getProductPrice(a, branchId) - getProductPrice(b, branchId),
-            );
-            break;
-          case "price-high":
-            result.sort(
-              (a, b) =>
-                getProductPrice(b, branchId) - getProductPrice(a, branchId),
-            );
-            break;
-          case "rating":
-            result.sort((a, b) => b.rating - a.rating);
-            break;
-        }
-
-        setFilteredProducts(result);
-      } catch (error) {
-        if (!isActive) return;
-
-        console.error("Semantic product search failed:", error);
-        setSearchError(
-          "Smart search couldn't start. Check your connection and try again.",
-        );
-
-        const term = search.trim().toLocaleLowerCase();
-        setFilteredProducts(
-          categoryProducts.filter((product) =>
-            `${product.title} ${product.description}`
-              .toLocaleLowerCase()
-              .includes(term),
-          ),
-        );
-      } finally {
-        if (isActive) setIsSearching(false);
-      }
-    }, search.trim() ? 450 : 0);
-
-    return () => {
-      isActive = false;
-      window.clearTimeout(timeoutId);
-    };
+    return result;
   }, [products, search, selectedCategory, sortBy, branchId]);
 
   return (
@@ -216,9 +139,7 @@ export default function ProductsPage() {
             <p className="mt-1 text-sm text-text-slate">
               {pageLoading
                 ? "Loading products..."
-                : isSearching
-                  ? "Understanding your search..."
-                  : `${filteredProducts.length} products found`}
+                : `${filteredProducts.length} products found`}
             </p>
           </div>
         </div>
@@ -235,7 +156,7 @@ export default function ProductsPage() {
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search products by meaning (Arabic or English)..."
+              placeholder="Search products..."
               className="h-11 w-full rounded-xl border border-border-subtle bg-surface-white pl-10 pr-4 text-sm outline-none transition focus:border-brand-gold"
             />
           </div>
@@ -261,10 +182,6 @@ export default function ProductsPage() {
             </select>
           </div>
         </div>
-
-        {searchError && (
-          <p className="mb-4 text-sm text-amber-700" role="status">{searchError} Showing exact text matches instead.</p>
-        )}
 
         {/* Categories */}
         {!pageLoading && !pageError && (
@@ -299,9 +216,9 @@ export default function ProductsPage() {
         )}
 
         {/* Loading State */}
-        {(pageLoading || isSearching) && (
+        {pageLoading && (
           <p className="py-16 text-center text-sm text-text-slate">
-            {isSearching ? "Understanding your search..." : "Loading products and branch inventory..."}
+            Loading products and branch inventory...
           </p>
         )}
 

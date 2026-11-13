@@ -1,5 +1,4 @@
-import type { CartItem } from "../types/cart";
-import type { Order, OrderStatus, PaymentMethod } from "../types/order";
+import type { Order, OrderStatus } from "../types/order";
 
 const STORAGE_KEY = "crown-anchor-orders";
 
@@ -11,46 +10,36 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function isCartItem(value: unknown): value is CartItem {
-  if (!isRecord(value) || !isRecord(value.product)) return false;
-  const product = value.product;
+function isOrderItem(value: unknown): boolean {
   return (
+    isRecord(value) &&
+    typeof value.productId === "string" &&
+    typeof value.title === "string" &&
+    isFiniteNumber(value.unitPrice) &&
     isFiniteNumber(value.quantity) &&
     Number.isInteger(value.quantity) &&
-    value.quantity > 0 &&
-    isFiniteNumber(product.id) &&
-    typeof product.title === "string" &&
-    typeof product.description === "string" &&
-    typeof product.category === "string" &&
-    isFiniteNumber(product.price) &&
-    isFiniteNumber(product.discountPercentage) &&
-    isFiniteNumber(product.rating) &&
-    isFiniteNumber(product.stock) &&
-    typeof product.brand === "string" &&
-    typeof product.thumbnail === "string" &&
-    Array.isArray(product.images) &&
-    product.images.every((image) => typeof image === "string")
+    value.quantity > 0
   );
 }
 
 function isOrder(value: unknown): value is Order {
-  if (!isRecord(value) || !Array.isArray(value.items) ||
-      !value.items.every(isCartItem) || !isRecord(value.shippingAddress)) {
+  if (!isRecord(value) || !Array.isArray(value.items) || !value.items.every(isOrderItem)) {
     return false;
   }
   const address = value.shippingAddress;
   const statuses: OrderStatus[] = [
     "pending", "processing", "shipped", "delivered", "cancelled",
   ];
-  const payments: PaymentMethod[] = ["cash", "card"];
+  const payments = ["cash", "card"];
 
   return (
     typeof value.id === "string" &&
+    isRecord(address) &&
     typeof address.fullName === "string" &&
     typeof address.phone === "string" &&
     typeof address.city === "string" &&
     typeof address.street === "string" &&
-    payments.includes(value.paymentMethod as PaymentMethod) &&
+    payments.includes(value.paymentMethod as string) &&
     statuses.includes(value.status as OrderStatus) &&
     isFiniteNumber(value.subtotal) &&
     isFiniteNumber(value.deliveryFee) &&
@@ -64,6 +53,52 @@ function isOrder(value: unknown): value is Order {
   );
 }
 
+/** Migrates legacy orders (full product snapshots, numeric ids) to the new shape. */
+function migrateLegacyOrder(value: Record<string, unknown>): Order | null {
+  if (!Array.isArray(value.items)) return null;
+  const items: Order["items"] = [];
+  for (const raw of value.items as unknown[]) {
+    if (!isRecord(raw)) continue;
+    const product = isRecord(raw.product) ? raw.product : null;
+    if (product) {
+      items.push({
+        productId: String(product.id ?? ""),
+        title: typeof product.title === "string" ? product.title : "Product",
+        thumbnail: typeof product.thumbnail === "string" ? product.thumbnail : "",
+        category: typeof product.category === "string" ? product.category : "",
+        unitPrice: isFiniteNumber(product.price)
+          ? product.price
+          : isFiniteNumber(raw.unitPrice)
+            ? raw.unitPrice
+            : 0,
+        quantity: isFiniteNumber(raw.quantity) ? raw.quantity : 0,
+      });
+    } else if (isOrderItem(raw)) {
+      items.push(raw as unknown as Order["items"][number]);
+    }
+  }
+
+  if (items.length === 0) return null;
+
+  const address = isRecord(value.shippingAddress)
+    ? (value.shippingAddress as unknown as Order["shippingAddress"])
+    : { fullName: "", phone: "", city: "", street: "" };
+
+  return {
+    ...(value as unknown as Order),
+    items,
+    subtotal: isFiniteNumber(value.subtotal) ? value.subtotal : 0,
+    deliveryFee: isFiniteNumber(value.deliveryFee) ? value.deliveryFee : 0,
+    total: isFiniteNumber(value.total) ? value.total : 0,
+    shippingAddress: address,
+    paymentMethod: value.paymentMethod === "card" ? "card" : "cash",
+    status: (["pending", "processing", "shipped", "delivered", "cancelled"] as OrderStatus[]).includes(value.status as OrderStatus)
+      ? (value.status as OrderStatus)
+      : "pending",
+    createdAt: typeof value.createdAt === "string" ? value.createdAt : new Date().toISOString(),
+  };
+}
+
 export function getOrders(): Order[] {
   try {
     const savedOrders = localStorage.getItem(STORAGE_KEY);
@@ -73,7 +108,13 @@ export function getOrders(): Order[] {
       console.warn("Saved orders data is invalid; ignoring it.");
       return [];
     }
-    const orders = parsed.filter(isOrder);
+    const orders = parsed
+      .map((value) => {
+        if (isOrder(value)) return value;
+        if (isRecord(value)) return migrateLegacyOrder(value);
+        return null;
+      })
+      .filter((order): order is Order => order !== null);
     if (orders.length !== parsed.length) {
       console.warn("Invalid saved orders were skipped.");
     }
@@ -84,10 +125,14 @@ export function getOrders(): Order[] {
   }
 }
 
+export function saveOrders(orders: Order[]): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+  window.dispatchEvent(new Event("orders-updated"));
+}
+
 export function saveOrder(order: Order): boolean {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([order, ...getOrders()]));
-    window.dispatchEvent(new Event("orders-updated"));
+    saveOrders([order, ...getOrders()]);
     return true;
   } catch (error) {
     console.error("Unable to save order to browser storage.", error);
@@ -95,27 +140,15 @@ export function saveOrder(order: Order): boolean {
   }
 }
 
-export function updateOrderStatus(
+export function updateOrderStatusLocal(
   orderId: string,
   status: OrderStatus,
-  branchId?: string,
 ): void {
-  const orders = getOrders();
-  const orderIndex = orders.findIndex((order) => order.id === orderId);
-  if (orderIndex < 0) {
-    throw new Error("This order could not be found in saved orders.");
-  }
-
-  const order = orders[orderIndex];
-  if (branchId !== undefined && order.branch?.id !== branchId) {
-    throw new Error("You can only update orders from your assigned branch.");
-  }
-
-  const updatedOrders = orders.map((existingOrder) =>
-    existingOrder.id === orderId ? { ...existingOrder, status } : existingOrder,
+  saveOrders(
+    getOrders().map((order) =>
+      order.id === orderId ? { ...order, status, updatedAt: new Date().toISOString() } : order,
+    ),
   );
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedOrders));
-  window.dispatchEvent(new Event("orders-updated"));
 }
 
 export function getOrderById(id: string): Order | undefined {

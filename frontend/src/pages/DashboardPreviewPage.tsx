@@ -7,9 +7,10 @@ import {
   PackageSearch,
   Plus,
   Search,
+  Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -30,12 +31,18 @@ import { Input } from "../shared/components/Input";
 import { Label } from "../shared/components/Label";
 import { Select } from "../shared/components/Select";
 import type { StoreProduct } from "../shared/types/cart";
-import { getProducts } from "../shared/services/product.service";
-import { saveProducts } from "../shared/utils/productStorage";
-import { useOrders } from "../shared/hooks/useOrders";
+import type { Order } from "../shared/types/order";
+import {
+  createProduct,
+  deleteProduct,
+  getProducts,
+  updateProduct,
+} from "../shared/services/product.service";
+import { reportsService } from "../shared/services/reports.service";
+import type { DashboardReport } from "../shared/services/reports.service";
 import { formatPrice } from "../shared/utils/pricing";
 import OrderStatus from "../shared/components/OrderStatus";
-import type { Order } from "../shared/types/order";
+import { normalizeError } from "../shared/api/errors";
 
 type StockFilter = "all" | "in-stock" | "low-stock" | "out-of-stock";
 
@@ -73,9 +80,23 @@ function toFormValues(product: StoreProduct): ProductFormValues {
   };
 }
 
+function toProductInput(values: ProductFormValues) {
+  return {
+    title: values.title.trim(),
+    description: values.description.trim(),
+    category: values.category.trim(),
+    brand: values.brand.trim(),
+    price: Number(values.price),
+    discountPercentage: Number(values.discountPercentage),
+    thumbnail: "",
+    images: [] as string[],
+    stock: Number(values.stock),
+  };
+}
+
 export default function DashboardPreviewPage() {
+  const [report, setReport] = useState<DashboardReport | null>(null);
   const [products, setProducts] = useState<StoreProduct[]>([]);
-  const orders = useOrders();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -83,32 +104,29 @@ export default function DashboardPreviewPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const loadAll = useCallback(async () => {
+    try {
+      const [reportData, productData] = await Promise.all([
+        reportsService.admin(),
+        getProducts(),
+      ]);
+      setReport(reportData);
+      setProducts(productData);
+      setLoadError("");
+    } catch (error) {
+      setLoadError(normalizeError(error, "Failed to load dashboard data.").message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadProducts() {
-      try {
-        const loadedProducts = await getProducts();
-        if (isMounted) setProducts(loadedProducts);
-      } catch (error) {
-        if (isMounted) {
-          setLoadError(
-            error instanceof Error ? error.message : "Failed to load products.",
-          );
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
-
-    void loadProducts();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    queueMicrotask(() => void loadAll());
+  }, [loadAll]);
 
   const categories = useMemo(
     () => [...new Set(products.map((product) => product.category))].sort(),
@@ -147,32 +165,13 @@ export default function DashboardPreviewPage() {
       totalProducts: products.length,
       lowStock,
       outOfStock,
-      orderRevenue: orders
-        .filter((order) => order.status !== "cancelled")
-        .reduce((total, order) => total + order.total, 0),
-      pendingOrders: orders.filter((order) => order.status === "pending").length,
+      orderRevenue: report?.totals.orderRevenue ?? 0,
+      pendingOrders: report?.totals.pendingOrders ?? 0,
     };
-  }, [products, orders]);
+  }, [products, report]);
 
-  const recentOrders = useMemo(
-    () =>
-      [...orders]
-        .sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        )
-        .slice(0, 5),
-    [orders],
-  );
-
-  const stockAlerts = useMemo(
-    () =>
-      products
-        .filter((product) => product.stock <= 10)
-        .sort((a, b) => a.stock - b.stock)
-        .slice(0, 5),
-    [products],
-  );
+  const recentOrders = report?.recentOrders ?? [];
+  const stockAlerts = report?.stockAlerts ?? [];
 
   function openAddForm() {
     setEditingProductId(null);
@@ -192,61 +191,42 @@ export default function DashboardPreviewPage() {
     setIsFormOpen(false);
   }
 
-  function handleProductSubmit(values: ProductFormValues) {
+  async function handleProductSubmit(values: ProductFormValues) {
     setActionError("");
-    const price = Number(values.price);
-    const stock = Number(values.stock);
-    const discountPercentage = Number(values.discountPercentage);
-    const updatedProducts =
-      editingProductId === null
-        ? [
-            {
-              id: Math.max(0, ...products.map((product) => product.id)) + 1,
-              title: values.title.trim(),
-              description: values.description.trim(),
-              category: values.category.trim(),
-              price,
-              discountPercentage,
-              rating: 0,
-              stock,
-              brand: values.brand.trim(),
-              thumbnail: "https://picsum.photos/seed/new-product/300/300",
-              images: [],
-            },
-            ...products,
-          ]
-        : products.map((product) =>
-            product.id === editingProductId
-              ? {
-                  ...product,
-                  title: values.title.trim(),
-                  description: values.description.trim(),
-                  category: values.category.trim(),
-                  price,
-                  discountPercentage,
-                  stock,
-                  brand: values.brand.trim(),
-                }
-              : product,
-          );
+    const input = toProductInput(values);
 
     try {
-      saveProducts(updatedProducts);
+      if (editingProductId === null) {
+        await createProduct(input);
+        setActionMessage("Product added successfully.");
+      } else {
+        await updateProduct(editingProductId, input);
+        setActionMessage("Product updated successfully.");
+      }
+      setProducts(await getProducts());
+      closeForm();
+      void loadAll();
     } catch (error) {
-      setActionError(
-        error instanceof Error ? error.message : "Failed to save product changes.",
-      );
+      setActionError(normalizeError(error, "Failed to save product changes.").message);
+    }
+  }
+
+  async function handleDeleteProduct(product: StoreProduct) {
+    if (!window.confirm(`Delete "${product.title}"? This cannot be undone.`)) {
       return;
     }
-
-    setProducts(updatedProducts);
-    if (editingProductId === null) {
-      setActionMessage("Product added successfully.");
-    } else {
-      setActionMessage("Product updated successfully.");
+    setDeletingId(product.id);
+    setActionError("");
+    try {
+      await deleteProduct(product.id);
+      setProducts(await getProducts());
+      setActionMessage(`"${product.title}" deleted.`);
+      void loadAll();
+    } catch (error) {
+      setActionError(normalizeError(error, "Failed to delete product.").message);
+    } finally {
+      setDeletingId(null);
     }
-
-    closeForm();
   }
 
   const productColumns: DashboardTableColumn<StoreProduct>[] = [
@@ -284,7 +264,7 @@ export default function DashboardPreviewPage() {
     {
       key: "price",
       header: "Price",
-      render: (product) => `$${product.price.toFixed(2)}`,
+      render: (product) => formatPrice(product.price),
     },
     {
       key: "stock",
@@ -307,14 +287,25 @@ export default function DashboardPreviewPage() {
       key: "actions",
       header: "Actions",
       render: (product) => (
-        <Button
-          variant="tertiary"
-          onClick={() => openEditForm(product)}
-          className="inline-flex items-center gap-2 whitespace-nowrap"
-        >
-          <Edit3 aria-hidden="true" size={15} />
-          Edit
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="tertiary"
+            onClick={() => openEditForm(product)}
+            className="inline-flex items-center gap-2 whitespace-nowrap"
+          >
+            <Edit3 aria-hidden="true" size={15} />
+            Edit
+          </Button>
+          <Button
+            variant="tertiary"
+            disabled={deletingId === product.id}
+            onClick={() => void handleDeleteProduct(product)}
+            className="inline-flex items-center gap-2 whitespace-nowrap text-status-error"
+          >
+            <Trash2 aria-hidden="true" size={15} />
+            {deletingId === product.id ? "Deleting…" : "Delete"}
+          </Button>
+        </div>
       ),
     },
   ];
@@ -485,7 +476,7 @@ export default function DashboardPreviewPage() {
             <DashboardTable
               columns={stockAlertColumns}
               rows={stockAlerts}
-              getRowKey={(product) => String(product.id)}
+              getRowKey={(product) => product.id}
             />
           ) : (
             <DashboardEmptyState
@@ -559,7 +550,7 @@ export default function DashboardPreviewPage() {
           <DashboardTable
             columns={productColumns}
             rows={filteredProducts}
-            getRowKey={(product) => String(product.id)}
+            getRowKey={(product) => product.id}
           />
         )}
 
@@ -631,7 +622,7 @@ export default function DashboardPreviewPage() {
                     )
               }
               mode={editingProductId === null ? "add" : "edit"}
-              onSubmit={handleProductSubmit}
+              onSubmit={(values) => void handleProductSubmit(values)}
               onCancel={closeForm}
             />
           </div>

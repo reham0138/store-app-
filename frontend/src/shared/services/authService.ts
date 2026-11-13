@@ -1,15 +1,16 @@
-import type { LoginInput, RegisterInput, User, UserRole } from '../types/auth.ts'
+import type { LoginInput, RegisterInput, User } from '../types/auth.ts'
+import { apiClient, getAuthToken, setAuthToken, USE_MOCK } from '../api/index.ts'
+import { normalizeError } from '../api/errors.ts'
 
 /*
- * خدمة مصادقة وهمية (localStorage).
- * عند جاهزية الباك اند: بدّل الداخل فقط (axios من shared/api)، وخلّي أسماء الدوال
- * والأنواع نفسها، فما بينكسر أي كود يستخدم useAuth.
- * تحذير: كلمات المرور هون مخزنة نص عادي لأنو هاد وهمي للتطوير فقط.
+ * Auth service — single entry point for pages.
+ * Mock mode (VITE_USE_MOCK != "false"): users live in localStorage with seeded dev accounts.
+ * API mode: talks to /api/auth with JWT.
  */
 
 const USERS_KEY = 'crown-anchor:mock-users'
 const SESSION_KEY = 'crown-anchor:session'
-const FAKE_DELAY_MS = 600
+const FAKE_DELAY_MS = 250
 
 interface StoredUser extends User {
   password: string
@@ -35,10 +36,42 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
 }
 
+// ---------- Mock implementation (localStorage) ----------
+
+const SEED_USERS: StoredUser[] = [
+  {
+    id: 'mock-admin',
+    name: 'Admin Demo',
+    email: 'admin@crown-anchor.dev',
+    password: 'admin12345',
+    role: 'admin',
+  },
+  {
+    id: 'mock-manager',
+    name: 'Manager Demo',
+    email: 'manager@crown-anchor.dev',
+    password: 'manager12345',
+    role: 'branchManager',
+    branchId: 'damascus',
+  },
+  {
+    id: 'mock-customer',
+    name: 'Customer Demo',
+    email: 'customer@crown-anchor.dev',
+    password: 'customer12345',
+    role: 'customer',
+  },
+]
+
 function readUsers(): StoredUser[] {
   try {
     const raw = localStorage.getItem(USERS_KEY)
-    return raw ? (JSON.parse(raw) as StoredUser[]) : []
+    if (raw === null) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(SEED_USERS))
+      return SEED_USERS
+    }
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as StoredUser[]) : []
   } catch {
     return []
   }
@@ -58,7 +91,7 @@ function toPublicUser(stored: StoredUser): User {
   }
 }
 
-async function login({ email, password }: LoginInput): Promise<User> {
+async function mockLogin({ email, password }: LoginInput): Promise<User> {
   await wait(FAKE_DELAY_MS)
   const found = readUsers().find(
     (u) => u.email === normalizeEmail(email) && u.password === password,
@@ -70,7 +103,7 @@ async function login({ email, password }: LoginInput): Promise<User> {
   return toPublicUser(found)
 }
 
-async function register({ name, email, password }: RegisterInput): Promise<User> {
+async function mockRegister({ name, email, password }: RegisterInput): Promise<User> {
   await wait(FAKE_DELAY_MS)
   const users = readUsers()
   const normalized = normalizeEmail(email)
@@ -89,32 +122,11 @@ async function register({ name, email, password }: RegisterInput): Promise<User>
   return toPublicUser(created)
 }
 
-function loginAsRole(role: Exclude<UserRole, 'customer'>): User {
-  if (!import.meta.env.DEV) {
-    throw new Error('Development role access is not available in production.')
-  }
-
-  const isAdmin = role === 'admin'
-  const mockUser: StoredUser = {
-    id: `development-${role}`,
-    name: isAdmin ? 'Development Admin' : 'Development Branch Manager',
-    email: isAdmin ? 'admin@development.local' : 'manager@development.local',
-    role,
-    ...(isAdmin ? {} : { branchId: 'damascus' }),
-    password: '',
-  }
-  const users = readUsers().filter((user) => user.id !== mockUser.id)
-  writeUsers([...users, mockUser])
-  localStorage.setItem(SESSION_KEY, mockUser.id)
-  return toPublicUser(mockUser)
-}
-
-function logout(): void {
+function mockLogout(): void {
   localStorage.removeItem(SESSION_KEY)
 }
 
-/** متزامنة عمداً: بتنقرأ مرة وحدة عند فتح الموقع بدون وميض "غير مسجّل". */
-function getCurrentUser(): User | null {
+function mockGetCurrentUser(): User | null {
   try {
     const id = localStorage.getItem(SESSION_KEY)
     if (!id) return null
@@ -125,4 +137,120 @@ function getCurrentUser(): User | null {
   }
 }
 
-export const authService = { login, register, loginAsRole, logout, getCurrentUser }
+// ---------- API implementation (JWT) ----------
+
+interface ApiAuthResponse {
+  id: string
+  name: string
+  email: string
+  role: User['role']
+  branchId?: string
+  token: string
+}
+
+function toUser(data: ApiAuthResponse | User): User {
+  return {
+    id: data.id,
+    name: data.name,
+    email: data.email,
+    role: data.role,
+    ...(data.branchId ? { branchId: data.branchId } : {}),
+  }
+}
+
+async function apiLogin(input: LoginInput): Promise<User> {
+  try {
+    const { data } = await apiClient.post<ApiAuthResponse>('/auth/login', {
+      email: normalizeEmail(input.email),
+      password: input.password,
+    })
+    setAuthToken(data.token)
+    return toUser(data)
+  } catch (error) {
+    const normalized = normalizeError(error, 'Login failed.')
+    if (normalized.code === 'INVALID_CREDENTIALS' || normalized.status === 401) {
+      throw new AuthError('INVALID_CREDENTIALS', 'The email or password is incorrect.')
+    }
+    throw new AuthError('INVALID_CREDENTIALS', normalized.message)
+  }
+}
+
+async function apiRegister(input: RegisterInput): Promise<User> {
+  try {
+    const { data } = await apiClient.post<ApiAuthResponse>('/auth/register', {
+      name: input.name.trim(),
+      email: normalizeEmail(input.email),
+      password: input.password,
+    })
+    setAuthToken(data.token)
+    return toUser(data)
+  } catch (error) {
+    const normalized = normalizeError(error, 'Registration failed.')
+    if (normalized.code === 'EMAIL_TAKEN' || normalized.status === 409) {
+      throw new AuthError('EMAIL_TAKEN', 'An account with this email already exists.')
+    }
+    throw new AuthError('INVALID_CREDENTIALS', normalized.message)
+  }
+}
+
+function apiLogout(): void {
+  setAuthToken(null)
+}
+
+// ---------- Public API ----------
+
+let cachedUser: User | null | undefined
+
+async function login(input: LoginInput): Promise<User> {
+  const user = USE_MOCK ? await mockLogin(input) : await apiLogin(input)
+  cachedUser = user
+  return user
+}
+
+async function register(input: RegisterInput): Promise<User> {
+  const user = USE_MOCK ? await mockRegister(input) : await apiRegister(input)
+  cachedUser = user
+  return user
+}
+
+function logout(): void {
+  cachedUser = null
+  if (USE_MOCK) mockLogout()
+  else apiLogout()
+}
+
+/** Sync read of the last known user (for initial render). */
+function getCurrentUser(): User | null {
+  if (cachedUser !== undefined) return cachedUser
+  cachedUser = USE_MOCK ? mockGetCurrentUser() : null
+  return cachedUser
+}
+
+/** Async session restore — call once on app start. */
+async function refreshSession(): Promise<User | null> {
+  if (USE_MOCK) {
+    cachedUser = mockGetCurrentUser()
+    return cachedUser
+  }
+  if (!getAuthToken()) {
+    cachedUser = null
+    return null
+  }
+  try {
+    const { data } = await apiClient.get<User>('/auth/me')
+    cachedUser = toUser(data)
+    return cachedUser
+  } catch {
+    cachedUser = null
+    setAuthToken(null)
+    return null
+  }
+}
+
+export const authService = {
+  login,
+  register,
+  logout,
+  getCurrentUser,
+  refreshSession,
+}

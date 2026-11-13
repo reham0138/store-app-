@@ -5,13 +5,14 @@ export interface BranchInventory {
 }
 
 export interface StoreProduct {
-  id: number;
+  id: string;
   title: string;
   description: string;
   category: string;
   price: number;
   discountPercentage: number;
   rating: number;
+  reviewCount?: number;
   stock: number;
   brand: string;
   thumbnail: string;
@@ -24,6 +25,12 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface CartLine {
+  productId: string;
+  quantity: number;
+  branchId: string;
+}
+
 export interface CartContextType {
   items: CartItem[];
   totalItems: number;
@@ -33,8 +40,8 @@ export interface CartContextType {
   cartNotice: string | null;
 
   addToCart: (product: StoreProduct, quantity?: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
-  removeFromCart: (productId: number) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
+  removeFromCart: (productId: string) => void;
   clearCart: () => void;
   dismissCartNotice: () => void;
 }
