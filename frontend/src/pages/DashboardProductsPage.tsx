@@ -25,7 +25,7 @@ type StockFilter = "all" | "in-stock" | "low-stock" | "out-of-stock";
 
 function getStockStatus(stock: number): "In stock" | "Low stock" | "Out of stock" {
   if (stock <= 0) return "Out of stock";
-  if (stock <= 10) return "Low stock";
+  if (stock <= 5) return "Low stock";
   return "In stock";
 }
 

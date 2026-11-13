@@ -38,6 +38,9 @@ import {
   getProducts,
   updateProduct,
 } from "../shared/services/product.service";
+import type { ProductInput } from "../shared/services/product.service";
+import { getBranches } from "../shared/services/branches.service";
+import type { Branch } from "../shared/types/type";
 import { reportsService } from "../shared/services/reports.service";
 import type { DashboardReport } from "../shared/services/reports.service";
 import { formatPrice } from "../shared/utils/pricing";
@@ -80,7 +83,7 @@ function toFormValues(product: StoreProduct): ProductFormValues {
   };
 }
 
-function toProductInput(values: ProductFormValues) {
+function toCatalogInput(values: ProductFormValues): ProductInput {
   return {
     title: values.title.trim(),
     description: values.description.trim(),
@@ -90,13 +93,13 @@ function toProductInput(values: ProductFormValues) {
     discountPercentage: Number(values.discountPercentage),
     thumbnail: "",
     images: [] as string[],
-    stock: Number(values.stock),
   };
 }
 
 export default function DashboardPreviewPage() {
   const [report, setReport] = useState<DashboardReport | null>(null);
   const [products, setProducts] = useState<StoreProduct[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -110,12 +113,14 @@ export default function DashboardPreviewPage() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [reportData, productData] = await Promise.all([
+      const [reportData, productData, branchData] = await Promise.all([
         reportsService.admin(),
         getProducts(),
+        getBranches(),
       ]);
       setReport(reportData);
       setProducts(productData);
+      setBranches(branchData);
       setLoadError("");
     } catch (error) {
       setLoadError(normalizeError(error, "Failed to load dashboard data.").message);
@@ -193,14 +198,32 @@ export default function DashboardPreviewPage() {
 
   async function handleProductSubmit(values: ProductFormValues) {
     setActionError("");
-    const input = toProductInput(values);
+    const catalog = toCatalogInput(values);
 
     try {
       if (editingProductId === null) {
-        await createProduct(input);
+        // Create sends catalog fields + initial per-branch stock. Stock/price
+        // per branch afterwards go through /stock and /branch-price only.
+        const initialStock = Number(values.stock);
+        await createProduct({
+          ...catalog,
+          branchInventory: branches.map((branch) => ({
+            branchId: branch.id,
+            price: catalog.price,
+            stock: Number.isInteger(initialStock) && initialStock >= 0 ? initialStock : 0,
+          })),
+        });
         setActionMessage("Product added successfully.");
       } else {
-        await updateProduct(editingProductId, input);
+        // PATCH accepts catalog fields only — never stock/branchInventory.
+        await updateProduct(editingProductId, {
+          title: catalog.title,
+          description: catalog.description,
+          category: catalog.category,
+          brand: catalog.brand,
+          price: catalog.price,
+          discountPercentage: catalog.discountPercentage,
+        });
         setActionMessage("Product updated successfully.");
       }
       setProducts(await getProducts());
