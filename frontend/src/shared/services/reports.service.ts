@@ -131,7 +131,7 @@ function buildReport(
 
 async function mockAdminReport(): Promise<DashboardReport> {
   const [orders, products, branches] = await Promise.all([
-    ordersService.getOrders(),
+    ordersService.list({ page: 1, limit: 1000 }).then((r) => r.items),
     getProducts(),
     getBranches(),
   ]);
@@ -142,7 +142,7 @@ async function mockBranchReport(): Promise<DashboardReport> {
   const user = authService.getCurrentUser();
   const branchId = user?.branchId;
   const [orders, products, branches] = await Promise.all([
-    ordersService.getOrders(),
+    ordersService.list({ page: 1, limit: 1000 }).then((r) => r.items),
     getProducts(),
     getBranches(),
   ]);

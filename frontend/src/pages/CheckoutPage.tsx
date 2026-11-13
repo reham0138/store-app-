@@ -145,9 +145,25 @@ export default function CheckoutPage() {
       });
     } catch (error) {
       const normalized = normalizeError(error, "We couldn’t place your order. Please try again.");
-      setSaveError(normalized.message);
       if (normalized.code === "INSUFFICIENT_STOCK") {
+        // Tell the user which items failed and refresh cart quantities.
+        const details = Array.isArray(normalized.details)
+          ? (normalized.details as { productId: string; available: number }[])
+          : [];
+        if (details.length > 0) {
+          const names = details
+            .map((d) => items.find((i) => i.product.id === d.productId)?.product.title ?? d.productId)
+            .join(", ");
+          setSaveError(
+            `Not enough stock for: ${names}. Your cart was updated — please review quantities and try again.`,
+          );
+        } else {
+          setSaveError(normalized.message);
+        }
+        // Refresh product data so the cart re-caps quantities at real stock.
         window.dispatchEvent(new Event("products-updated"));
+      } else {
+        setSaveError(normalized.message);
       }
     } finally {
       setSubmitting(false);

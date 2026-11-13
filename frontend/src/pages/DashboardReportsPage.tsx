@@ -204,7 +204,7 @@ export default function DashboardReportsPage() {
 
     paidOrders.forEach((order) => {
       order.items.forEach((item) => {
-        const category = item.category;
+        const category = item.category ?? "Uncategorized";
         categoryTotals.set(
           category,
           (categoryTotals.get(category) ?? 0) + item.quantity,
@@ -267,8 +267,8 @@ export default function DashboardReportsPage() {
       .forEach((order) => {
         order.items.forEach((item) => {
           map.set(
-            item.category,
-            (map.get(item.category) ?? 0) + item.quantity,
+            item.category ?? "Uncategorized",
+            (map.get(item.category ?? "Uncategorized") ?? 0) + item.quantity,
           );
         });
       });

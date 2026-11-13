@@ -7,6 +7,7 @@ import { ordersService } from "../shared/services/orders.service";
 import type { Order } from "../shared/types/order";
 
 import { formatPrice } from "../shared/utils/pricing";
+import { shortOrderId } from "../shared/utils/orderId";
 
 export default function OrderSuccessPage() {
   const location = useLocation();
@@ -97,6 +98,9 @@ export default function OrderSuccessPage() {
             </p>
 
             <p className="font-semibold text-brand-navy">
+              {shortOrderId(order.id)}
+            </p>
+            <p className="text-xs text-text-slate" title={order.id}>
               {order.id}
             </p>
           </div>

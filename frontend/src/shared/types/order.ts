@@ -28,7 +28,9 @@ export interface OrderItem {
   productId: string;
   title: string;
   thumbnail: string;
-  category: string;
+  /** Optional snapshot kept for mock reports; the contract item shape is
+   *  { productId, title, thumbnail, unitPrice, quantity }. */
+  category?: string;
   unitPrice: number;
   quantity: number;
 }
@@ -36,6 +38,8 @@ export interface OrderItem {
 export interface Order {
   id: string;
   userId?: string;
+  /** Direct indexed field used by reports/scoping (contract §4). */
+  branchId?: string;
   items: OrderItem[];
   branch?: {
     id: string;

@@ -2,17 +2,20 @@ export interface ApiErrorShape {
   message: string;
   code?: string;
   status?: number;
+  details?: unknown;
 }
 
 export class ApiError extends Error {
   code?: string;
   status?: number;
+  details?: unknown;
 
-  constructor(message: string, code?: string, status?: number) {
+  constructor(message: string, code?: string, status?: number, details?: unknown) {
     super(message);
     this.name = "ApiError";
     this.code = code;
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -41,10 +44,23 @@ function extractCode(data: unknown): string | undefined {
   return undefined;
 }
 
-/** Normalizes axios/fetch errors into { message, code } for UI display. */
+function extractDetails(data: unknown): unknown {
+  if (typeof data === "object" && data !== null) {
+    const details = (data as { details?: unknown }).details;
+    if (details !== undefined) return details;
+  }
+  return undefined;
+}
+
+/** Normalizes axios/fetch errors into { message, code, status, details } for UI display. */
 export function normalizeError(error: unknown, fallback = "Something went wrong. Please try again."): ApiErrorShape {
   if (error instanceof ApiError) {
-    return { message: error.message, code: error.code, status: error.status };
+    return {
+      message: error.message,
+      code: error.code,
+      status: error.status,
+      details: error.details,
+    };
   }
 
   const axiosLike = error as {
@@ -58,6 +74,7 @@ export function normalizeError(error: unknown, fallback = "Something went wrong.
       message: extractMessage(data, fallback),
       code: extractCode(data),
       status,
+      details: extractDetails(data),
     };
   }
 

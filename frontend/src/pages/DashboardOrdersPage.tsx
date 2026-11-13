@@ -17,10 +17,14 @@ import { ordersService } from "../shared/services/orders.service";
 import { normalizeError } from "../shared/api/errors";
 import { Select } from "../shared/components/Select";
 import { FormError } from "../shared/components/FormError";
+import { Label } from "../shared/components/Label";
+import { shortOrderId } from "../shared/utils/orderId";
 
 interface DashboardOrdersPageProps {
   branchScoped?: boolean;
 }
+
+const PAGE_SIZE = 20;
 
 const statusLabels: Record<OrderStatusValue, string> = {
   pending: "Pending",
@@ -30,12 +34,23 @@ const statusLabels: Record<OrderStatusValue, string> = {
   cancelled: "Cancelled",
 };
 
+const STATUS_FILTER_OPTIONS: { value: "" | OrderStatusValue; label: string }[] = [
+  { value: "", label: "All statuses" },
+  { value: "pending", label: "Pending" },
+  { value: "processing", label: "Processing" },
+  { value: "shipped", label: "Shipped" },
+  { value: "delivered", label: "Delivered" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
 const orderColumns: DashboardTableColumn<Order>[] = [
   {
     key: "id",
     header: "Order",
     render: (order) => (
-      <span className="font-medium text-brand-navy">{order.id}</span>
+      <span className="font-medium text-brand-navy" title={order.id}>
+        {shortOrderId(order.id)}
+      </span>
     ),
   },
   {
@@ -65,22 +80,33 @@ export default function DashboardOrdersPage({
   branchScoped = false,
 }: DashboardOrdersPageProps) {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<"" | OrderStatusValue>("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
 
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
   const loadOrders = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const data = await ordersService.getOrders();
-      setOrders(data);
+      const data = await ordersService.list({
+        status: statusFilter || undefined,
+        page,
+        limit: PAGE_SIZE,
+      });
+      setOrders(data.items);
+      setTotal(data.total);
       setError("");
     } catch (loadError) {
       setError(normalizeError(loadError, "Failed to load orders.").message);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page, statusFilter]);
 
   useEffect(() => {
     queueMicrotask(() => void loadOrders());
@@ -91,10 +117,15 @@ export default function DashboardOrdersPage({
     setActionMessage("");
     try {
       await ordersService.updateOrderStatus(order.id, status);
-      setActionMessage(`Order ${order.id} updated to ${status}.`);
+      setActionMessage(`Order ${shortOrderId(order.id)} updated to ${statusLabels[status]}.`);
       await loadOrders();
     } catch (updateError) {
-      setActionError(normalizeError(updateError, "Unable to update order status.").message);
+      const normalized = normalizeError(updateError, "Unable to update order status.");
+      setActionError(normalized.message);
+      if (normalized.code === "INVALID_TRANSITION") {
+        // Status changed elsewhere — refresh so the dropdown shows reality.
+        await loadOrders();
+      }
     }
   }
 
@@ -154,6 +185,19 @@ export default function DashboardOrdersPage({
       />
 
       <DashboardCard title="All orders">
+        <div className="mb-6 max-w-xs">
+          <Label label="Status">
+            <Select
+              value={statusFilter}
+              options={STATUS_FILTER_OPTIONS}
+              onChange={(event) => {
+                setStatusFilter(event.target.value as "" | OrderStatusValue);
+                setPage(1);
+              }}
+            />
+          </Label>
+        </div>
+
         {isLoading && (
           <p className="py-12 text-center text-sm text-text-slate">
             Loading orders...
@@ -178,11 +222,36 @@ export default function DashboardOrdersPage({
           </p>
         )}
         {!isLoading && !error && orders.length > 0 && (
-          <DashboardTable
-            columns={columns}
-            rows={orders}
-            getRowKey={(order) => order.id}
-          />
+          <>
+            <DashboardTable
+              columns={columns}
+              rows={orders}
+              getRowKey={(order) => order.id}
+            />
+            {totalPages > 1 && (
+              <nav className="mt-6 flex items-center justify-center gap-3" aria-label="Order pages">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="rounded-lg border border-border-subtle bg-surface-white px-4 py-2 text-sm font-medium text-brand-navy disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-text-slate">
+                  Page {page} of {totalPages} · {total} orders
+                </span>
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded-lg border border-border-subtle bg-surface-white px-4 py-2 text-sm font-medium text-brand-navy disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </nav>
+            )}
+          </>
         )}
         {!isLoading && !error && orders.length === 0 && (
           <DashboardEmptyState
