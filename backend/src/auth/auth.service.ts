@@ -14,7 +14,7 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const email = dto.email.toLocaleLowerCase().trim();
     const existingUser = await this.userService.findByEmail(email);
-    if (!existingUser) {
+    if (existingUser) {
       throw new ConflictException('email already register');
     }
     const passwordHash = await bcrypt.hash(dto.password, 10);
@@ -33,7 +33,7 @@ export class AuthService {
     }
     const passwordMatches=await bcrypt.compare(
         dto.password,
-        user.passWordHash
+        user.passwordHash
     );
     if(!passwordMatches){
         throw new UnauthorizedException('invalid email or password ')

@@ -9,7 +9,7 @@ export class User{
     @Prop({required:true,unique:true,trim:true,lowercase:true})
     email:string;
     @Prop({required:true,trim:true})
-    passWordHash:string;
+    passwordHash:string;
     @Prop({required:true,enum:['customer','staff','admin'],default:'customer'})
     role:UserRole;
     
