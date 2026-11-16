@@ -105,6 +105,23 @@ function DashboardEntryRedirect() {
   return <Navigate to="/" replace />;
 }
 
+function ForbiddenPage() {
+  return (
+    <section className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center gap-4 px-4 text-center">
+      <h1 className="text-3xl font-semibold text-brand-navy">Access denied</h1>
+      <p className="text-text-slate">
+        You don't have permission to view this page.
+      </p>
+      <a
+        href="/"
+        className="rounded-lg bg-brand-navy px-6 py-3 font-medium text-white"
+      >
+        Back to home
+      </a>
+    </section>
+  );
+}
+
 function BranchManagerDashboardTopbar() {
   const { user } = useAuth();
   const { branches } = useBranch();
@@ -131,14 +148,17 @@ function App() {
                 <Route path="branches" element={<BranchesPage />} />
                 <Route path="branch-test" element={<BranchesPage />} />
                 <Route path="cart" element={<CartPage />} />
-                <Route path="checkout" element={<CheckoutPage />} />
-                <Route path="orders" element={<OrdersPage />} />
-                <Route
-                  path="order-success"
-                  element={<OrderSuccessPage />}
-                />
+                <Route element={<ProtectedRoute />}>
+                  <Route path="checkout" element={<CheckoutPage />} />
+                  <Route path="orders" element={<OrdersPage />} />
+                  <Route
+                    path="order-success"
+                    element={<OrderSuccessPage />}
+                  />
+                </Route>
                 <Route path="login" element={<LoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
+                <Route path="forbidden" element={<ForbiddenPage />} />
               </Route>
               <Route path="dashboard" element={<DashboardEntryRedirect />} />
               <Route element={<ProtectedRoute roles={["admin"]} />}>

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { BranchContext } from "./BranchContext";
 import type { Branch } from "../types/type";
+import { getBranches } from "../services/branches.service";
+import { normalizeError } from "../api/errors";
 
 type BranchProviderProps = {
   children: ReactNode;
@@ -29,34 +31,21 @@ export function BranchProvider({
 
     let isMounted = true;
 
-    async function loadBranches() {
-      try {
-        const response = await fetch("/mock/branches.json");
-        if (!response.ok) {
-          throw new Error(`Failed to load branches (${response.status}).`);
-        }
-
-        const data: unknown = await response.json();
-        if (!isBranchListResponse(data)) {
-          throw new Error("Branch data has an invalid format.");
-        }
-
-        if (isMounted) setBranches(data.branches);
-      } catch (loadError) {
+    getBranches()
+      .then((data) => {
+        if (isMounted) setBranches(data);
+      })
+      .catch((loadError) => {
         console.error("Unable to load branches.", loadError);
         if (isMounted) {
           setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Unable to load branches.",
+            normalizeError(loadError, "Unable to load branches.").message,
           );
         }
-      } finally {
+      })
+      .finally(() => {
         if (isMounted) setIsLoading(false);
-      }
-    }
-
-    void loadBranches();
+      });
 
     return () => {
       isMounted = false;
@@ -98,28 +87,5 @@ export function BranchProvider({
     >
       {children}
     </BranchContext.Provider>
-  );
-}
-
-function isBranchListResponse(
-  value: unknown,
-): value is { branches: Branch[] } {
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    !("branches" in value) ||
-    !Array.isArray(value.branches)
-  ) {
-    return false;
-  }
-
-  return value.branches.every(
-    (branch) =>
-      typeof branch === "object" &&
-      branch !== null &&
-      "id" in branch &&
-      typeof branch.id === "string" &&
-      "name" in branch &&
-      typeof branch.name === "string",
   );
 }

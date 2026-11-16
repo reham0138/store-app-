@@ -1,5 +1,5 @@
 import { ClipboardList } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -10,25 +10,47 @@ import {
 } from "../shared/components/dashboard";
 import type { DashboardTableColumn } from "../shared/components/dashboard";
 import OrderStatus from "../shared/components/OrderStatus";
-import { useOrders } from "../shared/hooks/useOrders";
 import { formatPrice } from "../shared/utils/pricing";
-import type { Order } from "../shared/types/order";
-import { useAuth } from "../shared/hooks/useAuth";
+import type { Order, OrderStatus as OrderStatusValue } from "../shared/types/order";
+import { ORDER_STATUS_FLOW } from "../shared/types/order";
+import { ordersService } from "../shared/services/orders.service";
+import { normalizeError } from "../shared/api/errors";
 import { Select } from "../shared/components/Select";
 import { FormError } from "../shared/components/FormError";
-import { updateOrderStatus } from "../shared/utils/orderStorage";
-import type { OrderStatus as OrderStatusValue } from "../shared/types/order";
+import { Label } from "../shared/components/Label";
+import { shortOrderId } from "../shared/utils/orderId";
 
 interface DashboardOrdersPageProps {
   branchScoped?: boolean;
 }
+
+const PAGE_SIZE = 20;
+
+const statusLabels: Record<OrderStatusValue, string> = {
+  pending: "Pending",
+  processing: "Processing",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
+
+const STATUS_FILTER_OPTIONS: { value: "" | OrderStatusValue; label: string }[] = [
+  { value: "", label: "All statuses" },
+  { value: "pending", label: "Pending" },
+  { value: "processing", label: "Processing" },
+  { value: "shipped", label: "Shipped" },
+  { value: "delivered", label: "Delivered" },
+  { value: "cancelled", label: "Cancelled" },
+];
 
 const orderColumns: DashboardTableColumn<Order>[] = [
   {
     key: "id",
     header: "Order",
     render: (order) => (
-      <span className="font-medium text-brand-navy">{order.id}</span>
+      <span className="font-medium text-brand-navy" title={order.id}>
+        {shortOrderId(order.id)}
+      </span>
     ),
   },
   {
@@ -54,63 +76,91 @@ const orderColumns: DashboardTableColumn<Order>[] = [
   },
 ];
 
-const orderStatuses: { value: OrderStatusValue; label: string }[] = [
-  { value: "pending", label: "Pending" },
-  { value: "processing", label: "Processing" },
-  { value: "shipped", label: "Shipped" },
-  { value: "delivered", label: "Delivered" },
-  { value: "cancelled", label: "Cancelled" },
-];
-
 export default function DashboardOrdersPage({
   branchScoped = false,
 }: DashboardOrdersPageProps) {
-  const orders = useOrders();
-  const { user } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<"" | OrderStatusValue>("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
-  const assignedBranchId = user?.branchId;
-  const visibleOrders = branchScoped
-    ? orders.filter(
-        (order) =>
-          Boolean(assignedBranchId) && order.branch?.id === assignedBranchId,
-      )
-    : orders;
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const loadOrders = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await ordersService.list({
+        status: statusFilter || undefined,
+        page,
+        limit: PAGE_SIZE,
+      });
+      setOrders(data.items);
+      setTotal(data.total);
+      setError("");
+    } catch (loadError) {
+      setError(normalizeError(loadError, "Failed to load orders.").message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [page, statusFilter]);
+
+  useEffect(() => {
+    queueMicrotask(() => void loadOrders());
+  }, [loadOrders]);
+
+  async function handleStatusChange(order: Order, status: OrderStatusValue) {
+    setActionError("");
+    setActionMessage("");
+    try {
+      await ordersService.updateOrderStatus(order.id, status);
+      setActionMessage(`Order ${shortOrderId(order.id)} updated to ${statusLabels[status]}.`);
+      await loadOrders();
+    } catch (updateError) {
+      const normalized = normalizeError(updateError, "Unable to update order status.");
+      setActionError(normalized.message);
+      if (normalized.code === "INVALID_TRANSITION") {
+        // Status changed elsewhere — refresh so the dropdown shows reality.
+        await loadOrders();
+      }
+    }
+  }
+
   const columns: DashboardTableColumn<Order>[] = [
     ...orderColumns,
     {
       key: "status",
       header: "Status",
-      render: (order) => (
-        <div className="flex min-w-40 items-center gap-2">
-          <OrderStatus status={order.status} />
-          <Select
-            aria-label={`Update status for order ${order.id}`}
-            value={order.status}
-            options={orderStatuses}
-            disabled={branchScoped && !user?.branchId}
-            onChange={(event) => {
-              const status = event.currentTarget.value as OrderStatusValue;
-              setActionError("");
-              setActionMessage("");
-              try {
-                updateOrderStatus(
-                  order.id,
-                  status,
-                  branchScoped ? user?.branchId ?? "" : undefined,
-                );
-                setActionMessage(`Order ${order.id} updated to ${status}.`);
-              } catch (error) {
-                setActionError(
-                  error instanceof Error
-                    ? error.message
-                    : "Unable to update order status.",
-                );
-              }
-            }}
-          />
-        </div>
-      ),
+      render: (order) => {
+        const nextStatuses = ORDER_STATUS_FLOW[order.status];
+        return (
+          <div className="flex min-w-40 items-center gap-2">
+            <OrderStatus status={order.status} />
+            {nextStatuses.length > 0 ? (
+              <Select
+                aria-label={`Update status for order ${order.id}`}
+                value={order.status}
+                options={[
+                  { value: order.status, label: `${statusLabels[order.status]} (current)` },
+                  ...nextStatuses.map((status) => ({
+                    value: status,
+                    label: `Move to ${statusLabels[status]}`,
+                  })),
+                ]}
+                onChange={(event) => {
+                  const status = event.currentTarget.value as OrderStatusValue;
+                  if (status !== order.status) void handleStatusChange(order, status);
+                }}
+              />
+            ) : (
+              <span className="text-xs text-text-slate">Final status</span>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -122,7 +172,7 @@ export default function DashboardOrdersPage({
         description={
           branchScoped
             ? "Review orders placed through your assigned branch."
-            : "Review all orders currently stored for the store."
+            : "Review all orders across the store."
         }
         actions={
           <Link
@@ -135,19 +185,75 @@ export default function DashboardOrdersPage({
       />
 
       <DashboardCard title="All orders">
+        <div className="mb-6 max-w-xs">
+          <Label label="Status">
+            <Select
+              value={statusFilter}
+              options={STATUS_FILTER_OPTIONS}
+              onChange={(event) => {
+                setStatusFilter(event.target.value as "" | OrderStatusValue);
+                setPage(1);
+              }}
+            />
+          </Label>
+        </div>
+
+        {isLoading && (
+          <p className="py-12 text-center text-sm text-text-slate">
+            Loading orders...
+          </p>
+        )}
+        {!isLoading && error && (
+          <div className="py-8 text-center">
+            <p className="text-sm text-status-error">{error}</p>
+            <button
+              type="button"
+              onClick={() => void loadOrders()}
+              className="mt-3 rounded-lg bg-brand-navy px-4 py-2 text-sm text-white"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
         {actionError && <div className="mb-4"><FormError message={actionError} /></div>}
         {actionMessage && (
           <p className="mb-4 text-sm text-status-success" role="status">
             {actionMessage}
           </p>
         )}
-        {visibleOrders.length > 0 ? (
-          <DashboardTable
-            columns={columns}
-            rows={visibleOrders}
-            getRowKey={(order) => order.id}
-          />
-        ) : (
+        {!isLoading && !error && orders.length > 0 && (
+          <>
+            <DashboardTable
+              columns={columns}
+              rows={orders}
+              getRowKey={(order) => order.id}
+            />
+            {totalPages > 1 && (
+              <nav className="mt-6 flex items-center justify-center gap-3" aria-label="Order pages">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="rounded-lg border border-border-subtle bg-surface-white px-4 py-2 text-sm font-medium text-brand-navy disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-text-slate">
+                  Page {page} of {totalPages} · {total} orders
+                </span>
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded-lg border border-border-subtle bg-surface-white px-4 py-2 text-sm font-medium text-brand-navy disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </nav>
+            )}
+          </>
+        )}
+        {!isLoading && !error && orders.length === 0 && (
           <DashboardEmptyState
             title="No orders yet"
             description={

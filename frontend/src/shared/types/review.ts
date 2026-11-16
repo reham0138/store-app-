@@ -1,10 +1,10 @@
 export interface ProductReview {
   id: string;
-  productId: number;
+  productId: string;
   userId: string;
   userName: string;
   rating: number;
-  comment: string;
+  comment?: string;
   createdAt: string;
   updatedAt?: string;
 }

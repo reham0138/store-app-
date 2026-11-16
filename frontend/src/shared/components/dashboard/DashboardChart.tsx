@@ -88,14 +88,14 @@ function LineChart({ data }: { data: DashboardChartDatum[] }) {
             x2="580"
             y1={y}
             y2={y}
-            stroke="#E5E7EB"
+            className="stroke-border-subtle"
             strokeDasharray="4 5"
           />
         ))}
         <path
           d={path}
           fill="none"
-          stroke="#D4AF37"
+          className="stroke-brand-gold"
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="4"
@@ -106,8 +106,7 @@ function LineChart({ data }: { data: DashboardChartDatum[] }) {
             cx={x}
             cy={y}
             r="5"
-            fill="#0B2D4A"
-            stroke="white"
+            className="fill-brand-navy stroke-surface-white"
             strokeWidth="2"
           >
             <title>{`${label}: ${value}`}</title>

@@ -1,6 +1,7 @@
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export const MIN_PASSWORD_LENGTH = 8
+export const MAX_PASSWORD_LENGTH = 72
 export const MAX_NAME_LENGTH = 100
 export const MAX_EMAIL_LENGTH = 254
 
@@ -27,6 +28,9 @@ export function validatePassword(value: string): string | undefined {
   if (!value.trim()) return 'Enter your password.'
   if (value.length < MIN_PASSWORD_LENGTH) {
     return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`
+  }
+  if (value.length > MAX_PASSWORD_LENGTH) {
+    return `Password must be ${MAX_PASSWORD_LENGTH} characters or fewer.`
   }
   return undefined
 }
