@@ -1,5 +1,5 @@
 export function validate(config: Record<string, unknown>) {
-  const required = ['MONGODB_URI', 'ADMIN_API_KEY', 'STAFF_API_KEY'];
+  const required = ['MONGODB_URI', 'ADMIN_API_KEY', 'STAFF_API_KEY', 'JWT_SECRET'];
   const missing = required.filter((k) => !config[k]);
   if (missing.length) {
     throw new Error(`Missing environment variables: ${missing.join(', ')}`);
