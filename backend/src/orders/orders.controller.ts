@@ -37,7 +37,8 @@ export class OrdersController {
     @Query() query: OrderLookupQueryDto,
     @Req() req: Request & { role?: string },
   ) {
-    const role = req.role ?? 'visitor';
+    const role =
+  req.role === 'customer' ? 'visitor' : req.role ?? 'visitor';
     return this.ordersService.findOne(
       id.toString(),
       query.email,
