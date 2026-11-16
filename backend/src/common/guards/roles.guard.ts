@@ -1,3 +1,4 @@
+
 import {
   Injectable,
   CanActivate,
@@ -7,46 +8,82 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly config: ConfigService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  canActivate(ctx: ExecutionContext) {
+  async canActivate(ctx: ExecutionContext) {
     const req = ctx.switchToHttp().getRequest();
+
     const required = this.reflector.getAllAndOverride<string[]>('roles', [
       ctx.getHandler(),
       ctx.getClass(),
     ]);
 
-    const rawKey = req.headers['x-api-key'];
-    const apiKey = Array.isArray(rawKey) ? rawKey[0] : rawKey;
-    const adminKey = this.config.get<string>('ADMIN_API_KEY');
-    const staffKey = this.config.get<string>('STAFF_API_KEY');
+    const authHeader = req.headers.authorization;
 
-    if (apiKey == null) {
-      req.role = 'visitor';
-    } else if (apiKey === adminKey) {
-      req.role = 'admin';
-    } else if (apiKey === staffKey) {
-      req.role = 'staff';
+    // Check JWT token first
+    if (authHeader) {
+      if (
+        typeof authHeader !== 'string' ||
+        !authHeader.startsWith('Bearer ')
+      ) {
+        throw new UnauthorizedException('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+
+      try {
+        const payload = await this.jwtService.verifyAsync(token);
+
+        if (!['customer', 'staff', 'admin'].includes(payload.role)) {
+          throw new UnauthorizedException('Invalid user role');
+        }
+
+        req.user = payload;
+        req.role = payload.role;
+      } catch {
+        throw new UnauthorizedException('Invalid or expired token');
+      }
     } else {
-      req.role = null;
-      if (required) {
-        throw new UnauthorizedException('Valid API key required');
+      // Keep the old API key system working
+      const rawKey = req.headers['x-api-key'];
+      const apiKey = Array.isArray(rawKey) ? rawKey[0] : rawKey;
+
+      const adminKey = this.config.get<string>('ADMIN_API_KEY');
+      const staffKey = this.config.get<string>('STAFF_API_KEY');
+
+      if (apiKey == null) {
+        req.role = 'visitor';
+      } else if (apiKey === adminKey) {
+        req.role = 'admin';
+      } else if (apiKey === staffKey) {
+        req.role = 'staff';
+      } else {
+        req.role = null;
+
+        if (required) {
+          throw new UnauthorizedException('Valid API key required');
+        }
       }
     }
 
     if (!required) return true;
+
     if (!req.role) {
-      throw new UnauthorizedException('Valid API key required');
+      throw new UnauthorizedException('Authentication required');
     }
+
     if (!required.includes(req.role)) {
       throw new ForbiddenException('Your role cannot do this');
     }
+
     return true;
   }
 }
