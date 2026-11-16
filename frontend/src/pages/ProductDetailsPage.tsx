@@ -1,136 +1,153 @@
-import { ArrowLeft, Pencil, Star, Trash2 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import ProductRating from "../shared/components/ProductRating";
 import { useAuth } from "../shared/hooks/useAuth";
-import { getProducts } from "../shared/services/product.service";
+import { getProduct } from "../shared/services/product.service";
+import { reviewsService } from "../shared/services/reviews.service";
 import type { StoreProduct } from "../shared/types/cart";
 import type { ProductReview } from "../shared/types/review";
-import {
-  addProductReview,
-  deleteProductReview,
-  getProductReviews,
-  updateProductReview,
-} from "../shared/utils/reviewStorage";
 import { formatPrice, getProductPrice } from "../shared/utils/pricing";
 import { useBranch } from "../shared/contexts/useBranch";
+import { normalizeError } from "../shared/api/errors";
+
+const REVIEWS_PAGE_SIZE = 10;
 
 export default function ProductDetailsPage() {
-  const { productId } = useParams();
+  const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { selectedBranch } = useBranch();
   const [product, setProduct] = useState<StoreProduct | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
+  const [reviewsPage, setReviewsPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [rating, setRating] = useState("5");
   const [comment, setComment] = useState("");
-  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editingReview, setEditingReview] = useState<ProductReview | null>(null);
   const [formError, setFormError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const numericProductId = Number(productId);
-
-  const refreshReviews = () => {
-    if (Number.isInteger(numericProductId)) {
-      setReviews(getProductReviews(numericProductId));
-    }
-  };
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadProduct() {
-      try {
-        const products = await getProducts();
-        const found = products.find((item) => item.id === numericProductId);
-        if (!found) {
-          setError("Product not found.");
-          return;
-        }
-        if (isMounted) {
-          setProduct(found);
-          setReviews(getProductReviews(found.id));
-        }
-      } catch (loadError) {
-        if (isMounted) {
-          setError(loadError instanceof Error ? loadError.message : "Unable to load product.");
-        }
-      } finally {
-        if (isMounted) setLoading(false);
+  const loadData = useCallback(async () => {
+    if (!productId) return;
+    try {
+      const [found, reviewData] = await Promise.all([
+        getProduct(productId),
+        reviewsService.list(productId, 1, REVIEWS_PAGE_SIZE),
+      ]);
+      if (!found) {
+        setError("Product not found.");
+        setProduct(null);
+      } else {
+        setProduct(found);
+        setError("");
       }
+      setReviews(reviewData.items);
+      setReviewsTotal(reviewData.total);
+      setReviewsPage(1);
+    } catch (loadError) {
+      setError(normalizeError(loadError, "Unable to load product.").message);
+    } finally {
+      setLoading(false);
     }
-    void loadProduct();
-    return () => {
-      isMounted = false;
-    };
-  }, [numericProductId]);
+  }, [productId]);
 
   useEffect(() => {
-    window.addEventListener("product-reviews-updated", refreshReviews);
-    return () => window.removeEventListener("product-reviews-updated", refreshReviews);
-  });
+    queueMicrotask(() => void loadData());
+  }, [loadData]);
 
-  const averageRating = useMemo(() => {
-    if (!product || reviews.length === 0) return product?.rating ?? 0;
-    return reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
-  }, [product, reviews]);
+  async function loadMoreReviews() {
+    if (!productId || loadingMore) return;
+    const nextPage = reviewsPage + 1;
+    setLoadingMore(true);
+    try {
+      const data = await reviewsService.list(productId, nextPage, REVIEWS_PAGE_SIZE);
+      setReviews((prev) => {
+        const seen = new Set(prev.map((r) => r.id));
+        return [...prev, ...data.items.filter((r) => !seen.has(r.id))];
+      });
+      setReviewsTotal(data.total);
+      setReviewsPage(nextPage);
+    } catch (loadError) {
+      setFormError(normalizeError(loadError, "Unable to load more reviews.").message);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  const myReview = useMemo(
+    () => reviews.find((review) => review.userId === user?.id) ?? null,
+    [reviews, user],
+  );
 
   function resetForm() {
     setRating("5");
     setComment("");
-    setEditingReviewId(null);
+    setEditingReview(null);
     setFormError("");
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!user || !product) return;
+    if (!user || !product || submitting) return;
 
     const parsedRating = Number(rating);
     const trimmedComment = comment.trim();
-    if (!trimmedComment || parsedRating < 1 || parsedRating > 5) {
-      setFormError("Choose a rating from 1 to 5 and write a comment.");
+    if (!Number.isInteger(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      setFormError("Choose a rating from 1 to 5.");
+      return;
+    }
+    if (!trimmedComment) {
+      setFormError("Please write a comment for your review.");
+      return;
+    }
+    if (trimmedComment.length > 500) {
+      setFormError("Comment must be 500 characters or fewer.");
       return;
     }
 
+    setSubmitting(true);
+    setFormError("");
     try {
-      if (editingReviewId) {
-        updateProductReview(editingReviewId, user.id, {
-          rating: parsedRating,
-          comment: trimmedComment,
-        });
-      } else {
-        addProductReview({
-          productId: product.id,
-          userId: user.id,
-          userName: user.name,
-          rating: parsedRating,
-          comment: trimmedComment,
-        });
-      }
+      // POST upserts the user's single review for this product.
+      await reviewsService.upsert(product.id, {
+        rating: parsedRating,
+        comment: trimmedComment,
+      });
       resetForm();
-      refreshReviews();
+      await loadData();
     } catch (submitError) {
-      setFormError(submitError instanceof Error ? submitError.message : "Unable to save review.");
+      setFormError(normalizeError(submitError, "Unable to save review.").message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
   function startEditing(review: ProductReview) {
     if (!user || review.userId !== user.id) return;
-    setEditingReviewId(review.id);
+    setEditingReview(review);
     setRating(String(review.rating));
-    setComment(review.comment);
+    setComment(review.comment ?? "");
     setFormError("");
   }
 
-  function handleDelete(review: ProductReview) {
-    if (!user || review.userId !== user.id) return;
+  async function handleDelete(review: ProductReview) {
+    if (!user || review.userId !== user.id || submitting) return;
+    setSubmitting(true);
+    setFormError("");
     try {
-      deleteProductReview(review.id, user.id);
-      refreshReviews();
+      await reviewsService.remove(review.id);
+      if (editingReview?.id === review.id) resetForm();
+      await loadData();
     } catch (deleteError) {
-      setFormError(deleteError instanceof Error ? deleteError.message : "Unable to delete review.");
+      setFormError(normalizeError(deleteError, "Unable to delete review.").message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -142,12 +159,24 @@ export default function ProductDetailsPage() {
     return (
       <section className="mx-auto max-w-7xl px-4 py-20 text-center">
         <p className="text-status-error">{error || "Product not found."}</p>
-        <Link to="/products" className="mt-4 inline-flex text-sm font-semibold text-brand-navy underline">
+        <button
+          type="button"
+          onClick={() => {
+            setLoading(true);
+            void loadData();
+          }}
+          className="mt-4 inline-flex text-sm font-semibold text-brand-navy underline"
+        >
+          Try again
+        </button>
+        <Link to="/products" className="mt-4 ms-4 inline-flex text-sm font-semibold text-brand-navy underline">
           Back to products
         </Link>
       </section>
     );
   }
+
+  const hasMoreReviews = reviews.length < reviewsTotal;
 
   return (
     <div className="min-h-screen bg-page">
@@ -162,7 +191,7 @@ export default function ProductDetailsPage() {
             <p className="text-sm text-text-slate">{product.brand} · {product.category}</p>
             <h1 className="mt-2 text-3xl font-bold text-brand-navy">{product.title}</h1>
             <div className="mt-4">
-              <ProductRating rating={averageRating} reviewCount={reviews.length} />
+              <ProductRating rating={product.rating} reviewCount={product.reviewCount ?? 0} />
             </div>
             <p className="mt-5 leading-7 text-text-slate">{product.description}</p>
             <p className="mt-6 text-2xl font-bold text-brand-navy">
@@ -174,7 +203,7 @@ export default function ProductDetailsPage() {
         <section className="mt-10 grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
           <div>
             <h2 className="text-2xl font-bold text-brand-navy">Customer reviews</h2>
-            <p className="mt-1 text-sm text-text-slate">{reviews.length} review{reviews.length === 1 ? "" : "s"}</p>
+            <p className="mt-1 text-sm text-text-slate">{reviewsTotal} review{reviewsTotal === 1 ? "" : "s"}</p>
             <div className="mt-5 space-y-4">
               {reviews.length === 0 && (
                 <p className="rounded-xl border border-border-subtle bg-surface-white p-6 text-sm text-text-slate">No reviews yet. Be the first to share your experience.</p>
@@ -189,26 +218,38 @@ export default function ProductDetailsPage() {
                     {user?.id === review.userId && (
                       <div className="flex gap-2">
                         <button type="button" onClick={() => startEditing(review)} aria-label="Edit your review" className="text-brand-navy hover:text-brand-gold"><Pencil size={17} /></button>
-                        <button type="button" onClick={() => handleDelete(review)} aria-label="Delete your review" className="text-status-error hover:opacity-70"><Trash2 size={17} /></button>
+                        <button type="button" onClick={() => void handleDelete(review)} disabled={submitting} aria-label="Delete your review" className="text-status-error hover:opacity-70"><Trash2 size={17} /></button>
                       </div>
                     )}
                   </div>
-                  <p className="mt-3 text-sm leading-6 text-text-slate">{review.comment}</p>
+                  {review.comment && (
+                    <p className="mt-3 text-sm leading-6 text-text-slate">{review.comment}</p>
+                  )}
                 </article>
               ))}
+              {hasMoreReviews && (
+                <button
+                  type="button"
+                  onClick={() => void loadMoreReviews()}
+                  disabled={loadingMore}
+                  className="w-full rounded-xl border border-border-subtle bg-surface-white px-4 py-3 text-sm font-semibold text-brand-navy transition hover:bg-surface-cream disabled:opacity-60"
+                >
+                  {loadingMore ? "Loading..." : "Load more reviews"}
+                </button>
+              )}
             </div>
           </div>
 
           <div className="h-fit rounded-xl border border-border-subtle bg-surface-white p-6">
             <h2 className="text-xl font-bold text-brand-navy">
-              {editingReviewId ? "Edit your review" : "Write a review"}
+              {editingReview || myReview ? "Update your review" : "Write a review"}
             </h2>
             {!user ? (
               <p className="mt-3 text-sm text-text-slate">
                 <Link to="/login" className="font-semibold text-brand-navy underline">Sign in</Link> to rate and review this product.
               </p>
             ) : (
-              <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+              <form onSubmit={(event) => void handleSubmit(event)} className="mt-4 space-y-4">
                 <label className="block text-sm font-medium text-brand-navy">
                   Rating
                   <select value={rating} onChange={(event) => setRating(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-border-subtle bg-white px-3">
@@ -217,12 +258,14 @@ export default function ProductDetailsPage() {
                 </label>
                 <label className="block text-sm font-medium text-brand-navy">
                   Comment
-                  <textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={5} maxLength={1000} placeholder="Tell other shoppers about this product..." className="mt-2 w-full rounded-lg border border-border-subtle p-3 text-sm outline-none focus:border-brand-gold" />
+                  <textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={5} maxLength={500} placeholder="Tell other shoppers about this product..." className="mt-2 w-full rounded-lg border border-border-subtle p-3 text-sm outline-none focus:border-brand-gold" />
                 </label>
                 {formError && <p className="text-sm text-status-error" role="alert">{formError}</p>}
                 <div className="flex gap-3">
-                  <button type="submit" className="rounded-lg bg-brand-navy px-4 py-2 text-sm font-semibold text-white">{editingReviewId ? "Save changes" : "Publish review"}</button>
-                  {editingReviewId && <button type="button" onClick={resetForm} className="rounded-lg border border-border-subtle px-4 py-2 text-sm font-semibold text-text-slate">Cancel</button>}
+                  <button type="submit" disabled={submitting} className="rounded-lg bg-brand-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+                    {submitting ? "Saving…" : editingReview || myReview ? "Update review" : "Publish review"}
+                  </button>
+                  {editingReview && <button type="button" onClick={resetForm} className="rounded-lg border border-border-subtle px-4 py-2 text-sm font-semibold text-text-slate">Cancel</button>}
                 </div>
               </form>
             )}

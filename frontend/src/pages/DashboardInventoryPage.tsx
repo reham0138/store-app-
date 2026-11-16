@@ -6,7 +6,7 @@ import {
   Pencil,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -19,13 +19,22 @@ import {
 import type { DashboardTableColumn } from "../shared/components/dashboard";
 import { useBranch } from "../shared/contexts/useBranch";
 import type { StoreProduct } from "../shared/types/cart";
-import { getProducts } from "../shared/services/product.service";
 import { formatPrice } from "../shared/utils/pricing";
 import { useAuth } from "../shared/hooks/useAuth";
 import Button from "../shared/components/Button";
 import { FormError } from "../shared/components/FormError";
 import { Input } from "../shared/components/Input";
-import { saveProducts, updateBranchProductStock } from "../shared/utils/productStorage";
+import { Select } from "../shared/components/Select";
+import { Label } from "../shared/components/Label";
+import {
+  listProducts,
+  updateProductStock,
+} from "../shared/services/product.service";
+import type { StockStatusFilter } from "../shared/services/product.service";
+import { normalizeError } from "../shared/api/errors";
+
+const PAGE_SIZE = 20;
+const LOW_STOCK_THRESHOLD = 5;
 
 interface DashboardInventoryPageProps {
   branchScoped?: boolean;
@@ -38,9 +47,9 @@ interface InventoryRow {
   status: "In stock" | "Low stock" | "Out of stock";
 }
 
-function getStockStatus(stock: number): "In stock" | "Low stock" | "Out of stock" {
+function stockStatusOf(stock: number): InventoryRow["status"] {
   if (stock <= 0) return "Out of stock";
-  if (stock <= 10) return "Low stock";
+  if (stock <= LOW_STOCK_THRESHOLD) return "Low stock";
   return "In stock";
 }
 
@@ -49,79 +58,116 @@ export default function DashboardInventoryPage({
 }: DashboardInventoryPageProps) {
   const { branches, selectedBranch } = useBranch();
   const { user } = useAuth();
-  const branchId = branchScoped ? user?.branchId : selectedBranch?.id;
+  const managerBranchId = branchScoped ? user?.branchId : undefined;
+  const [chosenBranchId, setChosenBranchId] = useState("");
+  const adminBranchId = chosenBranchId || selectedBranch?.id || "";
+  const branchId = branchScoped ? managerBranchId : adminBranchId || undefined;
   const inventoryBranch = branches.find((branch) => branch.id === branchId);
+
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [stockStatus, setStockStatus] = useState<"" | StockStatusFilter>("");
+  const [page, setPage] = useState(1);
+
   const [products, setProducts] = useState<StoreProduct[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totals, setTotals] = useState({ all: 0, low: 0, out: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [stockDraft, setStockDraft] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
 
+  // Debounce search; any filter change resets to page 1.
   useEffect(() => {
-    let isMounted = true;
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 350);
+    return () => window.clearTimeout(timeoutId);
+  }, [search]);
 
-    async function loadProducts() {
-      try {
-        const loadedProducts = await getProducts();
-        if (isMounted) setProducts(loadedProducts);
-      } catch (loadError) {
-        if (isMounted) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load inventory.",
-          );
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
+  const resetPageOnFilter = (apply: () => void) => {
+    apply();
+    setPage(1);
+  };
+
+  const loadProducts = useCallback(async () => {
+    setIsLoading(true);
+    if (branchScoped && !managerBranchId) {
+      setProducts([]);
+      setTotal(0);
+      setIsLoading(false);
+      return;
     }
+    try {
+      const [list, all, low, out] = await Promise.all([
+        listProducts({
+          branchId,
+          search: debouncedSearch || undefined,
+          category: category || undefined,
+          stockStatus: stockStatus || undefined,
+          page,
+          limit: PAGE_SIZE,
+        }),
+        branchId
+          ? listProducts({ branchId, page: 1, limit: 1 })
+          : Promise.resolve({ total: 0 }),
+        branchId
+          ? listProducts({ branchId, stockStatus: "low", page: 1, limit: 1 })
+          : Promise.resolve({ total: 0 }),
+        branchId
+          ? listProducts({ branchId, stockStatus: "out", page: 1, limit: 1 })
+          : Promise.resolve({ total: 0 }),
+      ]);
+      setProducts(list.items);
+      setTotal(list.total);
+      setTotals({ all: all.total, low: low.total, out: out.total });
+      setError("");
+    } catch (loadError) {
+      setError(normalizeError(loadError, "Failed to load inventory.").message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [branchId, managerBranchId, branchScoped, debouncedSearch, category, stockStatus, page]);
 
-    void loadProducts();
+  useEffect(() => {
+    queueMicrotask(() => void loadProducts());
+  }, [loadProducts]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const rows = useMemo(() => {
+  const rows = useMemo<InventoryRow[]>(() => {
     return products.map((product) => {
-      const branchStock = branchId
-        ? product.branchInventory?.find(
-            (item) => item.branchId === branchId,
-          )?.stock ?? (branchScoped || product.branchInventory ? 0 : product.stock)
-        : product.stock;
-      const totalStock = branchScoped
-        ? branchStock
-        : product.branchInventory?.reduce(
-            (sum, item) => sum + item.stock,
-            0,
-          ) ?? product.stock;
+      // With ?branchId= the API/mock already reflects that branch's stock on product.stock.
+      const branchStock = product.stock;
+      const totalStock = product.branchInventory?.reduce(
+        (sum, item) => sum + item.stock,
+        0,
+      ) ?? product.stock;
 
       return {
         product,
-        totalStock,
+        totalStock: branchScoped ? branchStock : totalStock,
         branchStock,
-        status: getStockStatus(branchStock),
+        status: stockStatusOf(branchStock),
       };
     });
-  }, [products, branchId, branchScoped]);
+  }, [products, branchScoped]);
 
-  const stats = useMemo(() => {
-    const lowStock = rows.filter((row) => row.status === "Low stock").length;
-    const outOfStock = rows.filter((row) => row.status === "Out of stock").length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-    return {
-      totalProducts: rows.length,
-      lowStock,
-      outOfStock,
-      selectedBranchName: inventoryBranch?.name ?? "all branches",
-    };
-  }, [rows, inventoryBranch]);
+  const categories = useMemo(() => {
+    const set = new Set(products.map((p) => p.category));
+    if (category) set.add(category);
+    return [...set].sort();
+  }, [products, category]);
 
   function startEditing(row: InventoryRow) {
+    if (!branchId) {
+      setActionError("Select a branch before updating stock.");
+      return;
+    }
     setEditingProductId(row.product.id);
     setStockDraft(String(row.branchStock));
     setActionError("");
@@ -134,12 +180,12 @@ export default function DashboardInventoryPage({
     setActionError("");
   }
 
-  function saveStock(productId: number) {
+  async function saveStock(productId: string) {
     setActionError("");
     setActionMessage("");
 
-    if (!branchScoped || !branchId) {
-      setActionError("A valid assigned branch is required to update stock.");
+    if (!branchId) {
+      setActionError("Select a branch to update stock.");
       return;
     }
 
@@ -155,23 +201,18 @@ export default function DashboardInventoryPage({
     }
 
     try {
-      const updatedProducts = updateBranchProductStock(
-        products,
-        productId,
-        branchId,
-        stock,
+      const updated = await updateProductStock(productId, branchId, stock);
+      // Update the row from the returned Product — no full reload needed.
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? { ...p, ...updated } : p)),
       );
-      saveProducts(updatedProducts);
-      setProducts(updatedProducts);
       setEditingProductId(null);
       setStockDraft("");
       setActionMessage("Branch stock updated.");
+      // Refresh the summary counts.
+      void loadProducts();
     } catch (saveError) {
-      setActionError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Unable to save the stock update.",
-      );
+      setActionError(normalizeError(saveError, "Unable to save the stock update.").message);
     }
   }
 
@@ -199,19 +240,11 @@ export default function DashboardInventoryPage({
     {
       key: "value",
       header: "Inventory value",
-      render: ({ product, totalStock }) => {
-        if (!branchScoped && product.branchInventory) {
-          const value = product.branchInventory.reduce(
-            (total, item) => total + item.price * item.stock,
-            0,
-          );
-          return formatPrice(value);
-        }
-
+      render: ({ product, branchStock }) => {
         const price = product.branchInventory?.find(
           (item) => item.branchId === branchId,
         )?.price ?? product.price;
-        return formatPrice(price * totalStock);
+        return formatPrice(price * branchStock);
       },
     },
     {
@@ -231,56 +264,56 @@ export default function DashboardInventoryPage({
         </span>
       ),
     },
-    ...(branchScoped
-      ? [
-          {
-            key: "actions",
-            header: "Actions",
-            render: (row: InventoryRow) =>
-              editingProductId === row.product.id ? (
-                <div className="flex min-w-48 items-center gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={stockDraft}
-                    aria-label={`Stock quantity for ${row.product.title}`}
-                    onChange={(event) => {
-                      setStockDraft(event.target.value);
-                      setActionError("");
-                    }}
-                    className="w-24"
-                  />
-                  <Button
-                    variant="secondary"
-                    onClick={() => saveStock(row.product.id)}
-                    className="inline-flex items-center gap-1"
-                  >
-                    <Check aria-hidden="true" size={15} />
-                    Save
-                  </Button>
-                  <Button
-                    variant="tertiary"
-                    onClick={cancelEditing}
-                    className="inline-flex items-center gap-1"
-                  >
-                    <X aria-hidden="true" size={15} />
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="tertiary"
-                  onClick={() => startEditing(row)}
-                  className="inline-flex items-center gap-2 whitespace-nowrap"
-                >
-                  <Pencil aria-hidden="true" size={15} />
-                  Update stock
-                </Button>
-              ),
-          },
-        ]
-      : []),
+    {
+      key: "actions",
+      header: "Actions",
+      render: (row: InventoryRow) => {
+        if (branchScoped && !managerBranchId) {
+          return <span className="text-xs text-text-slate">No branch assigned</span>;
+        }
+        return editingProductId === row.product.id ? (
+          <div className="flex min-w-48 items-center gap-2">
+            <Input
+              type="number"
+              min="0"
+              step="1"
+              value={stockDraft}
+              aria-label={`Stock quantity for ${row.product.title}`}
+              onChange={(event) => {
+                setStockDraft(event.target.value);
+                setActionError("");
+              }}
+              className="w-24"
+            />
+            <Button
+              variant="secondary"
+              onClick={() => void saveStock(row.product.id)}
+              className="inline-flex items-center gap-1"
+            >
+              <Check aria-hidden="true" size={15} />
+              Save
+            </Button>
+            <Button
+              variant="tertiary"
+              onClick={cancelEditing}
+              className="inline-flex items-center gap-1"
+            >
+              <X aria-hidden="true" size={15} />
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="tertiary"
+            onClick={() => startEditing(row)}
+            className="inline-flex items-center gap-2 whitespace-nowrap"
+          >
+            <Pencil aria-hidden="true" size={15} />
+            Update stock
+          </Button>
+        );
+      },
+    },
   ];
 
   return (
@@ -291,7 +324,7 @@ export default function DashboardInventoryPage({
         description={
           branchScoped
             ? "Review stock levels and identify products requiring restocking at your assigned branch."
-            : "Review stock levels across branches and identify products requiring restocking."
+            : "Review stock levels across branches and update per-branch stock."
         }
         actions={
           <Link
@@ -306,19 +339,19 @@ export default function DashboardInventoryPage({
       <div className={`grid gap-4 sm:grid-cols-2 ${branchScoped ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}>
         <StatCard
           label="Products tracked"
-          value={String(stats.totalProducts)}
-          description={stats.selectedBranchName}
+          value={String(totals.all)}
+          description={inventoryBranch?.name ?? "Select a branch"}
           icon={<Boxes size={20} />}
         />
         <StatCard
           label="Low stock"
-          value={String(stats.lowStock)}
-          description="Needs replenishment"
+          value={String(totals.low)}
+          description="0 < stock <= 5"
           icon={<AlertTriangle size={20} />}
         />
         <StatCard
           label="Out of stock"
-          value={String(stats.outOfStock)}
+          value={String(totals.out)}
           description="Unavailable now"
           icon={<AlertTriangle size={20} />}
           trendType="negative"
@@ -341,10 +374,70 @@ export default function DashboardInventoryPage({
               ? `Stock for ${inventoryBranch.name}.`
               : "No branch is assigned to this manager."
             : inventoryBranch
-              ? `Current branch focus: ${inventoryBranch.name}. Total stock covers all branches.`
-              : "Showing the default inventory snapshot across all branches."
+              ? `Editing stock for ${inventoryBranch.name}.`
+              : "Select a branch to view and edit its stock."
         }
       >
+        {!branchScoped && branches.length > 0 && (
+          <div className="mb-6 max-w-xs">
+            <Label label="Branch">
+              <Select
+                value={adminBranchId}
+                options={branches.map((branch) => ({
+                  value: branch.id,
+                  label: branch.name,
+                }))}
+                placeholder="Select a branch"
+                onChange={(event) => {
+                  setChosenBranchId(event.target.value);
+                  setEditingProductId(null);
+                  setPage(1);
+                }}
+              />
+            </Label>
+          </div>
+        )}
+
+        {/* Filters */}
+        {branchId && (
+          <div className="mb-6 grid gap-4 sm:grid-cols-3">
+            <Label label="Search">
+              <Input
+                type="search"
+                value={search}
+                placeholder="Search title, brand, description"
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </Label>
+            <Label label="Category">
+              <Select
+                value={category}
+                options={categories.map((c) => ({ value: c, label: c }))}
+                placeholder="All categories"
+                onChange={(event) =>
+                  resetPageOnFilter(() => setCategory(event.target.value))
+                }
+              />
+            </Label>
+            <Label label="Stock status">
+              <Select
+                value={stockStatus}
+                options={[
+                  { value: "", label: "All stock statuses" },
+                  { value: "in", label: "In stock" },
+                  { value: "low", label: "Low stock" },
+                  { value: "out", label: "Out of stock" },
+                ]}
+                onChange={(event) =>
+                  resetPageOnFilter(() =>
+                    setStockStatus(event.target.value as "" | StockStatusFilter),
+                  )
+                }
+              />
+            </Label>
+          </div>
+        )}
+
         {isLoading && (
           <p className="py-12 text-center text-sm text-text-slate">
             Loading inventory...
@@ -362,25 +455,58 @@ export default function DashboardInventoryPage({
           </p>
         )}
 
-        {!isLoading && !error && branchScoped && !inventoryBranch && (
+        {!isLoading && !error && branchScoped && !managerBranchId && (
           <p className="py-8 text-center text-sm text-status-error" role="alert">
             No valid branch is assigned to this manager.
           </p>
         )}
 
-        {!isLoading && !error && (!branchScoped || Boolean(inventoryBranch)) && rows.length > 0 && (
-          <DashboardTable
-            columns={inventoryColumns}
-            rows={rows}
-            getRowKey={({ product }) => String(product.id)}
+        {!isLoading && !error && (!branchScoped || Boolean(managerBranchId)) && branchId && rows.length > 0 && (
+          <>
+            <DashboardTable
+              columns={inventoryColumns}
+              rows={rows}
+              getRowKey={({ product }) => product.id}
+            />
+            {totalPages > 1 && (
+              <nav className="mt-6 flex items-center justify-center gap-3" aria-label="Inventory pages">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="rounded-lg border border-border-subtle bg-surface-white px-4 py-2 text-sm font-medium text-brand-navy disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-text-slate">
+                  Page {page} of {totalPages} · {total} products
+                </span>
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded-lg border border-border-subtle bg-surface-white px-4 py-2 text-sm font-medium text-brand-navy disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </nav>
+            )}
+          </>
+        )}
+
+        {!isLoading && !error && (!branchScoped || Boolean(managerBranchId)) && branchId && rows.length === 0 && (
+          <DashboardEmptyState
+            title="No inventory found"
+            description="Try changing the search or filters."
+            icon={<Boxes size={22} />}
           />
         )}
 
-        {!isLoading && !error && (!branchScoped || Boolean(inventoryBranch)) && rows.length === 0 && (
+        {!isLoading && !error && !branchId && !branchScoped && (
           <DashboardEmptyState
-            title="No inventory found"
-            description="Add products to the catalog to track stock levels."
-            icon={<Boxes size={22} />}
+            title="Select a branch"
+            description="Choose a branch above to view and edit its stock."
+            icon={<PackageSearch size={22} />}
           />
         )}
       </DashboardCard>

@@ -38,7 +38,6 @@ export default function ProductForm({
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const price = Number(values.price);
-    const stock = Number(values.stock);
     const discountPercentage = Number(values.discountPercentage);
 
     if (!values.title.trim() || !values.category.trim()) {
@@ -49,9 +48,14 @@ export default function ProductForm({
       setError("Price must be a valid non-negative number.");
       return;
     }
-    if (!Number.isInteger(stock) || stock < 0) {
-      setError("Stock must be a whole number equal to or above zero.");
-      return;
+    // Stock is only editable on create; per-branch stock/price changes go
+    // through PATCH /products/:id/stock and /branch-price instead.
+    if (mode === "add") {
+      const stock = Number(values.stock);
+      if (!Number.isInteger(stock) || stock < 0) {
+        setError("Stock must be a whole number equal to or above zero.");
+        return;
+      }
     }
     if (
       !Number.isFinite(discountPercentage) ||
@@ -105,17 +109,19 @@ export default function ProductForm({
             required
           />
         </Label>
-        <Label label="Stock" required>
-          <Input
-            type="number"
-            min="0"
-            step="1"
-            value={values.stock}
-            onChange={(event) => updateField("stock", event.target.value)}
-            placeholder="0"
-            required
-          />
-        </Label>
+        {mode === "add" && (
+          <Label label="Stock" required>
+            <Input
+              type="number"
+              min="0"
+              step="1"
+              value={values.stock}
+              onChange={(event) => updateField("stock", event.target.value)}
+              placeholder="0"
+              required
+            />
+          </Label>
+        )}
         <Label label="Discount percentage">
           <Input
             type="number"

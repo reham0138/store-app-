@@ -9,6 +9,7 @@ import { PasswordField } from '../shared/components/PasswordField.tsx'
 import { SubmitButton } from '../shared/components/SubmitButton.tsx'
 import { TextField } from '../shared/components/TextField.tsx'
 import { getDashboardPath } from '../shared/utils/dashboardRoute.ts'
+import { USE_MOCK } from '../shared/api/index.ts'
 import {
 	MAX_EMAIL_LENGTH,
 	validateEmail,
@@ -31,7 +32,7 @@ function getRedirectTarget(state: unknown, role: 'customer' | 'branchManager' | 
 }
 
 export default function LoginPage() {
-	const { user, login, loginAsRole } = useAuth()
+	const { user, login } = useAuth()
 	const location = useLocation()
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
@@ -104,28 +105,12 @@ export default function LoginPage() {
 				/>
 				<SubmitButton loading={submitting}>Sign in</SubmitButton>
 			</form>
-			{import.meta.env.DEV && (
-				<div className="mt-6 border-t border-border-subtle pt-5">
-					<p className="mb-3 text-sm font-semibold text-brand-navy">Development access</p>
-					<div className="grid gap-2 sm:grid-cols-2">
-						<button
-							type="button"
-							onClick={() => loginAsRole('admin')}
-							className="rounded-lg border border-border-subtle px-3 py-2 text-sm font-medium text-brand-navy hover:bg-surface-cream"
-						>
-							Continue as admin
-						</button>
-						<button
-							type="button"
-							onClick={() => loginAsRole('branchManager')}
-							className="rounded-lg border border-border-subtle px-3 py-2 text-sm font-medium text-brand-navy hover:bg-surface-cream"
-						>
-							Continue as branch manager
-						</button>
-					</div>
-					<p className="mt-2 text-xs text-text-slate">
-						Development-only mock sessions. These controls are disabled in production.
-					</p>
+			{USE_MOCK && (
+				<div className="mt-6 rounded-lg border border-border-subtle bg-surface-cream p-4 text-xs text-text-slate">
+					<p className="mb-1 font-semibold text-brand-navy">Mock mode demo accounts</p>
+					<p>admin@crown-anchor.dev / admin12345</p>
+					<p>manager@crown-anchor.dev / manager12345</p>
+					<p>customer@crown-anchor.dev / customer12345</p>
 				</div>
 			)}
 		</AuthCard>

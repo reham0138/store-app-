@@ -11,7 +11,6 @@ import {
   getProductStock,
 } from "../utils/pricing";
 import ProductRating from "./ProductRating";
-import { getProductReviews } from "../utils/reviewStorage";
 interface ProductCardProps {
   product: StoreProduct;
 }
@@ -23,7 +22,7 @@ function ProductCard({ product }: ProductCardProps) {
   const quantityInCart =
     items.find((item) => item.product.id === product.id)?.quantity ?? 0;
   const hasReachedStockLimit = quantityInCart >= stock;
-  const reviewCount = getProductReviews(product.id).length;
+  const reviewCount = product.reviewCount ?? 0;
   const [isAdded, setIsAdded] = useState(false);
   const addButtonLabel =
     stock <= 0

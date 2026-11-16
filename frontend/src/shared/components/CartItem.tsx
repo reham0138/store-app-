@@ -11,8 +11,8 @@ import { useBranch } from "../contexts/useBranch";
 
 interface CartItemProps {
   item: CartItemType;
-  onUpdateQuantity: (id: number, quantity: number) => void;
-  onRemove: (id: number) => void;
+  onUpdateQuantity: (id: string, quantity: number) => void;
+  onRemove: (id: string) => void;
 }
 
 export default function CartItem({

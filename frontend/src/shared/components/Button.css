@@ -8,6 +8,7 @@
   border: 1px solid transparent;
   border-radius: 0.625rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
   line-height: 1.25;
   text-align: center;
   cursor: pointer;
@@ -34,7 +35,7 @@
 
 .button--primary {
   background-color: var(--color-brand-navy);
-  color: var(--color-surface-white);
+  color: #ffffff;
   box-shadow: 0 4px 10px rgb(11 45 74 / 18%);
 }
 
@@ -65,8 +66,16 @@
   background-color: var(--color-surface-cream);
 }
 
+.dark .button--tertiary {
+  color: var(--color-heading);
+}
+
+.dark .button--tertiary:hover:not(:disabled) {
+  color: var(--color-heading);
+}
+
 .button:focus-visible {
-  outline: 3px solid var(--color-brand-gold);
+  outline: 2px solid var(--color-focus-ring);
   outline-offset: 3px;
 }
 

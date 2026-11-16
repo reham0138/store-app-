@@ -1,10 +1,10 @@
 export interface Branch {
   id: string;
   name: string;
-  code?: string;          
+  code?: string;
   address?: string;
-  isDefault?: boolean;    
-  parentId?: string | null;
+  isDefault?: boolean;
   latitude?: number;
   longitude?: number;
+  operationalStatus?: "open" | "closed";
 }

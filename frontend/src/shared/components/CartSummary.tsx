@@ -21,6 +21,9 @@ export default function CartSummary({
       <h2 className="text-lg font-semibold text-brand-navy">
         Order Summary
       </h2>
+      <p className="mt-1 text-xs text-text-slate">
+        Estimated totals — final prices are confirmed when you place the order.
+      </p>
 
       <div className="mt-5 grid gap-4">
 
