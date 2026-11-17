@@ -65,6 +65,7 @@ export class AuthService {
     };
     const accessToken = await this.jwtService.signAsync(payload);
     return {
+      ...(user.branchId ? { branchId: user.branchId } : {}),
       accessToken,
       user: {
         id: user._id.toString(),
