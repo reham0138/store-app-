@@ -1,8 +1,12 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service.js';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto.js';
-import  * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 import { LoginDto } from './dto/login.dto.js';
 
 @Injectable()
@@ -25,36 +29,52 @@ export class AuthService {
     });
     return this.CreateToken(user);
   }
-  async Login(dto:LoginDto){
-    const email=dto.email.toLocaleLowerCase().trim();   
-    const user=await this.userService.findByEmail(email);
-    if(!user){
-        throw new UnauthorizedException('invalid email or password')
+  async Login(dto: LoginDto) {
+    const email = dto.email.toLocaleLowerCase().trim();
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('invalid email or password');
     }
-    const passwordMatches=await bcrypt.compare(
-        dto.password,
-        user.passwordHash
+    const passwordMatches = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
     );
-    if(!passwordMatches){
-        throw new UnauthorizedException('invalid email or password ')
+    if (!passwordMatches) {
+      throw new UnauthorizedException('invalid email or password ');
     }
     return this.CreateToken(user);
   }
-  private async CreateToken(user:any){
-    const payload={
-        sub:user._id.toString(),
-        role:user.role,
+  async getMe(userId: string) {
+    const user = await this.userService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('user not found');
     }
-    const accessToken=await this.jwtService.signAsync(payload);
-    return{
-        accessToken,
-        user:{
-            id:user._id.toString(),
-            name:user.name,
-            email:user.email,
-            role:user.role
-
-        },
+    return {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role === 'staff' ? 'branchmanager' : user.role,
+    };
+  }
+  private async CreateToken(user: any) {
+    const payload = {
+      sub: user._id.toString(),
+      role: user.role,
+    };
+    const accessToken = await this.jwtService.signAsync(payload);
+    return {
+      accessToken,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      token: accessToken,
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role === 'staff' ? 'branchManager' : user.role,
     };
   }
 }

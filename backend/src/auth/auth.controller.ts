@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UnauthorizedException } from "@nestjs/common";
 import { AuthService } from "./auth.service.js";
 import { RegisterDto } from "./dto/register.dto.js";
 import { LoginDto } from "./dto/login.dto.js";
@@ -18,5 +18,12 @@ export class AuthController{
     login(@Body() dto:LoginDto){
         return this.authService.Login(dto);
         
+    }
+    @Get('me')
+    async getMe(@Req() req:any){
+        if(!req.user?.sub){
+            throw new UnauthorizedException('Authentecation required')
+        }
+        return this.authService.getMe(req.user.sub);
     }
 }

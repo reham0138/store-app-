@@ -13,6 +13,9 @@ export class UsersService {
   async findByEmail(email: string) {
     return this.userModel.findOne({ email: email.toLowerCase() });
   }
+  async findById(id:string){
+    return this.userModel.findById(id).exec();
+  }
 
   async create(userData: {
     name: string;
