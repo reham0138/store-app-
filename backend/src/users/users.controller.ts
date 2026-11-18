@@ -13,7 +13,7 @@ import { UsersService } from './users.service.js';
 import { BranchesService } from '../branches/branches.service.js';
 import { CreateStaffDto } from './dto/create-staff.dto.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
-import { ParseObjectIdPipe } from '@nestjs/mongoose';
+import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe.js';
 import { UpdateStaffDto } from './dto/update-staff.dto.js';
 
 @Controller('users')
