@@ -24,13 +24,13 @@ class BranchQueryDto {
 export class BranchesController {
   constructor(private readonly branchesService: BranchesService) {}
 
-  @Roles('staff', 'admin')
+  @Roles('branchManager', 'admin')
   @Get()
   findAll(@Query() query: BranchQueryDto) {
     return this.branchesService.findAll(query.includeInactive === 'true');
   }
 
-  @Roles('staff', 'admin')
+  @Roles('branchManager', 'admin')
   @Get(':id')
   findOne(@Param('id', ParseObjectIdPipe) id: string) {
     return this.branchesService.findOne(id);

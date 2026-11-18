@@ -86,7 +86,10 @@ export class OrdersService {
     return Math.round((amount + Number.EPSILON) * 100) / 100;
   }
 
-  async create(createOrderDto: CreateOrderDto) {
+  async create(
+    createOrderDto: CreateOrderDto,
+    user: { sub: string; email: string },
+  ) {
     await this.getBranchesService().assertActive(createOrderDto.branchId);
     const quantities = new Map<string, number>();
     for (const item of createOrderDto.items) {
@@ -175,7 +178,8 @@ export class OrdersService {
         const [order] = await this.getOrderModel().create(
           [
             {
-              customerEmail: createOrderDto.customerEmail,
+              customerId: new Types.ObjectId(user.sub),
+              customerEmail: user.email.toLowerCase(),
               branchId,
               items: orderItems,
               total,
@@ -202,14 +206,37 @@ export class OrdersService {
     return createdOrder;
   }
 
-  async findAll(query: OrderQueryDto = new OrderQueryDto()) {
-    await this.getBranchesService().assertExists(query.branchId);
-    const filter: Record<string, unknown> = {
-      branchId: new Types.ObjectId(query.branchId),
-    };
+  async findAll(
+  query: OrderQueryDto = new OrderQueryDto(),
+  role?: string,
+  user?: { sub: string; branchId?: string },
+) {
+  const filter: Record<string, unknown> = {};
+
+  if (role === 'customer') {
+    if (!user?.sub) {
+      throw new ForbiddenException('User identity is required');
+    }
+
+    filter.customerId = new Types.ObjectId(user.sub);
+  } else if (role === 'branchManager') {
+    if (!user?.branchId) {
+      throw new ForbiddenException('Branch ID is required');
+    }
+
+    await this.getBranchesService().assertExists(user.branchId);
+    filter.branchId = new Types.ObjectId(user.branchId);
+  } else if (role === 'admin') {
+    if (query.branchId) {
+      await this.getBranchesService().assertExists(query.branchId);
+      filter.branchId = new Types.ObjectId(query.branchId);
+    }
+  } else {
+    throw new ForbiddenException('Access denied');
+  }
     if (query.status) filter.status = query.status;
-    if (query.customerEmail)
-      filter.customerEmail = query.customerEmail.toLowerCase();
+    // if (query.customerEmail)
+    //   filter.customerEmail = query.customerEmail.toLowerCase();
 
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -231,26 +258,47 @@ export class OrdersService {
   }
 
   async findOne(
-    id: string,
-    email: string | undefined,
-    role: string | undefined,
-    branchId: string,
-  ) {
-    await this.getBranchesService().assertExists(branchId);
-    const order = await this.getOrderModel()
-      .findOne({ _id: id, branchId })
-      .exec();
-    if (!order) throw new NotFoundException('Order not found');
+  id: string,
+  role: string | undefined,
+  user?: { sub: string; branchId?: string },
+  branchId?: string,
+) {
+  const filter: Record<string, unknown> = {
+    _id: new Types.ObjectId(id),
+  };
 
-    if (
-      role === 'visitor' &&
-      email?.trim().toLowerCase() !== order.customerEmail.toLowerCase()
-    ) {
-      throw new ForbiddenException('Email does not match this order');
+  if (role === 'customer') {
+    if (!user?.sub) {
+      throw new ForbiddenException('User identity is required');
     }
 
-    return order;
+    filter.customerId = new Types.ObjectId(user.sub);
+  } else if (role === 'branchManager') {
+    if (!user?.branchId) {
+      throw new ForbiddenException('Branch ID is required');
+    }
+
+    await this.getBranchesService().assertExists(user.branchId);
+    filter.branchId = new Types.ObjectId(user.branchId);
+  } else if (role === 'admin') {
+    if (branchId) {
+      await this.getBranchesService().assertExists(branchId);
+      filter.branchId = new Types.ObjectId(branchId);
+    }
+  } else {
+    throw new ForbiddenException('Access denied');
   }
+
+  const order = await this.getOrderModel()
+    .findOne(filter)
+    .exec();
+
+  if (!order) {
+    throw new NotFoundException('Order not found');
+  }
+
+  return order;
+}
 
   async updateStatus(
     id: string,

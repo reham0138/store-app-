@@ -19,46 +19,68 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto.js';
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
-
+  @Roles('customer')
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto) {
-    return this.ordersService.create(createOrderDto);
+  create(@Body() createOrderDto: CreateOrderDto,
+          @Req() req:Request & {user?:{sub:string,email:string}}) {
+    return this.ordersService.create(createOrderDto,{
+      sub:req.user!.sub,
+      email:req.user!.email,
+    });
   }
 
-  @Roles('staff', 'admin')
-  @Get()
-  findAll(@Query() query: OrderQueryDto) {
-    return this.ordersService.findAll(query);
-  }
-
+  @Roles('customer', 'branchManager', 'admin')
+@Get()
+findAll(
+  @Query() query: OrderQueryDto,
+  @Req() req: Request & {
+    role?: string;
+    user?: { sub: string; branchId?: string };
+  },
+) {
+  return this.ordersService.findAll(query, req.role, req.user);
+}
   @Get(':id')
-  async findOne(
-    @Param('id', ParseObjectIdPipe) id: string,
-    @Query() query: OrderLookupQueryDto,
-    @Req() req: Request & { role?: string },
-  ) {
-    const role =
-  req.role === 'customer' ? 'visitor' : req.role ?? 'visitor';
-    return this.ordersService.findOne(
-      id.toString(),
-      query.email,
-      role,
-      query.branchId,
-    );
-  }
+@Roles('customer', 'branchManager', 'admin')
+@Get(':id')
+async findOne(
+  @Param('id', ParseObjectIdPipe) id: string,
+  @Query() query: OrderLookupQueryDto,
+  @Req() req: Request & {
+    role?: string;
+    user?: { sub: string; branchId?: string };
+  },
+) {
+  return this.ordersService.findOne(
+    id.toString(),
+    req.role ?? 'visitor',
+    req.user,
+    query.branchId,
+  );
+}
 
   @Roles('staff', 'admin')
   @Patch(':id/status')
-  updateStatus(
-    @Param('id', ParseObjectIdPipe) id: string,
-    @Body() body: UpdateOrderStatusDto,
-    @Req() req: Request & { role?: string },
-  ) {
-    return this.ordersService.updateStatus(
-      id.toString(),
-      body.status,
-      body.branchId,
-      req.role ?? 'visitor',
-    );
-  }
+  @Roles('branchManager', 'admin')
+@Patch(':id/status')
+updateStatus(
+  @Param('id', ParseObjectIdPipe) id: string,
+  @Body() body: UpdateOrderStatusDto,
+  @Req() req: Request & {
+    role?: string;
+    user?: { branchId?: string };
+  },
+) {
+  const branchId =
+    req.role === 'branchManager'
+      ? req.user?.branchId
+      : body.branchId;
+
+  return this.ordersService.updateStatus(
+    id.toString(),
+    body.status,
+    branchId!,
+    req.role ?? 'visitor',
+  );
+}
 }

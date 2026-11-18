@@ -19,6 +19,8 @@ export class OrderItem {
 export class Order {
   @Prop({ type: Types.ObjectId, ref: 'Branch', required: true })
   branchId: Types.ObjectId;
+  @Prop({type:Types.ObjectId,ref:'User'})
+  customerId?:Types.ObjectId;
 
   @Prop({ required: true, trim: true, lowercase: true })
   customerEmail: string;
