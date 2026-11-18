@@ -58,11 +58,14 @@ export class AuthService {
     };
   }
   private async CreateToken(user: any) {
-    const payload = {
-      sub: user._id.toString(),
-      role: user.role,
-      ...(user.branchId ? { branchId: user.branchId } : {}),
-    };
+   const role = user.role === 'staff' ? 'branchManager' : user.role;
+
+const payload = {
+  sub: user._id.toString(),
+  email: user.email,
+  role,
+  ...(user.branchId ? { branchId: user.branchId } : {}),
+};
     const accessToken = await this.jwtService.signAsync(payload);
     return {
       ...(user.branchId ? { branchId: user.branchId } : {}),
@@ -71,7 +74,7 @@ export class AuthService {
         id: user._id.toString(),
         name: user.name,
         email: user.email,
-        role: user.role,
+        role,
         ...(user.branchId ? { branchId: user.branchId } : {}),
       },
       token: accessToken,

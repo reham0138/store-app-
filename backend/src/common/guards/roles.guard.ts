@@ -42,12 +42,15 @@ export class RolesGuard implements CanActivate {
       try {
         const payload = await this.jwtService.verifyAsync(token);
 
-        if (!['customer', 'staff', 'admin'].includes(payload.role)) {
+        if (!['customer', 'staff','branchManager', 'admin'].includes(payload.role)) {
           throw new UnauthorizedException('Invalid user role');
+        }
+        if(payload.role==='branchManager' && !payload.branchId){
+          throw new UnauthorizedException('Branch manager must have a branch')
         }
 
         req.user = payload;
-        req.role = payload.role;
+        req.role = payload.role==="staff"?'branchManager':payload.role;
       } catch {
         throw new UnauthorizedException('Invalid or expired token');
       }

@@ -71,9 +71,9 @@ export class ProductQueryDto {
 }
 
 export class LowStockQueryDto {
-  @IsMongoId()
-  branchId: string;
-
+ @IsOptional()
+@IsMongoId()
+branchId?: string;
   @IsOptional()
   @Transform(({ value }) => (value === '' ? Number.NaN : Number(value)))
   @IsInt()

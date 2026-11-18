@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,6 +8,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import { IsMongoId } from 'class-validator';
 import { ProductsService } from './products.service.js';
@@ -31,11 +33,26 @@ export class ProductsController {
     return this.productsService.findAll(query);
   }
 
-  @Roles('staff', 'admin')
-  @Get('low-stock')
-  findLowStock(@Query() query: LowStockQueryDto) {
-    return this.productsService.findLowStock(query.branchId, query.threshold);
+ @Roles('branchManager', 'admin')
+@Get('low-stock')
+findLowStock(
+  @Query() query: LowStockQueryDto,
+  @Req() req: Request & {
+    role?: string;
+    user?: { branchId?: string };
+  },
+) {
+  const branchId =
+    req.role === 'branchManager'
+      ? req.user?.branchId
+      : query.branchId;
+
+  if (!branchId) {
+    throw new BadRequestException('Branch ID is required');
   }
+
+  return this.productsService.findLowStock(branchId, query.threshold);
+}
 
   @Get(':id')
   findOne(
@@ -65,19 +82,32 @@ export class ProductsController {
     );
   }
 
-  @Roles('admin')
-  @Patch(':id/stock')
-  updateStock(
-    @Param('id', ParseObjectIdPipe) id: string,
-    @Body() body: UpdateStockDto,
-    @Query() query: BranchIdQueryDto,
-  ) {
-    return this.productsService.updateStock(
-      id.toString(),
-      body.delta,
-      query.branchId,
-    );
+ @Roles('branchManager', 'admin')
+@Patch(':id/stock')
+updateStock(
+  @Param('id', ParseObjectIdPipe) id: string,
+  @Body() body: UpdateStockDto,
+  @Query() query: BranchIdQueryDto,
+  @Req() req: Request & {
+    role?: string;
+    user?: { branchId?: string };
+  },
+) {
+  const branchId =
+    req.role === 'branchManager'
+      ? req.user?.branchId
+      : query.branchId;
+
+  if (!branchId) {
+    throw new BadRequestException('Branch ID is required');
   }
+
+  return this.productsService.updateStock(
+    id.toString(),
+    body.delta,
+    branchId,
+  );
+}
 
   @Roles('admin')
   @Delete(':id')

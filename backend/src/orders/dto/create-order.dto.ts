@@ -23,8 +23,8 @@ export class CreateOrderDto {
   @IsMongoId()
   branchId: string;
 
-  @IsEmail()
-  customerEmail: string;
+  // @IsEmail()
+  // customerEmail: string;
 
   @IsArray()
   @ArrayMinSize(1)
