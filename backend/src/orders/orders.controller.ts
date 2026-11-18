@@ -40,7 +40,7 @@ findAll(
 ) {
   return this.ordersService.findAll(query, req.role, req.user);
 }
-  @Get(':id')
+  
 @Roles('customer', 'branchManager', 'admin')
 @Get(':id')
 async findOne(
@@ -59,8 +59,7 @@ async findOne(
   );
 }
 
-  @Roles('staff', 'admin')
-  @Patch(':id/status')
+  
   @Roles('branchManager', 'admin')
 @Patch(':id/status')
 updateStatus(
