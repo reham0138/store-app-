@@ -16,6 +16,7 @@ import { Roles } from '../common/decorators/roles.decorator.js';
 import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe.js';
 import { IsBooleanString, IsOptional } from 'class-validator';
 type BranchRequest = Request & {
+  role?: string;
   user: {
     role: string;
     branchId: string;
@@ -38,7 +39,7 @@ findAll(
   @Query() query: BranchQueryDto,
   @Req() req: BranchRequest,
 ) {
-  if (req.user.role === 'branchManager') {
+  if (req.role === 'branchManager') {
     return this.branchesService.findOne(req.user.branchId);
   }
 
@@ -54,7 +55,7 @@ findOne(
   @Req() req: BranchRequest,
 ) {
   if (
-    req.user.role === 'branchManager' &&
+    req.role === 'branchManager' &&
     req.user.branchId !== id
   ) {
     throw new ForbiddenException(

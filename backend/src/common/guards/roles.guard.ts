@@ -1,4 +1,3 @@
-
 import {
   Injectable,
   CanActivate,
@@ -30,10 +29,7 @@ export class RolesGuard implements CanActivate {
 
     // Check JWT token first
     if (authHeader) {
-      if (
-        typeof authHeader !== 'string' ||
-        !authHeader.startsWith('Bearer ')
-      ) {
+      if (typeof authHeader !== 'string' || !authHeader.startsWith('Bearer ')) {
         throw new UnauthorizedException('Invalid authorization header');
       }
 
@@ -42,15 +38,22 @@ export class RolesGuard implements CanActivate {
       try {
         const payload = await this.jwtService.verifyAsync(token);
 
-        if (!['customer', 'staff','branchManager', 'admin'].includes(payload.role)) {
+        if (
+          !['customer', 'staff', 'branchManager', 'admin'].includes(
+            payload.role,
+          )
+        ) {
           throw new UnauthorizedException('Invalid user role');
         }
-        if(payload.role==='branchManager' && !payload.branchId){
-          throw new UnauthorizedException('Branch manager must have a branch')
+        if (
+          (payload.role === 'branchManager' || payload.role === 'staff') &&
+          !payload.branchId
+        ) {
+          throw new UnauthorizedException('Branch manager must have a branch');
         }
 
         req.user = payload;
-        req.role = payload.role==="staff"?'branchManager':payload.role;
+        req.role = payload.role === 'staff' ? 'branchManager' : payload.role;
       } catch {
         throw new UnauthorizedException('Invalid or expired token');
       }
