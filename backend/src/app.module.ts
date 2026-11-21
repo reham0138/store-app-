@@ -14,6 +14,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor.
 import { validate } from './config/env.validation.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
+import { ReportsModule } from './reports/reports.module.js';
 
 @Module({
   imports: [AuthModule,
@@ -32,6 +33,7 @@ import { ReviewsModule } from './reviews/reviews.module.js';
     OrdersModule,
     BranchesModule,
     ReviewsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [
