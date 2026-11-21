@@ -22,6 +22,11 @@ export class Product {
 
   @Prop({ default: true })
   isActive: boolean;
+    @Prop({ default: 0, min: 0, max: 5 })
+  rating: number;
+
+  @Prop({ default: 0, min: 0 })
+  reviewCount: number;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

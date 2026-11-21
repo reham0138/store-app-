@@ -13,6 +13,7 @@ import { RolesGuard } from './common/guards/roles.guard.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import { validate } from './config/env.validation.js';
 import { AuthModule } from './auth/auth.module.js';
+import { ReviewsModule } from './reviews/reviews.module.js';
 
 @Module({
   imports: [AuthModule,
@@ -30,6 +31,7 @@ import { AuthModule } from './auth/auth.module.js';
     ProductsModule,
     OrdersModule,
     BranchesModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [
