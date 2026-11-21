@@ -6,12 +6,13 @@ import { Inventory } from '../inventory/entities/inventory.entity.js';
 
 @Injectable()
 export class ReportsService {
-  constructor(
-    @InjectModel(Order.name)
-    @InjectModel(Inventory.name)
-private readonly inventoryModel: Model<Inventory>,
-    private readonly orderModel: Model<Order>,
-  ) {}
+ constructor(
+  @InjectModel(Order.name)
+  private readonly orderModel: Model<Order>,
+
+  @InjectModel(Inventory.name)
+  private readonly inventoryModel: Model<Inventory>,
+) {}
 
   async getOverview(branchId?: string) {
     const filter: any = {};
