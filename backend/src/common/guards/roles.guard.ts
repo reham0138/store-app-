@@ -82,9 +82,9 @@ export class RolesGuard implements CanActivate {
 
     if (!required) return true;
 
-    if (!req.role) {
-      throw new UnauthorizedException('Authentication required');
-    }
+    if (!req.role || req.role === 'visitor') {
+  throw new UnauthorizedException('Authentication required');
+}
 
     if (!required.includes(req.role)) {
       throw new ForbiddenException('Your role cannot do this');

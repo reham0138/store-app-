@@ -93,10 +93,10 @@ async getRecentOrders(
   @Req() req: any,
   @Query('branchId') branchId?: string,
 ) {
-  const targetBranchId =
-    req.user?.role === 'branchManager'
-      ? req.user.branchId
-      : branchId;
+ const targetBranchId =
+  req.role === 'branchManager'
+    ? req.user?.branchId
+    : branchId;
 
   return this.reportsService.getRecentOrders(targetBranchId);
 }

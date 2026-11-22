@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsMongoId,
@@ -7,6 +8,9 @@ import {
 } from 'class-validator';
 
 export class CreateStaffDto {
+  @Transform(({ value }) =>
+  typeof value === 'string' ? value.trim() : value,
+)
   @IsString()
   @IsNotEmpty()
   @MinLength(2)

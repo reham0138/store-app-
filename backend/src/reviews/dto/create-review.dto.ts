@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsInt,
   IsOptional,
@@ -13,6 +14,9 @@ export class CreateReviewDto {
   @Max(5)
   rating: number;
 
+  @Transform(({ value }) =>
+  typeof value === 'string' ? value.trim() : value,
+)
   @IsOptional()
   @IsString()
   @MaxLength(500)
