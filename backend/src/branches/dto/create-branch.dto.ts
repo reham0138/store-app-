@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsNotEmpty,
   IsOptional,
@@ -8,6 +9,9 @@ import {
 } from 'class-validator';
 
 export class CreateBranchDto {
+ @Transform(({ value }) =>
+  typeof value === 'string' ? value.trim() : value,
+)
   @IsString()
   @IsNotEmpty()
   @MinLength(2)
@@ -18,6 +22,9 @@ export class CreateBranchDto {
   @Matches(/^[a-zA-Z0-9][a-zA-Z0-9_-]{1,39}$/)
   code: string;
 
+ @Transform(({ value }) =>
+  typeof value === 'string' ? value.trim() : value,
+)
   @IsOptional()
   @IsString()
   @MaxLength(250)

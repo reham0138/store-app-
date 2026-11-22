@@ -11,10 +11,10 @@ export class User {
   @Prop({ required: true, trim: true })
   passwordHash: string;
   @Prop({
-    required: true,
-    enum: ['customer', 'staff', 'admin'],
-    default: 'customer',
-  })
+  type: String,
+  enum: ['customer', 'staff', 'admin'],
+  default: 'customer',
+})
   role: UserRole;
   @Prop({ trim: true })
   branchId?: string;
