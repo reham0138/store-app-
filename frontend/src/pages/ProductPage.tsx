@@ -1,20 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal } from "lucide-react";
 
-import { listProducts } from "../shared/services/product.service";
 import type { ProductSort } from "../shared/services/product.service";
-import type { StoreProduct } from "../shared/types/cart";
 import ProductCard from "../shared/components/ProductCard";
 import { useBranch } from "../shared/contexts/useBranch";
 import { normalizeError } from "../shared/api/errors";
+import { useCategoriesQuery, useProductListQuery } from "../shared/hooks/useApiQueries";
+import { USE_MOCK } from "../shared/api/mock";
 
 const PAGE_SIZE = 12;
 const SORT_OPTIONS: { value: ProductSort; label: string }[] = [
   { value: "default", label: "Sort: Default" },
   { value: "price-low", label: "Price: Low to High" },
   { value: "price-high", label: "Price: High to Low" },
-  { value: "rating", label: "Highest Rated" },
+  ...(USE_MOCK ? [{ value: "rating" as const, label: "Highest Rated" }] : []),
 ];
 
 export default function ProductsPage() {
@@ -32,13 +32,25 @@ export default function ProductsPage() {
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
 
   const [searchInput, setSearchInput] = useState(search);
-  const [products, setProducts] = useState<StoreProduct[]>([]);
-  const [total, setTotal] = useState(0);
-  const [allCategories, setAllCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const productQuery = useProductListQuery({
+    search: search || undefined,
+    category: selectedCategory === "all" ? undefined : selectedCategory,
+    branchId,
+    sort: sortBy,
+    page,
+    limit: PAGE_SIZE,
+  }, !branchesLoading && Boolean(branchId));
+  const categoriesQuery = useCategoriesQuery(!branchesLoading && Boolean(branchId));
+  const products = productQuery.data?.items ?? [];
+  const total = productQuery.data?.total ?? 0;
+  const allCategories = categoriesQuery.data ?? [];
+  const error = productQuery.error
+    ? normalizeError(productQuery.error, "We couldn't load the products. Please try again.").message
+    : categoriesQuery.error
+      ? normalizeError(categoriesQuery.error, "We couldn't load product categories.").message
+      : "";
 
-  const pageLoading = loading || branchesLoading;
+  const pageLoading = productQuery.isLoading || branchesLoading;
   const pageError =
     branchError ??
     (!branchesLoading && !selectedBranch
@@ -80,64 +92,7 @@ export default function ProductsPage() {
     });
   }
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadProducts() {
-      setLoading(true);
-      try {
-        const data = await listProducts({
-          search: search || undefined,
-          category: selectedCategory === "all" ? undefined : selectedCategory,
-          branchId,
-          sort: sortBy,
-          page,
-          limit: PAGE_SIZE,
-        });
-        if (isMounted) {
-          setProducts(data.items);
-          setTotal(data.total);
-          setError("");
-        }
-      } catch (loadError) {
-        if (isMounted) {
-          setError(
-            normalizeError(loadError, "We couldn't load the products. Please try again.").message,
-          );
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    queueMicrotask(() => void loadProducts());
-    return () => {
-      isMounted = false;
-    };
-  }, [search, selectedCategory, sortBy, page, branchId]);
-
-  // Category chips need the full catalog's categories; fetch once (contract max limit).
-  useEffect(() => {
-    let isMounted = true;
-    listProducts({ limit: 100 })
-      .then((data) => {
-        if (isMounted) {
-          setAllCategories(
-            [...new Set(data.items.map((p) => p.category))].sort(),
-          );
-        }
-      })
-      .catch(() => {});
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const categories = useMemo(() => {
-    const set = new Set(allCategories);
-    if (selectedCategory !== "all") set.add(selectedCategory);
-    return [...set].sort();
-  }, [allCategories, selectedCategory]);
+  const categories = [...allCategories];
 
   return (
     <div className="min-h-screen bg-page">
@@ -232,16 +187,16 @@ export default function ProductsPage() {
 
             {categories.map((category) => (
               <button
-                key={category}
+                key={category.id}
                 type="button"
-                onClick={() => updateParams({ category, page: null })}
+                onClick={() => updateParams({ category: category.id, page: null })}
                 className={`rounded-full px-4 py-2 text-sm font-medium capitalize transition ${
-                  selectedCategory === category
+                  selectedCategory === category.id
                     ? "bg-brand-navy text-white"
                     : "border border-border-subtle bg-white text-text-slate hover:border-brand-navy"
                 }`}
               >
-                {category.replaceAll("-", " ")}
+                {category.name.replaceAll("-", " ")}
               </button>
             ))}
           </div>
@@ -261,7 +216,7 @@ export default function ProductsPage() {
 
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={() => void productQuery.refetch()}
               className="mt-4 rounded-lg bg-brand-navy px-5 py-2 text-sm text-white"
             >
               Try Again

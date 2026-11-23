@@ -190,7 +190,7 @@ async function apiLogin(input: LoginInput): Promise<User> {
     if (normalized.code === 'INVALID_CREDENTIALS' || normalized.status === 401) {
       throw new AuthError('INVALID_CREDENTIALS', 'The email or password is incorrect.')
     }
-    throw new AuthError('INVALID_CREDENTIALS', normalized.message)
+    throw new Error(normalized.message, { cause: error })
   }
 }
 
@@ -259,10 +259,14 @@ async function refreshSession(): Promise<User | null> {
     const { data } = await apiClient.get<User>('/auth/me')
     cachedUser = toUser(data)
     return cachedUser
-  } catch {
+  } catch (error) {
+    const normalized = normalizeError(error, 'Could not restore the session.')
     cachedUser = null
-    setAuthToken(null)
-    return null
+    if (normalized.status === 401) {
+      setAuthToken(null)
+      return null
+    }
+    throw new Error(normalized.message, { cause: error })
   }
 }
 

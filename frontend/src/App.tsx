@@ -135,9 +135,9 @@ function BranchManagerDashboardTopbar() {
 
 function App() {
   return (
-    <BranchProvider>
-      <CartProvider>
-        <AuthProvider>
+    <AuthProvider>
+      <BranchProvider>
+        <CartProvider>
           <Router>
             <ErrorBoundary>
             <Routes>
@@ -206,9 +206,9 @@ function App() {
             </Routes>
             </ErrorBoundary>
           </Router>
-        </AuthProvider>
-      </CartProvider>
-    </BranchProvider>
+        </CartProvider>
+      </BranchProvider>
+    </AuthProvider>
   );
 }
 

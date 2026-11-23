@@ -3,7 +3,7 @@ import {
   PackageSearch,
   Search,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -18,10 +18,13 @@ import { Input } from "../shared/components/Input";
 import { Label } from "../shared/components/Label";
 import { Select } from "../shared/components/Select";
 import type { StoreProduct } from "../shared/types/cart";
-import { getProducts } from "../shared/services/product.service";
 import { formatPrice } from "../shared/utils/pricing";
+import { useAllProductsQuery } from "../shared/hooks/useApiQueries";
+import { useBranch } from "../shared/contexts/useBranch";
+import { normalizeError } from "../shared/api/errors";
 
 type StockFilter = "all" | "in-stock" | "low-stock" | "out-of-stock";
+const EMPTY_PRODUCTS: StoreProduct[] = [];
 
 function getStockStatus(stock: number): "In stock" | "Low stock" | "Out of stock" {
   if (stock <= 0) return "Out of stock";
@@ -36,39 +39,19 @@ function getStatusClass(status: ReturnType<typeof getStockStatus>): string {
 }
 
 export default function DashboardProductsPage() {
-  const [products, setProducts] = useState<StoreProduct[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { selectedBranch } = useBranch();
+  const productsQuery = useAllProductsQuery(
+    { branchId: selectedBranch?.id },
+    Boolean(selectedBranch),
+  );
+  const products = productsQuery.data ?? EMPTY_PRODUCTS;
+  const isLoading = productsQuery.isLoading;
+  const error = productsQuery.error
+    ? normalizeError(productsQuery.error, "Failed to load products.").message
+    : "";
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadProducts() {
-      try {
-        const loadedProducts = await getProducts();
-        if (isMounted) setProducts(loadedProducts);
-      } catch (loadError) {
-        if (isMounted) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load products.",
-          );
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
-
-    void loadProducts();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const categories = useMemo(
     () => [...new Set(products.map((product) => product.category))].sort(),

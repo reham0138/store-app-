@@ -1,19 +1,32 @@
+import { USE_MOCK } from "../api/mock";
+
 export type PaymentMethod = "cash" | "card";
 
 export type OrderStatus =
   | "pending"
   | "processing"
+  | "paid"
   | "shipped"
   | "delivered"
   | "cancelled";
 
-export const ORDER_STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
-  pending: ["processing", "cancelled"],
-  processing: ["shipped", "cancelled"],
-  shipped: ["delivered"],
-  delivered: [],
-  cancelled: [],
-};
+export const ORDER_STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = USE_MOCK
+  ? {
+      pending: ["processing", "cancelled"],
+      processing: ["shipped", "cancelled"],
+      paid: ["shipped", "cancelled"],
+      shipped: ["delivered"],
+      delivered: [],
+      cancelled: [],
+    }
+  : {
+      pending: ["paid"],
+      processing: [],
+      paid: ["shipped", "cancelled"],
+      shipped: ["delivered"],
+      delivered: [],
+      cancelled: [],
+    };
 
 export interface ShippingAddress {
   fullName: string;
@@ -26,10 +39,10 @@ export interface ShippingAddress {
 
 export interface OrderItem {
   productId: string;
-  title: string;
-  thumbnail: string;
+  title?: string;
+  thumbnail?: string;
   /** Snapshot of the product category at order time (contract §4 v2.3). */
-  category: string;
+  category?: string;
   unitPrice: number;
   quantity: number;
 }
@@ -45,14 +58,15 @@ export interface Order {
     name: string;
   };
 
-  shippingAddress: ShippingAddress;
-  paymentMethod: PaymentMethod;
+  shippingAddress?: ShippingAddress;
+  paymentMethod?: PaymentMethod;
 
-  subtotal: number;
-  deliveryFee: number;
+  subtotal?: number;
+  deliveryFee?: number;
   total: number;
 
   status: OrderStatus;
   createdAt: string;
   updatedAt?: string;
+  customerEmail?: string;
 }

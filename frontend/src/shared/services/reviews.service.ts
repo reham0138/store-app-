@@ -7,6 +7,7 @@ import {
   deleteProductReview,
 } from "../utils/reviewStorage";
 import { authService } from "./authService";
+import { normalizePage, readId } from "../api/backendShapes";
 
 export interface ReviewListResponse {
   items: ProductReview[];
@@ -18,6 +19,39 @@ export interface ReviewListResponse {
 export interface ReviewInput {
   rating: number;
   comment?: string;
+}
+
+interface BackendReview {
+  id?: string;
+  _id?: string;
+  productId: string | { id?: string; _id?: string };
+  userId: string | { id?: string; _id?: string; name?: string };
+  userName?: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+function relationId(value: string | { id?: string; _id?: string }): string {
+  if (typeof value === "string") return value;
+  const id = value.id ?? value._id;
+  if (!id) throw new Error("The reviews API returned an invalid entity ID.");
+  return id;
+}
+
+function mapBackendReview(raw: BackendReview): ProductReview {
+  const user = typeof raw.userId === "object" ? raw.userId : undefined;
+  return {
+    id: readId(raw),
+    productId: relationId(raw.productId),
+    userId: relationId(raw.userId),
+    userName: raw.userName ?? user?.name ?? "Customer",
+    rating: raw.rating,
+    comment: raw.comment,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  };
 }
 
 const DEFAULT_LIMIT = 10;
@@ -75,20 +109,24 @@ async function apiList(
   page: number,
   limit: number,
 ): Promise<ReviewListResponse> {
-  const { data } = await apiClient.get<ReviewListResponse>(
+  const { data } = await apiClient.get<{
+    data: BackendReview[];
+    meta: { page: number; limit: number; total: number; totalPages?: number };
+  }>(
     `/products/${productId}/reviews`,
     { params: { page, limit } },
   );
-  return data;
+  const pageData = normalizePage(data);
+  return { ...pageData, items: pageData.items.map(mapBackendReview) };
 }
 
 async function apiUpsert(productId: string, input: ReviewInput): Promise<ProductReview> {
   try {
-    const { data } = await apiClient.post<ProductReview>(
+    const { data } = await apiClient.post<BackendReview>(
       `/products/${productId}/reviews`,
       input,
     );
-    return data;
+    return mapBackendReview(data);
   } catch (error) {
     const normalized = normalizeError(error, "Could not save your review.");
     throw new ApiError(normalized.message, normalized.code, normalized.status);

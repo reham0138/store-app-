@@ -9,6 +9,7 @@ export interface StoreProduct {
   title: string;
   description: string;
   category: string;
+  categoryId?: string;
   price: number;
   discountPercentage: number;
   rating: number;

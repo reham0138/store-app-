@@ -22,8 +22,9 @@ import type {
   ShippingAddress,
 } from "../shared/types/order";
 
-import { ordersService } from "../shared/services/orders.service";
 import { normalizeError } from "../shared/api/errors";
+import { USE_MOCK } from "../shared/api/mock";
+import { useCreateOrderMutation } from "../shared/hooks/useApiQueries";
 
 interface CheckoutFieldErrors {
   fullName?: string;
@@ -49,6 +50,7 @@ export default function CheckoutPage() {
     cartNotice,
     dismissCartNotice,
   } = useCart();
+  const createOrderMutation = useCreateOrderMutation();
 
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("cash");
@@ -99,7 +101,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    const nextErrors: CheckoutFieldErrors = {
+    const nextErrors: CheckoutFieldErrors = USE_MOCK ? {
       fullName:
         address.fullName.trim().length < 2
           ? "Enter your full name (at least 2 characters)."
@@ -109,7 +111,7 @@ export default function CheckoutPage() {
       phone: validatePhone(address.phone),
       city: address.city.trim() ? undefined : "Enter your city.",
       street: address.street.trim() ? undefined : "Enter your street address.",
-    };
+    } : {};
     setFieldErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
 
@@ -121,7 +123,7 @@ export default function CheckoutPage() {
     setSubmitting(true);
     setSaveError("");
     try {
-      const order = await ordersService.createOrder({
+      const order = await createOrderMutation.mutateAsync({
         branchId: selectedBranch.id,
         items: items.map((item) => ({
           productId: item.product.id,
@@ -220,7 +222,9 @@ export default function CheckoutPage() {
         </h1>
 
         <p className="mt-2 text-text-slate">
-          Complete your shipping and payment information.
+          {USE_MOCK
+            ? "Complete your shipping and payment information."
+            : "Confirm your items and place the order. The server calculates the final total."}
         </p>
       </header>
 
@@ -255,6 +259,8 @@ export default function CheckoutPage() {
         {/* Checkout Form */}
         <div className="grid gap-6">
 
+          {USE_MOCK && (
+          <>
           {/* Shipping Information */}
           <section className="rounded-xl border border-border-subtle bg-surface-white p-5 sm:p-7">
 
@@ -458,7 +464,8 @@ export default function CheckoutPage() {
 
             </div>
           </section>
-
+          </>
+          )}
         </div>
 
         {/* Order Review */}
@@ -503,10 +510,12 @@ export default function CheckoutPage() {
                 <span>{formatPrice(subtotal)}</span>
               </div>
 
-              <div className="mt-3 flex justify-between text-sm">
-                <span className="text-text-slate">Estimated delivery</span>
-                <span>{formatPrice(deliveryFee)}</span>
-              </div>
+              {USE_MOCK && (
+                <div className="mt-3 flex justify-between text-sm">
+                  <span className="text-text-slate">Estimated delivery</span>
+                  <span>{formatPrice(deliveryFee)}</span>
+                </div>
+              )}
 
               <div className="mt-4 flex justify-between border-t border-border-subtle pt-4 font-semibold text-brand-navy">
                 <span>Estimated total</span>

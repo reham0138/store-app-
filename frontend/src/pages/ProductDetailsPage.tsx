@@ -1,83 +1,56 @@
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import ProductRating from "../shared/components/ProductRating";
 import { useAuth } from "../shared/hooks/useAuth";
-import { getProduct } from "../shared/services/product.service";
-import { reviewsService } from "../shared/services/reviews.service";
-import type { StoreProduct } from "../shared/types/cart";
 import type { ProductReview } from "../shared/types/review";
 import { formatPrice, getProductPrice } from "../shared/utils/pricing";
 import { useBranch } from "../shared/contexts/useBranch";
 import { normalizeError } from "../shared/api/errors";
+import {
+  useDeleteReviewMutation,
+  useInfiniteReviewsQuery,
+  useProductQuery,
+  useUpsertReviewMutation,
+} from "../shared/hooks/useApiQueries";
 
 const REVIEWS_PAGE_SIZE = 10;
+const EMPTY_REVIEWS: ProductReview[] = [];
 
 export default function ProductDetailsPage() {
   const { productId } = useParams<{ productId: string }>();
+  return <ProductDetails key={productId ?? ""} productId={productId} />;
+}
+
+function ProductDetails({ productId }: { productId?: string }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { selectedBranch } = useBranch();
-  const [product, setProduct] = useState<StoreProduct | null>(null);
-  const [reviews, setReviews] = useState<ProductReview[]>([]);
-  const [reviewsTotal, setReviewsTotal] = useState(0);
-  const [reviewsPage, setReviewsPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState("");
   const [rating, setRating] = useState("5");
   const [comment, setComment] = useState("");
   const [editingReview, setEditingReview] = useState<ProductReview | null>(null);
   const [formError, setFormError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const loadData = useCallback(async () => {
-    if (!productId) return;
-    try {
-      const [found, reviewData] = await Promise.all([
-        getProduct(productId),
-        reviewsService.list(productId, 1, REVIEWS_PAGE_SIZE),
-      ]);
-      if (!found) {
-        setError("Product not found.");
-        setProduct(null);
-      } else {
-        setProduct(found);
-        setError("");
-      }
-      setReviews(reviewData.items);
-      setReviewsTotal(reviewData.total);
-      setReviewsPage(1);
-    } catch (loadError) {
-      setError(normalizeError(loadError, "Unable to load product.").message);
-    } finally {
-      setLoading(false);
-    }
-  }, [productId]);
-
-  useEffect(() => {
-    queueMicrotask(() => void loadData());
-  }, [loadData]);
+  const productQuery = useProductQuery(productId, selectedBranch?.id);
+  const reviewsQuery = useInfiniteReviewsQuery(productId ?? "", REVIEWS_PAGE_SIZE);
+  const upsertReviewMutation = useUpsertReviewMutation(productId ?? "");
+  const deleteReviewMutation = useDeleteReviewMutation(productId ?? "");
+  const product = productQuery.data ?? null;
+  const loading = productQuery.isLoading || reviewsQuery.isLoading;
+  const loadingMore = reviewsQuery.isFetchingNextPage;
+  const reviews = reviewsQuery.data?.pages.flatMap((page) => page.items) ?? EMPTY_REVIEWS;
+  const reviewsTotal = reviewsQuery.data?.pages[0]?.total ?? 0;
+  const submitting = upsertReviewMutation.isPending || deleteReviewMutation.isPending;
+  const error = productQuery.error
+    ? normalizeError(productQuery.error, "Unable to load product.").message
+    : productQuery.data === null && !productQuery.isLoading
+      ? "Product not found."
+      : "";
 
   async function loadMoreReviews() {
-    if (!productId || loadingMore) return;
-    const nextPage = reviewsPage + 1;
-    setLoadingMore(true);
-    try {
-      const data = await reviewsService.list(productId, nextPage, REVIEWS_PAGE_SIZE);
-      setReviews((prev) => {
-        const seen = new Set(prev.map((r) => r.id));
-        return [...prev, ...data.items.filter((r) => !seen.has(r.id))];
-      });
-      setReviewsTotal(data.total);
-      setReviewsPage(nextPage);
-    } catch (loadError) {
-      setFormError(normalizeError(loadError, "Unable to load more reviews.").message);
-    } finally {
-      setLoadingMore(false);
-    }
+    if (!productId || loadingMore || !reviewsQuery.hasNextPage) return;
+    await reviewsQuery.fetchNextPage();
   }
 
   const myReview = useMemo(
@@ -111,20 +84,16 @@ export default function ProductDetailsPage() {
       return;
     }
 
-    setSubmitting(true);
     setFormError("");
     try {
       // POST upserts the user's single review for this product.
-      await reviewsService.upsert(product.id, {
+      await upsertReviewMutation.mutateAsync({
         rating: parsedRating,
         comment: trimmedComment,
       });
       resetForm();
-      await loadData();
     } catch (submitError) {
       setFormError(normalizeError(submitError, "Unable to save review.").message);
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -138,16 +107,12 @@ export default function ProductDetailsPage() {
 
   async function handleDelete(review: ProductReview) {
     if (!user || review.userId !== user.id || submitting) return;
-    setSubmitting(true);
     setFormError("");
     try {
-      await reviewsService.remove(review.id);
+      await deleteReviewMutation.mutateAsync(review.id);
       if (editingReview?.id === review.id) resetForm();
-      await loadData();
     } catch (deleteError) {
       setFormError(normalizeError(deleteError, "Unable to delete review.").message);
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -162,8 +127,7 @@ export default function ProductDetailsPage() {
         <button
           type="button"
           onClick={() => {
-            setLoading(true);
-            void loadData();
+            void productQuery.refetch();
           }}
           className="mt-4 inline-flex text-sm font-semibold text-brand-navy underline"
         >
@@ -176,7 +140,7 @@ export default function ProductDetailsPage() {
     );
   }
 
-  const hasMoreReviews = reviews.length < reviewsTotal;
+  const hasMoreReviews = reviewsQuery.hasNextPage;
 
   return (
     <div className="min-h-screen bg-page">
@@ -207,6 +171,11 @@ export default function ProductDetailsPage() {
             <div className="mt-5 space-y-4">
               {reviews.length === 0 && (
                 <p className="rounded-xl border border-border-subtle bg-surface-white p-6 text-sm text-text-slate">No reviews yet. Be the first to share your experience.</p>
+              )}
+              {reviewsQuery.error && (
+                <p className="text-sm text-status-error" role="alert">
+                  {normalizeError(reviewsQuery.error, "Unable to load reviews.").message}
+                </p>
               )}
               {reviews.map((review) => (
                 <article key={review.id} className="rounded-xl border border-border-subtle bg-surface-white p-5">

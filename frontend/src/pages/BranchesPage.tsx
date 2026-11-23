@@ -1,6 +1,7 @@
 import { BranchBadge } from "../shared/components/branch/BranchBadge";
 import { BranchSelector } from "../shared/components/branch/BranchSelector";
 import { useBranch } from "../shared/contexts/useBranch";
+import { USE_MOCK } from "../shared/api/mock";
 
 function BranchesPageContent() {
   const { selectedBranch, selectedByLocation } = useBranch();
@@ -12,15 +13,25 @@ function BranchesPageContent() {
           Store locations
         </p>
         <h1 className="text-2xl font-semibold text-brand-navy">
-          Choose your branch
+          {USE_MOCK ? "Choose your branch" : "Your configured branch"}
         </h1>
         <p className="max-w-2xl text-sm leading-6 text-text-slate">
-          Select a branch to see local product prices and availability.
+          {USE_MOCK
+            ? "Select a branch to see local product prices and availability."
+            : "Public branch discovery is not available in the current backend. Product availability uses the store's configured branch."}
         </p>
       </header>
 
       <div className="grid gap-6 rounded-2xl border border-border-subtle bg-surface-white p-5 shadow-sm sm:p-8">
-        <BranchSelector />
+        {USE_MOCK ? (
+          <BranchSelector />
+        ) : (
+          <p className="text-sm text-text-slate">
+            {selectedBranch
+              ? `Browsing from ${selectedBranch.name}.`
+              : "No default branch is configured."}
+          </p>
+        )}
         <div className="grid gap-2">
           <h2 className="text-sm font-semibold text-brand-navy">
             Current branch

@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { CheckCircle2, Package } from "lucide-react";
 
-import { ordersService } from "../shared/services/orders.service";
 import type { Order } from "../shared/types/order";
 
 import { formatPrice } from "../shared/utils/pricing";
 import { shortOrderId } from "../shared/utils/orderId";
+import { useOrderQuery } from "../shared/hooks/useApiQueries";
 
 export default function OrderSuccessPage() {
   const location = useLocation();
@@ -15,28 +14,10 @@ export default function OrderSuccessPage() {
   const state = location.state as { orderId?: string } | null;
   const orderId = state?.orderId;
 
-  const [order, setOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(Boolean(orderId));
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!orderId) return;
-    let isMounted = true;
-    ordersService
-      .getOrder(orderId)
-      .then((found) => {
-        if (isMounted) setOrder(found);
-      })
-      .catch(() => {
-        if (isMounted) setError("We couldn't load your order.");
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, [orderId]);
+  const orderQuery = useOrderQuery(orderId);
+  const order: Order | null = orderQuery.data ?? null;
+  const loading = orderQuery.isLoading;
+  const error = orderQuery.error ? "We couldn't load your order." : "";
 
   if (loading) {
     return (
@@ -116,11 +97,6 @@ export default function OrderSuccessPage() {
           </span>
         </div>
 
-        <p className="mt-3 text-xs text-text-slate">
-          Payment method: {order.paymentMethod === "cash"
-            ? "Cash on Delivery"
-            : "Card (Demo)"}
-        </p>
         {order.branch && (
           <p className="mt-2 text-xs text-text-slate">
             Fulfilled by: {order.branch.name}

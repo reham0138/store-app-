@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BranchContext } from "./BranchContext";
 import type { Branch } from "../types/type";
 import { getBranches } from "../services/branches.service";
+import { queryKeys } from "../api/queryKeys";
+import { USE_MOCK } from "../api/mock";
 import { normalizeError } from "../api/errors";
+import { useAuth } from "../hooks/useAuth";
 
 type BranchProviderProps = {
   children: ReactNode;
@@ -13,56 +17,75 @@ type BranchProviderProps = {
 
 const EMPTY_BRANCHES: Branch[] = [];
 
+function readSelectedBranchId(storageKey: string): string | null {
+  try {
+    return localStorage.getItem(storageKey);
+  } catch {
+    return null;
+  }
+}
+
 export function BranchProvider({
   children,
   initialBranches = EMPTY_BRANCHES,
   storageKey = "selectedBranchId",
 }: BranchProviderProps) {
-  const [branches, setBranches] = useState<Branch[]>(initialBranches);
-  const [isLoading, setIsLoading] = useState(initialBranches.length === 0);
-  const [error, setError] = useState<string | null>(null);
+  const { user, isLoading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(() =>
-    localStorage.getItem(storageKey),
+    readSelectedBranchId(storageKey),
   );
   const [selectedByLocation, setSelectedByLocation] = useState(false);
 
-  useEffect(() => {
-    if (initialBranches.length > 0) return;
+  const canListBranches =
+    USE_MOCK ||
+    (!authLoading && (user?.role === "admin" || user?.role === "branchManager"));
+  const branchesQuery = useQuery({
+    queryKey: queryKeys.branches.all,
+    queryFn: getBranches,
+    enabled: canListBranches && initialBranches.length === 0,
+  });
 
-    let isMounted = true;
-
-    getBranches()
-      .then((data) => {
-        if (isMounted) setBranches(data);
-      })
-      .catch((loadError) => {
-        console.error("Unable to load branches.", loadError);
-        if (isMounted) {
-          setError(
-            normalizeError(loadError, "Unable to load branches.").message,
-          );
-        }
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [initialBranches]);
+  const defaultBranchId = import.meta.env.VITE_DEFAULT_BRANCH_ID?.trim();
+  const branches = useMemo(() => {
+    if (initialBranches.length > 0) return initialBranches;
+    if (branchesQuery.data) return branchesQuery.data;
+    if (!USE_MOCK && defaultBranchId) {
+      return [{
+        id: defaultBranchId,
+        name: import.meta.env.VITE_DEFAULT_BRANCH_NAME?.trim() || "Configured branch",
+      }];
+    }
+    return EMPTY_BRANCHES;
+  }, [initialBranches, branchesQuery.data, defaultBranchId]);
 
   const selectedBranch =
     branches.find((branch) => branch.id === selectedBranchId) ??
+    (user?.role === "branchManager" ? branches[0] : undefined) ??
     branches.find((branch) => branch.isDefault) ??
     branches.find((branch) => branch.name === "main") ??
     branches[0] ??
     null;
   const activeBranchId = selectedBranch?.id;
 
+  const isLoading =
+    authLoading ||
+    (canListBranches && initialBranches.length === 0 && branchesQuery.isLoading);
+  const queryError = branchesQuery.error
+    ? normalizeError(branchesQuery.error, "Unable to load branches.").message
+    : null;
+  const error =
+    queryError ??
+    (!isLoading && !selectedBranch && !USE_MOCK
+      ? "No branch is available. Configure VITE_DEFAULT_BRANCH_ID or sign in with a staff account."
+      : null);
+
   useEffect(() => {
-    if (activeBranchId) {
+    if (!activeBranchId) return;
+    try {
       localStorage.setItem(storageKey, activeBranchId);
+    } catch {
+      // Branch selection remains available for the current page if storage is disabled.
     }
   }, [activeBranchId, storageKey]);
 
@@ -79,9 +102,7 @@ export function BranchProvider({
           setSelectedByLocation(byLocation);
         },
         setBranches: (nextBranches) => {
-          setBranches(nextBranches);
-          setIsLoading(false);
-          setError(null);
+          queryClient.setQueryData(queryKeys.branches.all, nextBranches);
         },
       }}
     >

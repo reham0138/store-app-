@@ -5,12 +5,25 @@ import {
   getBranchOperationalStatuses,
   saveBranchOperationalStatus,
 } from "../utils/branchStatusStorage";
+import { readId } from "../api/backendShapes";
 
-interface BranchListResponse {
-  items: Branch[];
-  total: number;
-  page: number;
-  limit: number;
+interface BackendBranch {
+  id?: string;
+  _id?: string;
+  name: string;
+  code?: string;
+  address?: string;
+  isActive?: boolean;
+}
+
+function mapBranch(raw: BackendBranch): Branch {
+  return {
+    id: readId(raw),
+    name: raw.name,
+    code: raw.code,
+    address: raw.address,
+    operationalStatus: raw.isActive === false ? "closed" : "open",
+  };
 }
 
 async function fetchMockBranches(): Promise<Branch[]> {
@@ -43,8 +56,12 @@ async function fetchMockBranches(): Promise<Branch[]> {
 export async function getBranches(): Promise<Branch[]> {
   if (USE_MOCK) return fetchMockBranches();
   try {
-    const { data } = await apiClient.get<BranchListResponse>("/branches");
-    return data.items;
+    const { data } = await apiClient.get<BackendBranch | BackendBranch[]>("/branches");
+    const branches = (Array.isArray(data) ? data : [data]).map(mapBranch);
+    if (branches.length === 0) {
+      throw new Error("The backend returned no branches.");
+    }
+    return branches;
   } catch (error) {
     const normalized = normalizeError(error, "Failed to load branches.");
     throw new ApiError(normalized.message, normalized.code, normalized.status);
@@ -63,11 +80,11 @@ export async function updateBranchStatus(
     return updated;
   }
   try {
-    const { data } = await apiClient.patch<Branch>(
-      `/branches/${branchId}/status`,
-      { operationalStatus: status },
+    const { data } = await apiClient.patch<BackendBranch>(
+      `/branches/${branchId}`,
+      { isActive: status === "open" },
     );
-    return data;
+    return mapBranch(data);
   } catch (error) {
     const normalized = normalizeError(error, "Failed to update branch status.");
     throw new ApiError(normalized.message, normalized.code, normalized.status);

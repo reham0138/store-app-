@@ -5,7 +5,7 @@ import {
   CircleDollarSign,
   PackageSearch,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -25,14 +25,16 @@ import type { Order } from "../shared/types/order";
 import type { Branch } from "../shared/types/type";
 import { formatPrice } from "../shared/utils/pricing";
 import { shortOrderId } from "../shared/utils/orderId";
-import {
-  reportsService,
-  type DashboardReport,
-  type ReportBranchSales,
-  type ReportLowStockProduct,
+import type {
+  DashboardReport,
+  ReportBranchSales,
+  ReportLowStockProduct,
 } from "../shared/services/reports.service";
-import { getBranches, updateBranchStatus as updateBranchStatusApi } from "../shared/services/branches.service";
 import { normalizeError } from "../shared/api/errors";
+import { useAdminReportQuery, useUpdateBranchStatusMutation } from "../shared/hooks/useApiQueries";
+import { useBranch } from "../shared/contexts/useBranch";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../shared/api/queryKeys";
 
 interface BranchRow extends ReportBranchSales {
   branchName: string;
@@ -40,35 +42,17 @@ interface BranchRow extends ReportBranchSales {
 }
 
 export default function DashboardReportsPage() {
-  const [report, setReport] = useState<DashboardReport | null>(null);
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const { branches } = useBranch();
   const [scopeBranchId, setScopeBranchId] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
   const [statusError, setStatusError] = useState("");
-
-  const loadAll = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [reportData, branchData] = await Promise.all([
-        reportsService.admin(scopeBranchId || undefined),
-        getBranches(),
-      ]);
-      setReport(reportData);
-      setBranches(branchData);
-      setLoadError("");
-    } catch (error) {
-      setLoadError(
-        normalizeError(error, "Failed to load report data.").message,
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [scopeBranchId]);
-
-  useEffect(() => {
-    queueMicrotask(() => void loadAll());
-  }, [loadAll]);
+  const queryClient = useQueryClient();
+  const reportQuery = useAdminReportQuery(scopeBranchId || undefined);
+  const statusMutation = useUpdateBranchStatusMutation();
+  const report: DashboardReport | null = reportQuery.data ?? null;
+  const isLoading = reportQuery.isLoading;
+  const loadError = reportQuery.error
+    ? normalizeError(reportQuery.error, "Failed to load report data.").message
+    : "";
 
   async function updateBranchStatus(
     branchId: string,
@@ -77,8 +61,7 @@ export default function DashboardReportsPage() {
     if (status === "") return;
     setStatusError("");
     try {
-      await updateBranchStatusApi(branchId, status);
-      setBranches(await getBranches());
+      await statusMutation.mutateAsync({ branchId, status });
     } catch (error) {
       setStatusError(
         normalizeError(error, "Unable to save branch status.").message,
@@ -259,8 +242,7 @@ export default function DashboardReportsPage() {
     {
       key: "customer",
       header: "Customer",
-      render: (order) =>
-        order.shippingAddress.fullName || "Unnamed customer",
+      render: (order) => order.customerEmail ?? "Customer",
     },
     {
       key: "date",
@@ -321,7 +303,10 @@ export default function DashboardReportsPage() {
           <FormError message={loadError} />
           <button
             type="button"
-            onClick={() => void loadAll()}
+            onClick={() => {
+              void reportQuery.refetch();
+              void queryClient.invalidateQueries({ queryKey: queryKeys.branches.all });
+            }}
             className="mt-4 rounded-lg bg-brand-navy px-4 py-2 text-sm text-white"
           >
             Try Again

@@ -13,6 +13,7 @@ import { saveProducts } from "../utils/productStorage";
 import { getProductPrice } from "../utils/pricing";
 import { authService } from "./authService";
 import type { StoreProduct } from "../types/cart";
+import { normalizePage, readId } from "../api/backendShapes";
 
 export interface CreateOrderInput {
   branchId: string;
@@ -25,6 +26,33 @@ export interface OrderQuery {
   status?: OrderStatus;
   page?: number;
   limit?: number;
+}
+
+interface BackendOrderItem {
+  productId: string | { _id?: string; id?: string };
+  quantity: number;
+  unitPrice: number;
+  title?: string;
+  thumbnail?: string;
+  category?: string;
+}
+
+interface BackendOrder {
+  id?: string;
+  _id?: string;
+  customerId?: string | { _id?: string; id?: string };
+  customerEmail?: string;
+  branchId?: string | { _id?: string; id?: string; name?: string; code?: string };
+  items?: BackendOrderItem[];
+  total: number;
+  status: OrderStatus;
+  createdAt: string;
+  updatedAt?: string;
+  shippingAddress?: ShippingAddress;
+  paymentMethod?: PaymentMethod;
+  subtotal?: number;
+  deliveryFee?: number;
+  history?: unknown[];
 }
 
 export interface OrderListResponse {
@@ -65,6 +93,43 @@ function assertValidTransition(from: OrderStatus, to: OrderStatus): void {
       400,
     );
   }
+}
+
+function relationId(value: string | { id?: string; _id?: string } | undefined): string | undefined {
+  if (typeof value === "string") return value;
+  if (!value) return undefined;
+  const id = value.id ?? value._id;
+  return typeof id === "string" ? id : undefined;
+}
+
+export function mapBackendOrder(raw: BackendOrder): Order {
+  const branchId = relationId(raw.branchId);
+  const branchRecord = typeof raw.branchId === "object" ? raw.branchId : undefined;
+  return {
+    id: readId(raw),
+    userId: relationId(raw.customerId),
+    customerEmail: raw.customerEmail,
+    branchId,
+    branch: branchId
+      ? { id: branchId, name: branchRecord?.name ?? branchRecord?.code ?? "Branch" }
+      : undefined,
+    items: (raw.items ?? []).map((item) => ({
+      productId: relationId(item.productId) ?? "",
+      title: item.title,
+      thumbnail: item.thumbnail,
+      category: item.category,
+      unitPrice: item.unitPrice,
+      quantity: item.quantity,
+    })),
+    shippingAddress: raw.shippingAddress,
+    paymentMethod: raw.paymentMethod,
+    subtotal: raw.subtotal,
+    deliveryFee: raw.deliveryFee,
+    total: raw.total,
+    status: raw.status,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  };
 }
 
 // ---------- Mock implementation ----------
@@ -270,8 +335,11 @@ async function mockUpdateOrderStatus(id: string, status: OrderStatus): Promise<O
 
 async function apiCreateOrder(input: CreateOrderInput): Promise<Order> {
   try {
-    const { data } = await apiClient.post<Order>("/orders", input);
-    return data;
+    const { data } = await apiClient.post<BackendOrder>("/orders", {
+      branchId: input.branchId,
+      items: input.items,
+    });
+    return mapBackendOrder(data);
   } catch (error) {
     const normalized = normalizeError(error, "Could not place your order.");
     throw new ApiError(normalized.message, normalized.code, normalized.status, normalized.details);
@@ -279,30 +347,37 @@ async function apiCreateOrder(input: CreateOrderInput): Promise<Order> {
 }
 
 async function apiListOrders(query?: OrderQuery): Promise<OrderListResponse> {
-  const { data } = await apiClient.get<OrderListResponse>("/orders", {
+  const { data } = await apiClient.get<{
+    data: BackendOrder[];
+    meta: { page: number; limit: number; total: number; totalPages?: number };
+  }>("/orders", {
     params: {
       status: query?.status || undefined,
       page: query?.page ?? 1,
       limit: query?.limit ?? 20,
     },
   });
-  return data;
+  const page = normalizePage(data);
+  return { ...page, items: page.items.map(mapBackendOrder) };
 }
 
 async function apiGetOrder(id: string): Promise<Order> {
   try {
-    const { data } = await apiClient.get<Order>(`/orders/${id}`);
-    return data;
+    const { data } = await apiClient.get<BackendOrder>(`/orders/${id}`);
+    return mapBackendOrder(data);
   } catch (error) {
     const normalized = normalizeError(error, "Order not found.");
     throw new ApiError(normalized.message, normalized.code, normalized.status);
   }
 }
 
-async function apiUpdateOrderStatus(id: string, status: OrderStatus): Promise<Order> {
+async function apiUpdateOrderStatus(id: string, status: OrderStatus, branchId?: string): Promise<Order> {
+  if (!branchId) {
+    throw new ApiError("A branch ID is required to update order status.", "VALIDATION_ERROR", 400);
+  }
   try {
-    const { data } = await apiClient.patch<Order>(`/orders/${id}/status`, { status });
-    return data;
+    const { data } = await apiClient.patch<BackendOrder>(`/orders/${id}/status`, { status, branchId });
+    return mapBackendOrder(data);
   } catch (error) {
     const normalized = normalizeError(error, "Could not update order status.");
     throw new ApiError(normalized.message, normalized.code, normalized.status);
@@ -322,7 +397,7 @@ export const ordersService = {
   getOrder(id: string): Promise<Order> {
     return USE_MOCK ? mockGetOrder(id) : apiGetOrder(id);
   },
-  updateOrderStatus(id: string, status: OrderStatus): Promise<Order> {
-    return USE_MOCK ? mockUpdateOrderStatus(id, status) : apiUpdateOrderStatus(id, status);
+  updateOrderStatus(id: string, status: OrderStatus, branchId?: string): Promise<Order> {
+    return USE_MOCK ? mockUpdateOrderStatus(id, status) : apiUpdateOrderStatus(id, status, branchId);
   },
 };

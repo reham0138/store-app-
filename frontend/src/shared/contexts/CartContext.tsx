@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import type { ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
   CartContextType,
@@ -21,9 +22,13 @@ import {
 import { useBranch } from "./useBranch";
 import { CartContext } from "./cart-context";
 import { getProducts } from "../services/product.service";
+import { queryKeys } from "../api/queryKeys";
+import { normalizeError } from "../api/errors";
+import { USE_MOCK } from "../api/mock";
 
 const STORAGE_KEY = "crown-anchor-cart";
 const CART_VERSION = 2;
+const EMPTY_PRODUCTS: StoreProduct[] = [];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -96,40 +101,30 @@ interface CartProviderProps {
 
 export function CartProvider({ children }: CartProviderProps) {
   const { selectedBranch } = useBranch();
+  const queryClient = useQueryClient();
   const branchId = selectedBranch?.id;
   const [lines, setLines] = useState<CartLine[]>(loadCartLines);
-  const [products, setProducts] = useState<StoreProduct[]>([]);
-  const [productsLoaded, setProductsLoaded] = useState(false);
   const [cartNotice, setCartNotice] = useState<string | null>(null);
-
-  const loadProducts = () => {
-    getProducts()
-      .then((loaded) => setProducts(loaded))
-      .catch((error) => {
-        console.warn("Unable to load products for cart.", error);
-      })
-      .finally(() => setProductsLoaded(true));
-  };
+  const [dismissedProductError, setDismissedProductError] = useState<unknown>(null);
+  const productsQuery = useQuery({
+    queryKey: [...queryKeys.products.all, "cart", branchId] as const,
+    queryFn: () => getProducts({ branchId }),
+    enabled: Boolean(branchId),
+  });
+  const products = productsQuery.data ?? EMPTY_PRODUCTS;
+  const productsLoaded = productsQuery.isSuccess;
 
   useEffect(() => {
-    let isMounted = true;
-    getProducts()
-      .then((loaded) => {
-        if (isMounted) setProducts(loaded);
-      })
-      .catch((error) => {
-        console.warn("Unable to load products for cart.", error);
-      })
-      .finally(() => {
-        if (isMounted) setProductsLoaded(true);
+    const refresh = () => {
+      void queryClient.invalidateQueries({
+        queryKey: [...queryKeys.products.all, "cart", branchId],
       });
-    const refresh = () => loadProducts();
+    };
     window.addEventListener("products-updated", refresh);
     return () => {
-      isMounted = false;
       window.removeEventListener("products-updated", refresh);
     };
-  }, []);
+  }, [branchId, queryClient]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -249,7 +244,15 @@ export function CartProvider({ children }: CartProviderProps) {
     setLines([]);
   };
 
-  const dismissCartNotice = () => setCartNotice(null);
+  const productErrorNotice =
+    productsQuery.error && productsQuery.error !== dismissedProductError
+      ? normalizeError(productsQuery.error, "Unable to load cart product data.").message
+      : null;
+  const visibleCartNotice = cartNotice ?? productErrorNotice;
+  const dismissCartNotice = () => {
+    setCartNotice(null);
+    setDismissedProductError(productsQuery.error ?? null);
+  };
 
   const subtotal = useMemo(
     () =>
@@ -266,7 +269,7 @@ export function CartProvider({ children }: CartProviderProps) {
     [items],
   );
 
-  const deliveryFee = items.length > 0 ? DELIVERY_FEE : 0;
+  const deliveryFee = USE_MOCK && items.length > 0 ? DELIVERY_FEE : 0;
 
   const total = subtotal + deliveryFee;
 
@@ -276,7 +279,7 @@ export function CartProvider({ children }: CartProviderProps) {
     subtotal,
     deliveryFee,
     total,
-    cartNotice,
+    cartNotice: visibleCartNotice,
     addToCart,
     updateQuantity,
     removeFromCart,
