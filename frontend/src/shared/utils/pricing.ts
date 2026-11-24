@@ -1,6 +1,6 @@
 import type { StoreProduct } from "../types/cart";
 
-export const DELIVERY_FEE = 5;
+export const DELIVERY_FEE = 10;
 
 export function getProductPrice(
   product: StoreProduct,

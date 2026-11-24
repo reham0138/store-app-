@@ -37,6 +37,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const {
     selectedBranch,
+    selectedByLocation,
     isLoading: branchesLoading,
     error: branchError,
   } = useBranch();
@@ -125,6 +126,7 @@ export default function CheckoutPage() {
     try {
       const order = await createOrderMutation.mutateAsync({
         branchId: selectedBranch.id,
+        selectedByLocation,
         items: items.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
@@ -510,12 +512,15 @@ export default function CheckoutPage() {
                 <span>{formatPrice(subtotal)}</span>
               </div>
 
-              {USE_MOCK && (
-                <div className="mt-3 flex justify-between text-sm">
-                  <span className="text-text-slate">Estimated delivery</span>
-                  <span>{formatPrice(deliveryFee)}</span>
-                </div>
-              )}
+              <div className="mt-3 flex justify-between text-sm">
+                <span className="text-text-slate">Estimated delivery</span>
+                <span>{formatPrice(deliveryFee)}</span>
+              </div>
+              <p className="mt-2 text-xs text-text-slate">
+                {selectedByLocation
+                  ? "Nearest branch selected using GPS — delivery is free."
+                  : "Select your nearest branch using GPS for free delivery."}
+              </p>
 
               <div className="mt-4 flex justify-between border-t border-border-subtle pt-4 font-semibold text-brand-navy">
                 <span>Estimated total</span>

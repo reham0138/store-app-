@@ -1,11 +1,14 @@
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Footer() {
+  const { user } = useAuth();
+
   return (
     <footer className="w-full bg-brand-navy text-white">
-      <div className=" flex w-full  flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-6 border-b border-surface-white/20 pb-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-5 py-10 sm:px-8 lg:px-12">
+        <div className="grid gap-8 border-b border-surface-white/20 pb-8 sm:grid-cols-[1fr_auto] sm:items-start">
           <div className="flex items-center gap-4">
             <img
               src="/brand/logo/the-crown-anchor-logo-white.png"
@@ -20,36 +23,62 @@ export default function Footer() {
             </div>
           </div>
 
-          <nav aria-label="Footer navigation" className="flex flex-wrap gap-2">
-            <Link
-              to="/products"
-              className="rounded-lg px-3 py-2 text-sm text-white transition-colors hover:bg-surface-white/10"
-            >
-              Products
-            </Link>
-            <Link
-              to="/cart"
-              className="rounded-lg px-3 py-2 text-sm text-white transition-colors hover:bg-white/10"
-            >
-              Cart
-            </Link>
-            <Link
-              to="/orders"
-              className="rounded-lg px-3 py-2 text-sm text-white transition-colors hover:bg-white/10"
-            >
-              Orders
-            </Link>
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white transition-colors hover:bg-white/10"
-            >
-              Home
-              <ArrowUpRight aria-hidden="true" size={16} />
-            </Link>
-          </nav>
+          <div className="grid grid-cols-2 gap-x-10 gap-y-7 sm:grid-cols-3">
+            <nav aria-label="Shop links" className="grid content-start gap-3">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-gold">
+                Shop
+              </h2>
+              <Link
+                to="/products"
+                className="text-sm text-white/80 transition-colors hover:text-white"
+              >
+                Products
+              </Link>
+              <Link
+                to="/branches"
+                className="text-sm text-white/80 transition-colors hover:text-white"
+              >
+                Branch locations
+              </Link>
+              <Link
+                to="/cart"
+                className="text-sm text-white/80 transition-colors hover:text-white"
+              >
+                Cart
+              </Link>
+            </nav>
+
+            <nav aria-label="Account links" className="grid content-start gap-3">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-gold">
+                Your account
+              </h2>
+              {user ? (
+                <Link
+                  to="/orders"
+                  className="text-sm text-white/80 transition-colors hover:text-white"
+                >
+                  Orders
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className="text-sm text-white/80 transition-colors hover:text-white"
+                >
+                  Sign in
+                </Link>
+              )}
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 text-sm text-white/80 transition-colors hover:text-white"
+              >
+                Home
+                <ArrowUpRight aria-hidden="true" size={15} />
+              </Link>
+            </nav>
+          </div>
         </div>
 
-        <p className="text-sm text-white/75">
+        <p className="text-xs text-white/65">
           &copy; {new Date().getFullYear()} The Crown &amp; Anchor
         </p>
       </div>

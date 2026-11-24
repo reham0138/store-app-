@@ -36,6 +36,11 @@ export default function CartSummary({
           <span className="text-text-slate">Delivery Fee</span>
           <span>{formatPrice(deliveryFee)}</span>
         </div>
+        <p className="-mt-2 text-xs text-text-slate">
+          {deliveryFee === 0
+            ? "Free delivery with the nearest branch selected by GPS."
+            : "Select your nearest branch using GPS for free delivery."}
+        </p>
 
         <div className="border-t border-border-subtle pt-4">
           <div className="flex justify-between font-semibold text-brand-navy">

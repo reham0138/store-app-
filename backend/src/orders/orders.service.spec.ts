@@ -163,7 +163,12 @@ describe('OrdersService', () => {
     ).rejects.toThrow(ForbiddenException);
   });
 
-  it('should create an order and deduct stock', async () => {
+  it.each([
+    { selectedByLocation: false, expectedDeliveryFee: 10 },
+    { selectedByLocation: true, expectedDeliveryFee: 0 },
+  ])(
+    'should charge $expectedDeliveryFee delivery when GPS selection is $selectedByLocation',
+    async ({ selectedByLocation, expectedDeliveryFee }) => {
     const session = {
       withTransaction: vi.fn(async (callback: any) => callback()),
       endSession: vi.fn(),
@@ -177,7 +182,7 @@ describe('OrdersService', () => {
 
     const createdOrder = {
       _id: orderId,
-      total: 25,
+      total: 25 + expectedDeliveryFee,
       status: 'pending',
     };
 
@@ -226,6 +231,7 @@ describe('OrdersService', () => {
     const result = await service.create(
       {
         branchId,
+        selectedByLocation,
         items: [{ productId, quantity: 2 }],
       } as any,
       {
@@ -235,10 +241,19 @@ describe('OrdersService', () => {
     );
 
     expect(result).toEqual(createdOrder);
-    expect(orderModel.create).toHaveBeenCalled();
+    expect(orderModel.create).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          deliveryFee: expectedDeliveryFee,
+          total: 25 + expectedDeliveryFee,
+        }),
+      ],
+      { session },
+    );
     expect(inventoryModel.updateOne).toHaveBeenCalled();
     expect(session.endSession).toHaveBeenCalled();
-  });
+    },
+  );
 
   it('should reject order creation when stock is insufficient', async () => {
     const session = {

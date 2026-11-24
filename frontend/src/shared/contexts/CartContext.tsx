@@ -24,7 +24,6 @@ import { CartContext } from "./cart-context";
 import { getProducts } from "../services/product.service";
 import { queryKeys } from "../api/queryKeys";
 import { normalizeError } from "../api/errors";
-import { USE_MOCK } from "../api/mock";
 
 const STORAGE_KEY = "crown-anchor-cart";
 const CART_VERSION = 2;
@@ -100,7 +99,7 @@ interface CartProviderProps {
 }
 
 export function CartProvider({ children }: CartProviderProps) {
-  const { selectedBranch } = useBranch();
+  const { selectedBranch, selectedByLocation } = useBranch();
   const queryClient = useQueryClient();
   const branchId = selectedBranch?.id;
   const [lines, setLines] = useState<CartLine[]>(loadCartLines);
@@ -269,7 +268,8 @@ export function CartProvider({ children }: CartProviderProps) {
     [items],
   );
 
-  const deliveryFee = USE_MOCK && items.length > 0 ? DELIVERY_FEE : 0;
+  const deliveryFee =
+    items.length === 0 || selectedByLocation ? 0 : DELIVERY_FEE;
 
   const total = subtotal + deliveryFee;
 
