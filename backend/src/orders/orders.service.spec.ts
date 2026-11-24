@@ -349,7 +349,7 @@ describe('OrdersService', () => {
     };
 
     const branchesService = {
-      assertActive: vi.fn().mockResolvedValue(undefined),
+      assertExists: vi.fn().mockResolvedValue(undefined),
     };
 
     const connection = {
@@ -373,6 +373,10 @@ describe('OrdersService', () => {
       ),
     ).rejects.toThrow(ForbiddenException);
 
+    expect(orderModel.findOne).toHaveBeenCalledWith({
+      _id: new Types.ObjectId(orderId),
+      branchId: new Types.ObjectId(branchId),
+    });
     expect(session.endSession).toHaveBeenCalled();
   });
 
@@ -403,7 +407,7 @@ describe('OrdersService', () => {
     };
 
     const branchesService = {
-      assertActive: vi.fn().mockResolvedValue(undefined),
+      assertExists: vi.fn().mockResolvedValue(undefined),
     };
 
     const connection = {
@@ -428,6 +432,61 @@ describe('OrdersService', () => {
     expect(result).toEqual(updatedOrder);
     expect(orderModel.findOneAndUpdate).toHaveBeenCalled();
     expect(session.endSession).toHaveBeenCalled();
+  });
+
+  it('lets admins update by order ID and advances legacy processing orders', async () => {
+    const session = {
+      withTransaction: vi.fn(async (callback: any) => callback()),
+      endSession: vi.fn(),
+    };
+    const legacyOrder = {
+      _id: new Types.ObjectId(orderId),
+      branchId: new Types.ObjectId(branchId),
+      status: 'processing',
+      items: [],
+    };
+    const updatedOrder = { ...legacyOrder, status: 'shipped' };
+    const orderModel = {
+      findOne: vi.fn().mockReturnValue({
+        session: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue(legacyOrder),
+      }),
+      findOneAndUpdate: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(updatedOrder),
+      }),
+    };
+    const branchesService = {
+      assertExists: vi.fn().mockResolvedValue(undefined),
+    };
+    const connection = {
+      startSession: vi.fn().mockResolvedValue(session),
+    };
+    const service = new OrdersService(
+      orderModel as any,
+      null,
+      null,
+      branchesService as any,
+      connection as any,
+    );
+
+    await expect(
+      service.updateStatus(orderId, 'shipped', undefined, 'admin'),
+    ).resolves.toEqual(updatedOrder);
+
+    expect(orderModel.findOne).toHaveBeenCalledWith({
+      _id: new Types.ObjectId(orderId),
+    });
+    expect(orderModel.findOneAndUpdate).toHaveBeenCalledWith(
+      {
+        _id: new Types.ObjectId(orderId),
+        branchId: new Types.ObjectId(branchId),
+        status: 'processing',
+      },
+      expect.objectContaining({
+        $set: { status: 'shipped' },
+      }),
+      expect.any(Object),
+    );
   });
 
 });

@@ -78,7 +78,7 @@ updateStatus(
   return this.ordersService.updateStatus(
     id.toString(),
     body.status,
-    branchId!,
+    branchId,
     req.role ?? 'visitor',
   );
 }

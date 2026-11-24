@@ -45,7 +45,7 @@ interface BackendOrder {
   branchId?: string | { _id?: string; id?: string; name?: string; code?: string };
   items?: BackendOrderItem[];
   total: number;
-  status: OrderStatus;
+  status: string;
   createdAt: string;
   updatedAt?: string;
   shippingAddress?: ShippingAddress;
@@ -126,10 +126,24 @@ export function mapBackendOrder(raw: BackendOrder): Order {
     subtotal: raw.subtotal,
     deliveryFee: raw.deliveryFee,
     total: raw.total,
-    status: raw.status,
+    status: normalizeBackendOrderStatus(raw.status),
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };
+}
+
+function normalizeBackendOrderStatus(status: string): OrderStatus {
+  if (status === "processing") return "paid";
+  if (
+    status === "pending" ||
+    status === "paid" ||
+    status === "shipped" ||
+    status === "delivered" ||
+    status === "cancelled"
+  ) {
+    return status;
+  }
+  throw new Error(`The backend returned unsupported order status "${status}".`);
 }
 
 // ---------- Mock implementation ----------
@@ -372,11 +386,11 @@ async function apiGetOrder(id: string): Promise<Order> {
 }
 
 async function apiUpdateOrderStatus(id: string, status: OrderStatus, branchId?: string): Promise<Order> {
-  if (!branchId) {
-    throw new ApiError("A branch ID is required to update order status.", "VALIDATION_ERROR", 400);
-  }
   try {
-    const { data } = await apiClient.patch<BackendOrder>(`/orders/${id}/status`, { status, branchId });
+    const { data } = await apiClient.patch<BackendOrder>(
+      `/orders/${id}/status`,
+      { status, ...(branchId ? { branchId } : {}) },
+    );
     return mapBackendOrder(data);
   } catch (error) {
     const normalized = normalizeError(error, "Could not update order status.");
