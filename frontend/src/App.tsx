@@ -5,6 +5,7 @@ import {
   FileText,
   LayoutDashboard,
   Package,
+  Users,
 } from "lucide-react";
 import {
   BrowserRouter as Router,
@@ -38,6 +39,7 @@ import DashboardProductsPage from "./pages/DashboardProductsPage";
 import DashboardInventoryPage from "./pages/DashboardInventoryPage";
 import DashboardReportsPage from "./pages/DashboardReportsPage";
 import DashboardBranchOverviewPage from "./pages/DashboardBranchOverviewPage";
+import DashboardStaffPage from "./pages/DashboardStaffPage";
 import { ProtectedRoute } from "./shared/components/ProtectedRoute";
 import { useAuth } from "./shared/hooks/useAuth";
 import { useBranch } from "./shared/contexts/useBranch";
@@ -68,6 +70,11 @@ const adminSidebarItems = [
     label: "Reports",
     path: "/dashboard/admin/reports",
     icon: <FileText size={18} />,
+  },
+  {
+    label: "Staff",
+    path: "/dashboard/admin/staff",
+    icon: <Users size={18} />,
   },
 ];
 
@@ -178,6 +185,7 @@ function App() {
                   <Route path="products" element={<DashboardProductsPage />} />
                   <Route path="inventory" element={<DashboardInventoryPage />} />
                   <Route path="reports" element={<DashboardReportsPage />} />
+                  <Route path="staff" element={<DashboardStaffPage />} />
                 </Route>
               </Route>
               <Route element={<ProtectedRoute roles={["branchManager"]} />}>

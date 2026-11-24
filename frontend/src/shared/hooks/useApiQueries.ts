@@ -24,6 +24,12 @@ import { reviewsService } from "../services/reviews.service";
 import type { ReviewInput } from "../services/reviews.service";
 import { reportsService } from "../services/reports.service";
 import { updateBranchStatus } from "../services/branches.service";
+import {
+  assignStaffBranch,
+  createStaff,
+  getStaff,
+} from "../services/staff.service";
+import type { CreateStaffInput } from "../services/staff.service";
 
 export function useCategoriesQuery(enabled = true) {
   return useQuery({
@@ -204,5 +210,30 @@ export function useUpdateBranchStatusMutation() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.branches.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
     },
+  });
+}
+
+export function useStaffQuery(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.staff.all,
+    queryFn: getStaff,
+    enabled,
+  });
+}
+
+export function useCreateStaffMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateStaffInput) => createStaff(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.staff.all }),
+  });
+}
+
+export function useAssignStaffBranchMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ staffId, branchId }: { staffId: string; branchId: string }) =>
+      assignStaffBranch(staffId, branchId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.staff.all }),
   });
 }

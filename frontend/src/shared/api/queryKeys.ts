@@ -5,6 +5,9 @@ export const queryKeys = {
   branches: {
     all: ["branches"] as const,
   },
+  staff: {
+    all: ["staff"] as const,
+  },
   products: {
     all: ["products"] as const,
     lists: () => [...queryKeys.products.all, "list"] as const,
