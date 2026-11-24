@@ -36,8 +36,28 @@ export class ProductImagesService {
           transformation: [{ quality: 'auto', fetch_format: 'auto' }],
         },
         (error, result) => {
-          if (error || !result?.secure_url) {
-            reject(new BadGatewayException('Cloudinary image upload failed.'));
+          if (error) {
+            const providerMessage = error.message
+              .split(apiSecret)
+              .join('[redacted]')
+              .split(apiKey)
+              .join('[redacted]')
+              .split(cloudName)
+              .join('[redacted]')
+              .slice(0, 240);
+            reject(
+              new BadGatewayException(
+                `Cloudinary upload failed (HTTP ${error.http_code}): ${providerMessage}`,
+              ),
+            );
+            return;
+          }
+          if (!result?.secure_url) {
+            reject(
+              new BadGatewayException(
+                'Cloudinary upload completed without returning a secure image URL.',
+              ),
+            );
             return;
           }
           resolve({ url: result.secure_url });
