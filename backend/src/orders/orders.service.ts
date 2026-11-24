@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
   Optional,
@@ -48,7 +49,9 @@ export class OrdersService {
     @Optional()
     @InjectModel(Inventory.name)
     private readonly inventoryModel: Model<InventoryDocument> | null = null,
-    @Optional() private readonly branchesService: BranchesService | null = null,
+    @Optional()
+    @Inject(BranchesService)
+    private readonly branchesService: BranchesService | null = null,
     @Optional()
     @InjectConnection()
     private readonly connection: Connection | null = null,
