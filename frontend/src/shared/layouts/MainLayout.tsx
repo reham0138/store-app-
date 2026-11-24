@@ -6,7 +6,7 @@ export default function MainLayout() {
   return (
     <div className="app-container">
       <NavBar />
-      <main className="main-content pt-14">
+      <main className="main-content pt-14 xl:pt-16">
         <Outlet />
       </main>
       <Footer />

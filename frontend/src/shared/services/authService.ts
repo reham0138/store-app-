@@ -142,7 +142,11 @@ async function mockRegister({ name, email, password }: RegisterInput): Promise<U
 }
 
 function mockLogout(): void {
-  localStorage.removeItem(SESSION_KEY)
+  try {
+    localStorage.removeItem(SESSION_KEY)
+  } catch {
+    // The in-memory auth state is still cleared if storage is unavailable.
+  }
 }
 
 function mockGetCurrentUser(): User | null {
@@ -214,6 +218,11 @@ async function apiRegister(input: RegisterInput): Promise<User> {
 
 function apiLogout(): void {
   setAuthToken(null)
+  try {
+    localStorage.removeItem(SESSION_KEY)
+  } catch {
+    // The API token is cleared independently by setAuthToken.
+  }
 }
 
 // ---------- Public API ----------
