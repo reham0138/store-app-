@@ -2,10 +2,12 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsEmail,
   IsInt,
   IsMongoId,
   Min,
+  IsOptional,
   ValidateNested,
 } from 'class-validator';
 
@@ -22,6 +24,10 @@ export class OrderItemDto {
 export class CreateOrderDto {
   @IsMongoId()
   branchId: string;
+
+  @IsOptional()
+  @IsBoolean()
+  selectedByLocation?: boolean;
 
   // @IsEmail()
   // customerEmail: string;

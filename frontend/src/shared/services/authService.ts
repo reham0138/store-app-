@@ -228,20 +228,24 @@ function apiLogout(): void {
 // ---------- Public API ----------
 
 let cachedUser: User | null | undefined
+let sessionRevision = 0
 
 async function login(input: LoginInput): Promise<User> {
   const user = USE_MOCK ? await mockLogin(input) : await apiLogin(input)
+  sessionRevision += 1
   cachedUser = user
   return user
 }
 
 async function register(input: RegisterInput): Promise<User> {
   const user = USE_MOCK ? await mockRegister(input) : await apiRegister(input)
+  sessionRevision += 1
   cachedUser = user
   return user
 }
 
 function logout(): void {
+  sessionRevision += 1
   cachedUser = null
   if (USE_MOCK) mockLogout()
   else apiLogout()
@@ -260,15 +264,23 @@ async function refreshSession(): Promise<User | null> {
     cachedUser = mockGetCurrentUser()
     return cachedUser
   }
-  if (!getAuthToken()) {
+  const token = getAuthToken()
+  if (!token) {
     cachedUser = null
     return null
   }
+  const revision = sessionRevision
   try {
     const { data } = await apiClient.get<User>('/auth/me')
+    if (revision !== sessionRevision || getAuthToken() !== token) {
+      return cachedUser ?? null
+    }
     cachedUser = toUser(data)
     return cachedUser
   } catch (error) {
+    if (revision !== sessionRevision || getAuthToken() !== token) {
+      return cachedUser ?? null
+    }
     const normalized = normalizeError(error, 'Could not restore the session.')
     cachedUser = null
     if (normalized.status === 401) {

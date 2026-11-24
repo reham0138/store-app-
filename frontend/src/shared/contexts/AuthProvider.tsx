@@ -55,7 +55,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       authService.logout()
     } finally {
-      queryClient.clear()
+      void queryClient.cancelQueries()
+      queryClient.removeQueries({
+        predicate: (query) =>
+          query.queryKey[0] !== queryKeys.auth.session[0] ||
+          query.queryKey[1] !== queryKeys.auth.session[1],
+      })
       queryClient.setQueryData(queryKeys.auth.session, null)
     }
   }, [queryClient])

@@ -27,7 +27,7 @@ function seedOrder(
   items: SeedItem[],
 ): Order {
   const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
-  const deliveryFee = 5;
+  const deliveryFee = 10;
   return {
     id,
     userId: "mock-customer",

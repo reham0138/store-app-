@@ -10,13 +10,14 @@ import {
 } from "../utils/orderStorage";
 import { getProducts } from "./product.service";
 import { saveProducts } from "../utils/productStorage";
-import { getProductPrice } from "../utils/pricing";
+import { DELIVERY_FEE, getProductPrice } from "../utils/pricing";
 import { authService } from "./authService";
 import type { StoreProduct } from "../types/cart";
 import { normalizePage, readId } from "../api/backendShapes";
 
 export interface CreateOrderInput {
   branchId: string;
+  selectedByLocation?: boolean;
   items: { productId: string; quantity: number }[];
   shippingAddress: ShippingAddress;
   paymentMethod: PaymentMethod;
@@ -62,7 +63,6 @@ export interface OrderListResponse {
   limit: number;
 }
 
-const DELIVERY_FEE = 5;
 const MAX_PAGE_LIMIT = 100;
 
 function scopeOrdersForUser(orders: Order[], user: User | null): Order[] {
@@ -244,7 +244,8 @@ async function mockCreateOrder(input: CreateOrderInput): Promise<Order> {
     quantity,
   }));
 
-  const deliveryFee = orderItems.length > 0 ? DELIVERY_FEE : 0;
+  const deliveryFee =
+    orderItems.length > 0 && !input.selectedByLocation ? DELIVERY_FEE : 0;
   const order: Order = {
     // Mongo _id-style string in v1 — never ORD-${Date.now()}.
     id: crypto.randomUUID(),
@@ -351,6 +352,7 @@ async function apiCreateOrder(input: CreateOrderInput): Promise<Order> {
   try {
     const { data } = await apiClient.post<BackendOrder>("/orders", {
       branchId: input.branchId,
+      selectedByLocation: input.selectedByLocation === true,
       items: input.items,
     });
     return mapBackendOrder(data);

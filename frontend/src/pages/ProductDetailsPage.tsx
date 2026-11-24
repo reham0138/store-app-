@@ -161,10 +161,15 @@ function ProductDetails({ productId }: { productId?: string }) {
             <img
               src={selectedImage ?? product.thumbnail}
               alt={product.title}
-              className="h-80 w-full rounded-xl object-cover"
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src =
+                  "/brand/logo/the-crown-anchor-logo-black.png";
+              }}
+              className="h-80 w-full rounded-xl border border-border-subtle bg-surface-cream p-2 object-contain"
             />
             {productImages.length > 1 && (
-              <div className="mt-3 flex gap-2 overflow-x-auto">
+              <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
                 {productImages.map((image, index) => (
                   <button
                     key={image}
@@ -172,11 +177,23 @@ function ProductDetails({ productId }: { productId?: string }) {
                     onClick={() => setActiveImage(image)}
                     aria-label={`Show product image ${index + 1}`}
                     aria-pressed={selectedImage === image}
-                    className={`shrink-0 rounded-lg border-2 ${
-                      selectedImage === image ? "border-brand-gold" : "border-border-subtle"
+                    className={`shrink-0 rounded-lg border p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-gold ${
+                      selectedImage === image
+                        ? "border-brand-gold bg-surface-cream"
+                        : "border-border-subtle bg-surface-white"
                     }`}
                   >
-                    <img src={image} alt="" className="size-16 rounded-md object-cover" />
+                    <img
+                      src={image}
+                      alt=""
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src =
+                          "/brand/logo/the-crown-anchor-logo-black.png";
+                      }}
+                      className="size-16 rounded-md bg-surface-cream object-contain"
+                    />
                   </button>
                 ))}
               </div>

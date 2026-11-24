@@ -25,6 +25,18 @@ function readSelectedBranchId(storageKey: string): string | null {
   }
 }
 
+function wasBranchSelectedByLocation(storageKey: string): boolean {
+  try {
+    const selectedBranchId = localStorage.getItem(storageKey);
+    return Boolean(
+      selectedBranchId &&
+        localStorage.getItem(`${storageKey}:gpsBranchId`) === selectedBranchId,
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function BranchProvider({
   children,
   initialBranches = EMPTY_BRANCHES,
@@ -34,7 +46,9 @@ export function BranchProvider({
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(() =>
     readSelectedBranchId(storageKey),
   );
-  const [selectedByLocation, setSelectedByLocation] = useState(false);
+  const [selectedByLocation, setSelectedByLocation] = useState(() =>
+    wasBranchSelectedByLocation(storageKey),
+  );
 
   const branchesQuery = useQuery({
     queryKey: queryKeys.branches.all,
@@ -70,6 +84,8 @@ export function BranchProvider({
     branches[0] ??
     null;
   const activeBranchId = selectedBranch?.id;
+  const activeBranchSelectedByLocation =
+    selectedByLocation && activeBranchId === selectedBranchId;
 
   const isLoading = initialBranches.length === 0 && branchesQuery.isLoading;
   const queryError = branchesQuery.error
@@ -84,20 +100,31 @@ export function BranchProvider({
       : null);
 
   useEffect(() => {
-    if (!activeBranchId) return;
+    if (!activeBranchId || isLoading || branchesQuery.error) return;
     try {
       localStorage.setItem(storageKey, activeBranchId);
+      if (activeBranchSelectedByLocation) {
+        localStorage.setItem(`${storageKey}:gpsBranchId`, activeBranchId);
+      } else {
+        localStorage.removeItem(`${storageKey}:gpsBranchId`);
+      }
     } catch {
       // Branch selection remains available for the current page if storage is disabled.
     }
-  }, [activeBranchId, storageKey]);
+  }, [
+    activeBranchId,
+    activeBranchSelectedByLocation,
+    branchesQuery.error,
+    isLoading,
+    storageKey,
+  ]);
 
   return (
     <BranchContext.Provider
       value={{
         branches,
         selectedBranch,
-        selectedByLocation,
+        selectedByLocation: activeBranchSelectedByLocation,
         isLoading,
         error,
         setSelectedBranch: (branch, byLocation = false) => {

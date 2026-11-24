@@ -36,6 +36,7 @@ const ORDER_STATUSES = new Set([
   'delivered',
   'cancelled',
 ]);
+const DELIVERY_FEE = 10;
 
 @Injectable()
 export class OrdersService {
@@ -172,12 +173,14 @@ export class OrdersService {
           }
         }
 
-        const total = this.roundMoney(
-          orderItems.reduce(
-            (sum, item) => sum + item.quantity * item.unitPrice,
-            0,
-          ),
+        const subtotal = orderItems.reduce(
+          (sum, item) => sum + item.quantity * item.unitPrice,
+          0,
         );
+        const deliveryFee = createOrderDto.selectedByLocation
+          ? 0
+          : DELIVERY_FEE;
+        const total = this.roundMoney(subtotal + deliveryFee);
         const [order] = await this.getOrderModel().create(
           [
             {
@@ -185,6 +188,7 @@ export class OrdersService {
               customerEmail: user.email.toLowerCase(),
               branchId,
               items: orderItems,
+              deliveryFee,
               total,
               status: 'pending',
               history: [

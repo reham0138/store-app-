@@ -31,6 +31,9 @@ export class Order {
   @Prop({ required: true, min: 0 })
   total: number;
 
+  @Prop({ required: true, min: 0 })
+  deliveryFee: number;
+
   @Prop({
     required: true,
     enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled'],

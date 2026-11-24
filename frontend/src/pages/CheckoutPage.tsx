@@ -37,6 +37,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const {
     selectedBranch,
+    selectedByLocation,
     isLoading: branchesLoading,
     error: branchError,
   } = useBranch();
@@ -125,6 +126,7 @@ export default function CheckoutPage() {
     try {
       const order = await createOrderMutation.mutateAsync({
         branchId: selectedBranch.id,
+        selectedByLocation,
         items: items.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
@@ -253,16 +255,16 @@ export default function CheckoutPage() {
       <form
         onSubmit={handleSubmit}
         noValidate
-        className="grid items-start gap-8 lg:grid-cols-[1fr_380px]"
+        className={`grid items-start gap-8 ${
+          USE_MOCK
+            ? "lg:grid-cols-[minmax(0,1fr)_380px]"
+            : "mx-auto max-w-2xl"
+        }`}
       >
-
-        {/* Checkout Form */}
-        <div className="grid gap-6">
-
-          {USE_MOCK && (
-          <>
+        {USE_MOCK && (
+          <div className="grid gap-6">
           {/* Shipping Information */}
-          <section className="rounded-xl border border-border-subtle bg-surface-white p-5 sm:p-7">
+          <section className="rounded-xl border border-border-subtle bg-surface-white p-5 shadow-sm sm:p-7">
 
             <div className="mb-6 flex items-center gap-3">
               <MapPin className="text-brand-gold" />
@@ -410,7 +412,7 @@ export default function CheckoutPage() {
           </section>
 
           {/* Payment Method */}
-          <section className="rounded-xl border border-border-subtle bg-surface-white p-5 sm:p-7">
+          <section className="rounded-xl border border-border-subtle bg-surface-white p-5 shadow-sm sm:p-7">
 
             <div className="mb-5 flex items-center gap-3">
               <CreditCard className="text-brand-gold" />
@@ -464,20 +466,36 @@ export default function CheckoutPage() {
 
             </div>
           </section>
-          </>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Order Review */}
-        <aside className="rounded-xl border border-border-subtle bg-surface-white p-5">
-
-          <h2 className="text-xl font-semibold text-brand-navy">
-            Order Review
-          </h2>
+        <aside className="rounded-xl border border-border-subtle bg-surface-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold text-brand-navy">
+              Order Review
+            </h2>
+            <span className="rounded-full bg-surface-cream px-3 py-1 text-xs font-medium text-text-slate">
+              {items.length} {items.length === 1 ? "item" : "items"}
+            </span>
+          </div>
           {selectedBranch && (
-            <p className="mt-2 text-sm text-text-slate">
-              Fulfilled by {selectedBranch.name}
-            </p>
+            <div className="mt-3 flex items-start gap-2 rounded-lg bg-surface-cream p-3">
+              <MapPin
+                aria-hidden="true"
+                className="mt-0.5 shrink-0 text-brand-gold"
+                size={17}
+              />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-brand-navy">
+                  {selectedBranch.name}
+                </p>
+                {selectedBranch.address && (
+                  <p className="mt-0.5 break-words text-xs text-text-slate">
+                    {selectedBranch.address}
+                  </p>
+                )}
+              </div>
+            </div>
           )}
 
           <div className="mt-5 grid gap-4">
@@ -485,13 +503,28 @@ export default function CheckoutPage() {
             {items.map((item) => (
               <div
                 key={item.product.id}
-                className="flex justify-between gap-3 text-sm"
+                className="flex items-center gap-3 border-b border-border-subtle pb-3 last:border-0 last:pb-0"
               >
-                <span className="text-text-slate">
-                  {item.product.title} × {item.quantity}
-                </span>
-
-                <span className="shrink-0 font-medium">
+                <img
+                  src={item.product.thumbnail}
+                  alt=""
+                  loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src =
+                      "/brand/logo/the-crown-anchor-logo-black.png";
+                  }}
+                  className="size-12 shrink-0 rounded-lg bg-surface-cream object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-sm font-medium text-brand-navy">
+                    {item.product.title}
+                  </p>
+                  <p className="mt-1 text-xs text-text-slate">
+                    Quantity: {item.quantity}
+                  </p>
+                </div>
+                <span className="shrink-0 text-sm font-medium text-brand-navy">
                   {formatPrice(
                     getProductPrice(item.product, selectedBranch?.id) *
                     item.quantity,
@@ -500,7 +533,7 @@ export default function CheckoutPage() {
               </div>
             ))}
 
-            <div className="border-t border-border-subtle pt-4">
+            <div className="rounded-lg bg-surface-cream p-4">
               <p className="mb-3 text-xs text-text-slate">
                 Estimated totals — the final amount is set by the server when
                 you place the order.
@@ -510,14 +543,23 @@ export default function CheckoutPage() {
                 <span>{formatPrice(subtotal)}</span>
               </div>
 
-              {USE_MOCK && (
-                <div className="mt-3 flex justify-between text-sm">
-                  <span className="text-text-slate">Estimated delivery</span>
-                  <span>{formatPrice(deliveryFee)}</span>
-                </div>
-              )}
+              <div className="mt-3 flex justify-between text-sm">
+                <span className="text-text-slate">Estimated delivery</span>
+                <span>{formatPrice(deliveryFee)}</span>
+              </div>
+              <p
+                className={`mt-2 rounded-md px-2.5 py-2 text-xs ${
+                  selectedByLocation
+                    ? "bg-status-success/10 text-status-success"
+                    : "bg-surface-white text-text-slate"
+                }`}
+              >
+                {selectedByLocation
+                  ? "Nearest branch selected using GPS — delivery is free."
+                  : "Select your nearest branch using GPS for free delivery."}
+              </p>
 
-              <div className="mt-4 flex justify-between border-t border-border-subtle pt-4 font-semibold text-brand-navy">
+              <div className="mt-4 flex justify-between border-t border-border-subtle pt-4 text-base font-semibold text-brand-navy">
                 <span>Estimated total</span>
                 <span>{formatPrice(total)}</span>
               </div>
