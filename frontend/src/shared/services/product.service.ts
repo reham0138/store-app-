@@ -38,6 +38,33 @@ export interface ProductInput {
   images: string[];
 }
 
+const MAX_PRODUCT_IMAGE_SIZE = 8 * 1024 * 1024;
+const PRODUCT_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
+
+export async function uploadProductImage(file: File): Promise<string> {
+  if (!PRODUCT_IMAGE_TYPES.has(file.type)) {
+    throw new ApiError("Choose a JPEG, PNG, WebP, or AVIF image.", "VALIDATION_ERROR", 400);
+  }
+  if (file.size > MAX_PRODUCT_IMAGE_SIZE) {
+    throw new ApiError("Product images must be 8 MB or smaller.", "VALIDATION_ERROR", 400);
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  try {
+    const { data } = await apiClient.post<{ url?: unknown }>("/products/images", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    if (typeof data.url !== "string" || !data.url.startsWith("https://")) {
+      throw new Error("The image upload API returned an invalid URL.");
+    }
+    return data.url;
+  } catch (error) {
+    const normalized = normalizeError(error, "Failed to upload product image.");
+    throw new ApiError(normalized.message, normalized.code, normalized.status);
+  }
+}
+
 export interface ProductCreateInput extends ProductInput {
   branchId?: string;
   categoryId?: string;
@@ -129,7 +156,7 @@ function mapBackendProduct(
     rating: typeof raw.rating === "number" ? raw.rating : 0,
     reviewCount: typeof raw.reviewCount === "number" ? raw.reviewCount : 0,
     stock,
-    thumbnail: raw.thumbnail ?? PLACEHOLDER_IMAGE,
+    thumbnail: raw.thumbnail || PLACEHOLDER_IMAGE,
     images: Array.isArray(raw.images) ? raw.images : [],
     branchInventory,
   };
@@ -422,6 +449,8 @@ export async function createProduct(input: ProductCreateInput): Promise<StorePro
     categoryId,
     branchId,
     stock,
+    thumbnail: input.thumbnail,
+    images: input.images,
   });
   const categories = await getCategories();
   return mapBackendProduct(data, branchId, new Map(categories.map((category) => [category.id, category.name])));
@@ -462,6 +491,8 @@ export async function updateProduct(
   if (input.description !== undefined) body.description = input.description;
   if (input.price !== undefined) body.price = input.price;
   if (input.category !== undefined) body.categoryId = input.category;
+  if (input.thumbnail !== undefined) body.thumbnail = input.thumbnail;
+  if (input.images !== undefined) body.images = input.images;
   const { data } = await apiClient.patch<BackendProduct>(`/products/${id}`, body, {
     params: { branchId: resolvedBranchId },
   });

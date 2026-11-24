@@ -7,8 +7,13 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUrl,
+  ArrayMaxSize,
+  IsArray,
+  MaxLength,
   Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateProductDto {
@@ -26,6 +31,22 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @ValidateIf((_object, value) => value !== '')
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
+  thumbnail?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(8)
+  @IsUrl(
+    { protocols: ['https'], require_protocol: true },
+    { each: true },
+  )
+  @MaxLength(2048, { each: true })
+  images?: string[];
 
   @Type(() => Number)
   @IsNumber({ allowNaN: false, allowInfinity: false })

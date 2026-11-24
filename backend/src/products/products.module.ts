@@ -8,6 +8,7 @@ import {
   InventorySchema,
 } from '../inventory/entities/inventory.entity.js';
 import { BranchesModule } from '../branches/branches.module.js';
+import { ProductImagesService } from './product-images.service.js';
 
 @Module({
   imports: [
@@ -18,6 +19,6 @@ import { BranchesModule } from '../branches/branches.module.js';
     ]),
   ],
   controllers: [ProductsController],
-  providers: [ProductsService],
+  providers: [ProductsService, ProductImagesService],
 })
 export class ProductsModule {}

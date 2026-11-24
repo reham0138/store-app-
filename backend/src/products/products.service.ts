@@ -85,6 +85,8 @@ export class ProductsService {
               price: dto.price,
               categoryId: dto.categoryId,
               isActive: dto.isActive,
+              thumbnail: dto.thumbnail ?? '',
+              images: dto.images ?? [],
             },
           ],
           { session },

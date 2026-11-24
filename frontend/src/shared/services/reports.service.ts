@@ -244,14 +244,33 @@ async function mockBranchReport(): Promise<DashboardReport> {
   return mockReport(branchId ?? "__unassigned__", false, true);
 }
 
-function relationId(value: unknown): string {
-  if (typeof value === "string") return value;
+function relationId(value: unknown, field: string): string {
+  if (typeof value === "string" && value.length > 0) return value;
   if (typeof value === "object" && value !== null) {
-    const record = value as { id?: unknown; _id?: unknown };
-    const id = record.id ?? record._id;
-    if (typeof id === "string") return id;
+    const record = value as {
+      id?: unknown;
+      _id?: unknown;
+      $oid?: unknown;
+      toHexString?: () => unknown;
+    };
+    const id = record.id ?? record._id ?? record.$oid;
+    if (typeof id === "string" && id.length > 0) return id;
+    if (typeof record.toHexString === "function") {
+      const hexId = record.toHexString();
+      if (typeof hexId === "string" && hexId.length > 0) return hexId;
+    }
+    if (typeof id === "object" && id !== null) {
+      const nestedId = id as { $oid?: unknown; toHexString?: () => unknown };
+      if (typeof nestedId.$oid === "string" && nestedId.$oid.length > 0) {
+        return nestedId.$oid;
+      }
+      if (typeof nestedId.toHexString === "function") {
+        const hexId = nestedId.toHexString();
+        if (typeof hexId === "string" && hexId.length > 0) return hexId;
+      }
+    }
   }
-  throw new Error("The reports API returned an invalid entity ID.");
+  throw new Error(`The reports API returned an invalid ${field} ID.`);
 }
 
 function requireArray<T>(value: unknown, endpoint: string): T[] {
@@ -300,9 +319,9 @@ async function fetchBackendReport(branchId?: string): Promise<DashboardReport> {
       stock: number;
     }>(lowStockResponse.data, "low-stock")
       .map((item) => ({
-        productId: relationId(item.productId),
+        productId: relationId(item.productId, "low-stock product"),
         title: typeof item.productId === "object" ? item.productId.name ?? "Product" : "Product",
-        branchId: relationId(item.branchId),
+        branchId: relationId(item.branchId, "low-stock branch"),
         stock: item.stock,
       }))
       .filter((item) => item.stock <= LOW_STOCK_MAX);

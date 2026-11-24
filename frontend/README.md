@@ -39,6 +39,22 @@ orders and uses `paid` rather than `processing` as an order status. The live
 frontend adapts to those capabilities. Keep the mock switch enabled (default)
 to use the broader demo behavior.
 
+## Product images
+
+Live product image uploads use the admin-only `POST /api/products/images`
+endpoint. Configure these values in `backend/.env` using your Cloudinary
+account's credentials; never put the API secret in a `VITE_` variable:
+
+```dotenv
+CLOUDINARY_CLOUD_NAME=<cloud-name>
+CLOUDINARY_API_KEY=<api-key>
+CLOUDINARY_API_SECRET=<api-secret>
+```
+
+Set `VITE_USE_MOCK=false` in `frontend/.env.local`, sign in as an admin, and
+upload up to 8 JPEG, PNG, WebP, or AVIF images per product (8 MB each). Product
+image URLs are persisted by the backend; the first image is the main image.
+
 ## Branch selection
 
 In mock mode, `BranchProvider` loads demo branches and the selector supports
