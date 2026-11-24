@@ -1,7 +1,6 @@
 import { BranchBadge } from "../shared/components/branch/BranchBadge";
 import { BranchSelector } from "../shared/components/branch/BranchSelector";
 import { useBranch } from "../shared/contexts/useBranch";
-import { USE_MOCK } from "../shared/api/mock";
 
 function BranchesPageContent() {
   const { selectedBranch, selectedByLocation } = useBranch();
@@ -13,25 +12,16 @@ function BranchesPageContent() {
           Store locations
         </p>
         <h1 className="text-2xl font-semibold text-brand-navy">
-          {USE_MOCK ? "Choose your branch" : "Your configured branch"}
+          Choose your branch
         </h1>
         <p className="max-w-2xl text-sm leading-6 text-text-slate">
-          {USE_MOCK
-            ? "Select a branch to see local product prices and availability."
-            : "Public branch discovery is not available in the current backend. Product availability uses the store's configured branch."}
+          Select a location or use your current location to find the nearest
+          branch. Product prices and availability will use your selection.
         </p>
       </header>
 
       <div className="grid gap-6 rounded-2xl border border-border-subtle bg-surface-white p-5 shadow-sm sm:p-8">
-        {USE_MOCK ? (
-          <BranchSelector />
-        ) : (
-          <p className="text-sm text-text-slate">
-            {selectedBranch
-              ? `Browsing from ${selectedBranch.name}.`
-              : "No default branch is configured."}
-          </p>
-        )}
+        <BranchSelector />
         <div className="grid gap-2">
           <h2 className="text-sm font-semibold text-brand-navy">
             Current branch
@@ -53,6 +43,15 @@ function BranchesPageContent() {
                 {selectedBranch.address ?? "Not provided"}
               </dd>
             </div>
+            {selectedBranch.latitude !== undefined &&
+              selectedBranch.longitude !== undefined && (
+                <div>
+                  <dt className="font-medium text-text-slate">Coordinates</dt>
+                  <dd className="mt-1 text-text-main">
+                    {selectedBranch.latitude}, {selectedBranch.longitude}
+                  </dd>
+                </div>
+              )}
           </dl>
         )}
       </div>

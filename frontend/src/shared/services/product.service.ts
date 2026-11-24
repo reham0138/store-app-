@@ -77,6 +77,17 @@ interface BackendProduct {
 
 const DEFAULT_BRANCH_ID = import.meta.env.VITE_DEFAULT_BRANCH_ID?.trim();
 const PLACEHOLDER_IMAGE = "/brand/logo/the-crown-anchor-logo-black.png";
+const MONGO_OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
+
+function assertMongoBranchId(branchId: string): void {
+  if (!MONGO_OBJECT_ID_PATTERN.test(branchId)) {
+    throw new ApiError(
+      "The branch ID must be the branch's 24-character MongoDB ObjectId, not its name or code.",
+      "VALIDATION_ERROR",
+      400,
+    );
+  }
+}
 
 function categoryFields(raw: BackendProduct): { category: string; categoryId?: string } {
   const source = raw.categoryId ?? raw.category;
@@ -283,6 +294,7 @@ export async function listProducts(query?: ProductQuery): Promise<ProductListRes
       400,
     );
   }
+  assertMongoBranchId(branchId);
   const page = Math.max(1, query?.page ?? 1);
   const limit = Math.min(100, Math.max(1, query?.limit ?? 40));
   if (USE_MOCK) {
@@ -356,6 +368,7 @@ export async function getProduct(id: string, branchId?: string): Promise<StorePr
     if (!resolvedBranchId) {
       throw new ApiError("A MongoDB branch ID is required to load a product.", "VALIDATION_ERROR", 400);
     }
+    assertMongoBranchId(resolvedBranchId);
     const { data } = await apiClient.get<BackendProduct>(`/products/${id}`, {
       params: { branchId: resolvedBranchId },
     });

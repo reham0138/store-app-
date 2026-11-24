@@ -48,11 +48,13 @@ legacy admin/staff API keys. Authentication returns top-level user fields and
 
 Current route summary:
 
-- `GET /api/branches` and `GET /api/branches/:id` require `admin` or
-  `branchManager`; the manager list route returns one branch object, while the
-  admin route returns a raw array. Branch IDs are Mongo ObjectIds. Admin
+- `GET /api/branches` is public and returns active branches as an array, with
+  their Mongo ObjectIds and optional `latitude`/`longitude`. Admins may request
+  inactive branches with `?includeInactive=true`; branch managers receive only
+  their assigned branch. `GET /api/branches/:id` remains staff-only. Admin
   creates with `POST /api/branches` and updates/deactivates with
-  `PATCH /api/branches/:id` (`isActive`).
+  `PATCH /api/branches/:id` (`isActive`); create/update may include numeric
+  `latitude` (-90 to 90) and `longitude` (-180 to 180).
 - `GET /api/categories` is public and returns a raw array.
 - `GET /api/products` and `GET /api/products/:id` are public but require a
   valid Mongo `branchId`. Product lists return `{ data, meta: { page, limit,
@@ -79,9 +81,10 @@ Current route summary:
   `totalOrders`, `totalRevenue`, and `ordersByStatus`; other reports return
   endpoint-specific data rather than a single dashboard envelope.
 
-The public product routes have no public branch-discovery route. A public
-frontend that needs product data must be configured with a valid branch
-ObjectId. Branch selection/discovery is available only to staff.
+Public users can discover active branches and select one before browsing
+products. GPS-based nearest-branch selection uses optional branch coordinates;
+branches without coordinates remain manually selectable. Public product reads
+still require the selected branch's Mongo ObjectId.
 
 Before deploying against existing data, build the project and run the backfill
 once with `MONGODB_URI` set:
@@ -98,12 +101,10 @@ first; do not start the application against legacy data before completing it.
 
 ### Known backend limitations
 
-1. Branch discovery is staff-only, so public clients need a configured branch
-   ObjectId.
-2. Checkout currently does not store shipping or payment details.
-3. Reports are split across endpoint-specific responses; there is no
+1. Checkout currently does not store shipping or payment details.
+2. Reports are split across endpoint-specific responses; there is no
    branch-sales summary endpoint.
-4. Product display assets and discount/branch-price fields are not part of the
+3. Product display assets and discount/branch-price fields are not part of the
    current product API model.
 
 ## Compile and run the project

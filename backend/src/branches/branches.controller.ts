@@ -17,7 +17,7 @@ import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe.js';
 import { IsBooleanString, IsOptional } from 'class-validator';
 type BranchRequest = Request & {
   role?: string;
-  user: {
+  user?: {
     role: string;
     branchId: string;
   };
@@ -33,20 +33,19 @@ class BranchQueryDto {
 export class BranchesController {
   constructor(private readonly branchesService: BranchesService) {}
 
-  @Roles('branchManager', 'admin')
-@Get()
-findAll(
-  @Query() query: BranchQueryDto,
-  @Req() req: BranchRequest,
-) {
-  if (req.role === 'branchManager') {
-    return this.branchesService.findOne(req.user.branchId);
-  }
+  @Get()
+  findAll(
+    @Query() query: BranchQueryDto,
+    @Req() req: BranchRequest,
+  ) {
+    if (req.role === 'branchManager' && req.user?.branchId) {
+      return this.branchesService.findOne(req.user.branchId);
+    }
 
-  return this.branchesService.findAll(
-    query.includeInactive === 'true',
-  );
-}
+    return this.branchesService.findAll(
+      req.role === 'admin' && query.includeInactive === 'true',
+    );
+  }
 
  @Roles('branchManager', 'admin')
 @Get(':id')
@@ -56,7 +55,7 @@ findOne(
 ) {
   if (
     req.role === 'branchManager' &&
-    req.user.branchId !== id
+    req.user?.branchId !== id
   ) {
     throw new ForbiddenException(
       'You can only access your own branch',

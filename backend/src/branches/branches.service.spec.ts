@@ -19,6 +19,31 @@ describe('BranchesService', () => {
       name: 'North Branch',
       code: 'north',
       address: undefined,
+      latitude: undefined,
+      longitude: undefined,
+    });
+  });
+
+  it('stores branch coordinates for nearest-location selection', async () => {
+    const branchModel = {
+      create: vi.fn().mockResolvedValue({ code: 'dam' }),
+    };
+    const service = new BranchesService(branchModel as never);
+    const dto = Object.assign(new CreateBranchDto(), {
+      name: 'Damascus',
+      code: 'DAM',
+      latitude: 33.5138,
+      longitude: 36.2765,
+    });
+
+    await service.create(dto);
+
+    expect(branchModel.create).toHaveBeenCalledWith({
+      name: 'Damascus',
+      code: 'dam',
+      address: undefined,
+      latitude: 33.5138,
+      longitude: 36.2765,
     });
   });
 
@@ -110,6 +135,8 @@ describe('BranchesService additional tests', () => {
     await service.update('branch123', {
       name: 'Updated Branch',
       code: 'UPDATED',
+      latitude: 33.5138,
+      longitude: 36.2765,
     });
 
     expect(branchModel.findByIdAndUpdate).toHaveBeenCalledWith(
@@ -117,6 +144,8 @@ describe('BranchesService additional tests', () => {
       {
         name: 'Updated Branch',
         code: 'updated',
+        latitude: 33.5138,
+        longitude: 36.2765,
       },
       { new: true, runValidators: true },
     );

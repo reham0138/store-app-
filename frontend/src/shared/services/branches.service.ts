@@ -13,6 +13,8 @@ interface BackendBranch {
   name: string;
   code?: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
   isActive?: boolean;
 }
 
@@ -22,6 +24,8 @@ function mapBranch(raw: BackendBranch): Branch {
     name: raw.name,
     code: raw.code,
     address: raw.address,
+    latitude: raw.latitude,
+    longitude: raw.longitude,
     operationalStatus: raw.isActive === false ? "closed" : "open",
   };
 }

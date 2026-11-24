@@ -24,26 +24,27 @@ For local backend development, set `frontend/.env.local`:
 ```dotenv
 VITE_USE_MOCK=false
 VITE_API_URL=http://localhost:3000
-VITE_DEFAULT_BRANCH_ID=<valid MongoDB branch ObjectId>
+VITE_DEFAULT_BRANCH_ID=<24-character MongoDB branch ObjectId from Compass>
 VITE_DEFAULT_BRANCH_NAME=Main Branch
 ```
 
-The backend only allows staff to list branches, while public product reads
-require a branch ID. The configured default is therefore used for public
-browsing. Never put secrets in `VITE_` variables because they are embedded in
-browser code.
+Public users can list active branches and choose one. Add `latitude` and
+`longitude` to each MongoDB branch document to enable GPS-based nearest-branch
+selection. Product reads still require a branch ID. Use the branch document's
+exact `_id` value, not its name or code (for example, `damascus`). Never put
+secrets in `VITE_` variables because they are embedded in browser code.
 
 The current backend does not persist shipping address or payment method on
-orders, does not expose public branch discovery, and uses `paid` rather than
-`processing` as an order status. The live frontend adapts to those capabilities.
-Keep the mock switch enabled (default) to use the broader demo behavior.
+orders and uses `paid` rather than `processing` as an order status. The live
+frontend adapts to those capabilities. Keep the mock switch enabled (default)
+to use the broader demo behavior.
 
 ## Branch selection
 
 In mock mode, `BranchProvider` loads demo branches and the selector supports
 switching branches and nearest-branch selection when coordinates are available.
-In live mode, public users use the configured default branch; staff can load
-branches from the backend. Visit `/branch-test` to try the mock selector with
-isolated sample data.
+In live mode, public users can select from active backend branches. The
+nearest-branch action requires coordinates on those branch documents. Visit
+`/branch-test` to try the mock selector with isolated sample data.
 
 After frontend changes, run `npm run build` and `npm run lint` from this folder.

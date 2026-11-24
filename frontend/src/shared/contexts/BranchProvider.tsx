@@ -7,7 +7,6 @@ import { getBranches } from "../services/branches.service";
 import { queryKeys } from "../api/queryKeys";
 import { USE_MOCK } from "../api/mock";
 import { normalizeError } from "../api/errors";
-import { useAuth } from "../hooks/useAuth";
 
 type BranchProviderProps = {
   children: ReactNode;
@@ -16,6 +15,7 @@ type BranchProviderProps = {
 };
 
 const EMPTY_BRANCHES: Branch[] = [];
+const MONGO_OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
 
 function readSelectedBranchId(storageKey: string): string | null {
   try {
@@ -30,54 +30,57 @@ export function BranchProvider({
   initialBranches = EMPTY_BRANCHES,
   storageKey = "selectedBranchId",
 }: BranchProviderProps) {
-  const { user, isLoading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(() =>
     readSelectedBranchId(storageKey),
   );
   const [selectedByLocation, setSelectedByLocation] = useState(false);
 
-  const canListBranches =
-    USE_MOCK ||
-    (!authLoading && (user?.role === "admin" || user?.role === "branchManager"));
   const branchesQuery = useQuery({
     queryKey: queryKeys.branches.all,
     queryFn: getBranches,
-    enabled: canListBranches && initialBranches.length === 0,
+    enabled: initialBranches.length === 0,
   });
 
   const defaultBranchId = import.meta.env.VITE_DEFAULT_BRANCH_ID?.trim();
+  const defaultBranchIdIsValid =
+    typeof defaultBranchId === "string" &&
+    MONGO_OBJECT_ID_PATTERN.test(defaultBranchId);
   const branches = useMemo(() => {
     if (initialBranches.length > 0) return initialBranches;
-    if (branchesQuery.data) return branchesQuery.data;
-    if (!USE_MOCK && defaultBranchId) {
+    if (branchesQuery.data) {
+      return branchesQuery.data.map((branch) => ({
+        ...branch,
+        isDefault: branch.isDefault ?? branch.id === defaultBranchId,
+      }));
+    }
+    if (!USE_MOCK && defaultBranchIdIsValid) {
       return [{
         id: defaultBranchId,
         name: import.meta.env.VITE_DEFAULT_BRANCH_NAME?.trim() || "Configured branch",
       }];
     }
     return EMPTY_BRANCHES;
-  }, [initialBranches, branchesQuery.data, defaultBranchId]);
+  }, [initialBranches, branchesQuery.data, defaultBranchId, defaultBranchIdIsValid]);
 
   const selectedBranch =
     branches.find((branch) => branch.id === selectedBranchId) ??
-    (user?.role === "branchManager" ? branches[0] : undefined) ??
     branches.find((branch) => branch.isDefault) ??
     branches.find((branch) => branch.name === "main") ??
     branches[0] ??
     null;
   const activeBranchId = selectedBranch?.id;
 
-  const isLoading =
-    authLoading ||
-    (canListBranches && initialBranches.length === 0 && branchesQuery.isLoading);
+  const isLoading = initialBranches.length === 0 && branchesQuery.isLoading;
   const queryError = branchesQuery.error
     ? normalizeError(branchesQuery.error, "Unable to load branches.").message
     : null;
   const error =
     queryError ??
     (!isLoading && !selectedBranch && !USE_MOCK
-      ? "No branch is available. Configure VITE_DEFAULT_BRANCH_ID or sign in with a staff account."
+      ? defaultBranchId && !defaultBranchIdIsValid
+        ? "VITE_DEFAULT_BRANCH_ID must be the branch's 24-character MongoDB ObjectId, not its name or code."
+        : "No branch is available. Configure VITE_DEFAULT_BRANCH_ID or sign in with a staff account."
       : null);
 
   useEffect(() => {
