@@ -15,7 +15,8 @@ function BranchesPageContent() {
           Choose your branch
         </h1>
         <p className="max-w-2xl text-sm leading-6 text-text-slate">
-          Select a branch to see local product prices and availability.
+          Select a location or use your current location to find the nearest
+          branch. Product prices and availability will use your selection.
         </p>
       </header>
 
@@ -42,6 +43,15 @@ function BranchesPageContent() {
                 {selectedBranch.address ?? "Not provided"}
               </dd>
             </div>
+            {selectedBranch.latitude !== undefined &&
+              selectedBranch.longitude !== undefined && (
+                <div>
+                  <dt className="font-medium text-text-slate">Coordinates</dt>
+                  <dd className="mt-1 text-text-main">
+                    {selectedBranch.latitude}, {selectedBranch.longitude}
+                  </dd>
+                </div>
+              )}
           </dl>
         )}
       </div>

@@ -10,7 +10,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -32,23 +32,25 @@ import { Label } from "../shared/components/Label";
 import { Select } from "../shared/components/Select";
 import type { StoreProduct } from "../shared/types/cart";
 import type { Order } from "../shared/types/order";
-import {
-  createProduct,
-  deleteProduct,
-  getProducts,
-  updateProduct,
-} from "../shared/services/product.service";
 import type { ProductInput } from "../shared/services/product.service";
-import { getBranches } from "../shared/services/branches.service";
-import type { Branch } from "../shared/types/type";
-import { reportsService } from "../shared/services/reports.service";
 import type { DashboardReport, ReportLowStockProduct } from "../shared/services/reports.service";
 import { formatPrice } from "../shared/utils/pricing";
 import OrderStatus from "../shared/components/OrderStatus";
 import { normalizeError } from "../shared/api/errors";
 import { shortOrderId } from "../shared/utils/orderId";
+import { useBranch } from "../shared/contexts/useBranch";
+import {
+  useAdminReportQuery,
+  useAllProductsQuery,
+  useCategoriesQuery,
+  useCreateProductMutation,
+  useDeleteProductMutation,
+  useUpdateProductMutation,
+} from "../shared/hooks/useApiQueries";
+import { USE_MOCK } from "../shared/api/mock";
 
 type StockFilter = "all" | "in-stock" | "low-stock" | "out-of-stock";
+const EMPTY_PRODUCTS: StoreProduct[] = [];
 
 const emptyForm: ProductFormValues = {
   title: "",
@@ -76,7 +78,7 @@ function toFormValues(product: StoreProduct): ProductFormValues {
   return {
     title: product.title,
     brand: product.brand,
-    category: product.category,
+    category: product.categoryId ?? product.category,
     price: String(product.price),
     stock: String(product.stock),
     discountPercentage: String(product.discountPercentage),
@@ -98,11 +100,25 @@ function toCatalogInput(values: ProductFormValues): ProductInput {
 }
 
 export default function DashboardPreviewPage() {
-  const [report, setReport] = useState<DashboardReport | null>(null);
-  const [products, setProducts] = useState<StoreProduct[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
+  const { branches, selectedBranch } = useBranch();
+  const productsQuery = useAllProductsQuery(
+    { branchId: selectedBranch?.id },
+    Boolean(selectedBranch),
+  );
+  const reportQuery = useAdminReportQuery();
+  const categoriesQuery = useCategoriesQuery();
+  const createMutation = useCreateProductMutation();
+  const updateMutation = useUpdateProductMutation(selectedBranch?.id);
+  const deleteMutation = useDeleteProductMutation(selectedBranch?.id);
+  const products = productsQuery.data ?? EMPTY_PRODUCTS;
+  const report: DashboardReport | null = reportQuery.data ?? null;
+  const isLoading = productsQuery.isLoading || reportQuery.isLoading;
+  const loadError = productsQuery.error || reportQuery.error
+    ? normalizeError(
+        productsQuery.error ?? reportQuery.error,
+        "Failed to load dashboard data.",
+      ).message
+    : "";
   const [actionError, setActionError] = useState("");
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -111,28 +127,6 @@ export default function DashboardPreviewPage() {
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const loadAll = useCallback(async () => {
-    try {
-      const [reportData, productData, branchData] = await Promise.all([
-        reportsService.admin(),
-        getProducts(),
-        getBranches(),
-      ]);
-      setReport(reportData);
-      setProducts(productData);
-      setBranches(branchData);
-      setLoadError("");
-    } catch (error) {
-      setLoadError(normalizeError(error, "Failed to load dashboard data.").message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    queueMicrotask(() => void loadAll());
-  }, [loadAll]);
 
   const categories = useMemo(
     () => [...new Set(products.map((product) => product.category))].sort(),
@@ -198,33 +192,41 @@ export default function DashboardPreviewPage() {
 
     try {
       if (editingProductId === null) {
-        // Create sends catalog fields + initial per-branch stock. Stock/price
-        // per branch afterwards go through /stock and /branch-price only.
         const initialStock = Number(values.stock);
-        await createProduct({
+        if (!selectedBranch) {
+          throw new Error("Select a branch before creating a product.");
+        }
+        await createMutation.mutateAsync({
           ...catalog,
-          branchInventory: branches.map((branch) => ({
-            branchId: branch.id,
-            price: catalog.price,
-            stock: Number.isInteger(initialStock) && initialStock >= 0 ? initialStock : 0,
-          })),
+          branchId: selectedBranch.id,
+          categoryId: catalog.category,
+          stock: Number.isInteger(initialStock) && initialStock >= 0 ? initialStock : 0,
+          ...(USE_MOCK
+            ? {
+                branchInventory: branches.map((branch) => ({
+                  branchId: branch.id,
+                  price: catalog.price,
+                  stock: Number.isInteger(initialStock) && initialStock >= 0 ? initialStock : 0,
+                })),
+              }
+            : {}),
         });
         setActionMessage("Product added successfully.");
       } else {
-        // PATCH accepts catalog fields only — never stock/branchInventory.
-        await updateProduct(editingProductId, {
+        await updateMutation.mutateAsync({
+          id: editingProductId,
+          input: {
           title: catalog.title,
           description: catalog.description,
           category: catalog.category,
           brand: catalog.brand,
           price: catalog.price,
           discountPercentage: catalog.discountPercentage,
+          },
         });
         setActionMessage("Product updated successfully.");
       }
-      setProducts(await getProducts());
       closeForm();
-      void loadAll();
     } catch (error) {
       setActionError(normalizeError(error, "Failed to save product changes.").message);
     }
@@ -237,10 +239,8 @@ export default function DashboardPreviewPage() {
     setDeletingId(product.id);
     setActionError("");
     try {
-      await deleteProduct(product.id);
-      setProducts(await getProducts());
+      await deleteMutation.mutateAsync(product.id);
       setActionMessage(`"${product.title}" deleted.`);
-      void loadAll();
     } catch (error) {
       setActionError(normalizeError(error, "Failed to delete product.").message);
     } finally {
@@ -342,8 +342,7 @@ export default function DashboardPreviewPage() {
     {
       key: "customer",
       header: "Customer",
-      render: (order) =>
-        order.shippingAddress.fullName || "Unnamed customer",
+      render: (order) => order.customerEmail ?? "Customer",
     },
     {
       key: "date",
@@ -642,6 +641,7 @@ export default function DashboardPreviewPage() {
                     )
               }
               mode={editingProductId === null ? "add" : "edit"}
+              categories={categoriesQuery.data}
               onSubmit={(values) => void handleProductSubmit(values)}
               onCancel={closeForm}
             />

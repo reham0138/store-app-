@@ -17,13 +17,21 @@ interface ProtectedRouteProps {
  *   </Route>
  */
 export function ProtectedRoute({ roles }: ProtectedRouteProps) {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading, error } = useAuth()
   const location = useLocation()
 
   if (isLoading) {
     return (
       <p className="px-4 py-16 text-center text-text-slate" role="status">
         Loading…
+      </p>
+    )
+  }
+
+  if (error) {
+    return (
+      <p className="px-4 py-16 text-center text-status-error" role="alert">
+        {error}
       </p>
     )
   }

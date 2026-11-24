@@ -31,35 +31,63 @@
 $ npm install
 ```
 
-## MongoDB requirements
+## MongoDB and environment requirements
 
-Order creation and status changes use MongoDB transactions so stock updates and
-order writes commit or roll back together. Product creation also uses a
-transaction to create its catalog record and initial branch inventory together.
+The backend validates `MONGODB_URI`, `JWT_SECRET` (at least 32 characters),
+`ADMIN_API_KEY`, and `STAFF_API_KEY` on startup. `PORT` defaults to `3000`.
 Configure `MONGODB_URI` to connect to a replica set (including a single-node
-replica set for local development); transactions are not supported by a
-standalone MongoDB server.
+replica set for local development); product/order writes use transactions.
 
-## Multi-branch operations
+## Active API behavior
 
-Products and categories are shared across branches. Each `(branch, product)`
-pair has its own inventory record; orders record the branch that fulfilled
-them. Branch-specific product listings, product reads, stock adjustments,
-low-stock queries, order creation, and order queries require a `branchId`.
-Product catalog writes are admin-only. Order creation requires `branchId` in
-its JSON body; order list/detail requests use `branchId` as a query parameter,
-and status changes include it in the JSON body.
+All routes use the `/api` prefix. `main.ts` enables CORS for
+`http://localhost:5173`, Helmet, and a global validation pipe that rejects
+unknown DTO fields. The global roles guard accepts JWT bearer tokens and
+legacy admin/staff API keys. Authentication returns top-level user fields and
+`token`/`accessToken`; `GET /api/auth/me` returns the user directly.
 
-Branches are managed with the admin-only `POST /api/branches` and
-`PATCH /api/branches/:id` endpoints. `GET /api/branches` and
-`GET /api/branches/:id` require staff or admin access. Branches are deactivated
-with `PATCH /api/branches/:id` and `{"isActive":false}`; existing orders remain
-readable against their inactive branch, but new branch operations reject it.
-The existing staff API key is global, so any staff key holder can access any
-branch. Branch-assigned identities and authorization are a security follow-up.
+Current route summary:
 
-Before deploying this version against existing data, build the project and run
-the backfill once with `MONGODB_URI` set:
+- `GET /api/branches` is public and returns active branches as an array, with
+  their Mongo ObjectIds and optional `latitude`/`longitude`. Admins may request
+  inactive branches with `?includeInactive=true`; branch managers receive only
+  their assigned branch. `GET /api/branches/:id` remains staff-only. Admin
+  creates with `POST /api/branches` and updates/deactivates with
+  `PATCH /api/branches/:id` (`isActive`); create/update may include numeric
+  `latitude` (-90 to 90) and `longitude` (-180 to 180).
+- `GET /api/categories` is public and returns a raw array.
+- `GET /api/products` and `GET /api/products/:id` are public but require a
+  valid Mongo `branchId`. Product lists return `{ data, meta: { page, limit,
+  total, totalPages } }`. Catalog fields are `name`, `sku`, `description`,
+  `price`, and `categoryId`; branch stock is returned as `stock`. Sorting uses
+  `newest`, `oldest`, `name_asc`, `name_desc`, `price_asc`, `price_desc`,
+  `stock_asc`, and `stock_desc`.
+- Admin creates products with `name`, `sku`, `price`, `categoryId`, `branchId`,
+  and `stock`. Product updates/deletes and detail reads also require
+  `branchId` as a query parameter. `PATCH /api/products/:id/stock` takes
+  `{ "delta": <non-zero integer> }` and a `branchId` query parameter; it
+  adjusts, rather than replaces, stock.
+- `POST /api/orders` (customer only) accepts `{ branchId, items:
+  [{ productId, quantity }] }`; the server computes prices and total. It does
+  not accept or persist shipping-address or payment-method fields. Order lists
+  return `{ data, meta }`. Status values are `pending`, `paid`, `shipped`,
+  `delivered`, and `cancelled`; status updates require `{ branchId, status }`.
+- Reviews use `GET /api/products/:id/reviews`, `POST
+  /api/products/:id/reviews`, and `DELETE /api/reviews/:id`; list responses
+  return `{ data, meta }`.
+- Reports are available as separate endpoints:
+  `/api/reports/overview`, `/low-stock`, `/top-selling`, `/daily-sales`,
+  `/sales-by-category`, and `/recent-orders`. The overview includes
+  `totalOrders`, `totalRevenue`, and `ordersByStatus`; other reports return
+  endpoint-specific data rather than a single dashboard envelope.
+
+Public users can discover active branches and select one before browsing
+products. GPS-based nearest-branch selection uses optional branch coordinates;
+branches without coordinates remain manually selectable. Public product reads
+still require the selected branch's Mongo ObjectId.
+
+Before deploying against existing data, build the project and run the backfill
+once with `MONGODB_URI` set:
 
 ```powershell
 npm run build
@@ -69,18 +97,15 @@ npm run migration:backfill-default-branch
 The repeatable backfill creates the `main` / `Main Branch` branch, copies
 existing product stock into its inventory records, assigns existing orders to
 it, and then removes the old product-level stock field. Back up the database
-first and run the migration during a maintenance window; do not start the new
-application against legacy data before completing it. Existing requests are
-not branch-compatible and clients must be updated to send `branchId`.
+first; do not start the application against legacy data before completing it.
 
-### Other backend gaps to prioritize
+### Known backend limitations
 
-1. Replace the shared staff API key with staff accounts and branch assignments
-   before branch-specific authorization is required.
-2. Record inventory adjustments and transfers in an immutable movement ledger.
-3. Add payment/refund reconciliation and idempotent external payment handling.
-4. Add branch-level reporting, audit trails for catalog/branch changes, and
-   operational health monitoring.
+1. Checkout currently does not store shipping or payment details.
+2. Reports are split across endpoint-specific responses; there is no
+   branch-sales summary endpoint.
+3. Product display assets and discount/branch-price fields are not part of the
+   current product API model.
 
 ## Compile and run the project
 

@@ -29,6 +29,8 @@ export class BranchesService {
         name: dto.name,
         code: dto.code.toLowerCase(),
         address: dto.address,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
       });
     } catch (error) {
       if (this.isDuplicateKey(error)) {
@@ -54,6 +56,8 @@ export class BranchesService {
     if (dto.name !== undefined) update.name = dto.name;
     if (dto.code !== undefined) update.code = dto.code.toLowerCase();
     if (dto.address !== undefined) update.address = dto.address;
+    if (dto.latitude !== undefined) update.latitude = dto.latitude;
+    if (dto.longitude !== undefined) update.longitude = dto.longitude;
     if (dto.isActive !== undefined) update.isActive = dto.isActive;
     try {
       const branch = await this.getBranchModel()

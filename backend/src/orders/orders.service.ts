@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
   Optional,
@@ -48,7 +49,9 @@ export class OrdersService {
     @Optional()
     @InjectModel(Inventory.name)
     private readonly inventoryModel: Model<InventoryDocument> | null = null,
-    @Optional() private readonly branchesService: BranchesService | null = null,
+    @Optional()
+    @Inject(BranchesService)
+    private readonly branchesService: BranchesService | null = null,
     @Optional()
     @InjectConnection()
     private readonly connection: Connection | null = null,
@@ -303,24 +306,40 @@ export class OrdersService {
   async updateStatus(
     id: string,
     nextStatus: string,
-    branchId: string,
+    branchId: string | undefined,
     role: string,
   ) {
     if (!ORDER_STATUSES.has(nextStatus)) {
       throw new BadRequestException('Invalid order status');
     }
-    await this.getBranchesService().assertActive(branchId);
+    if (role !== 'admin' && role !== 'branchManager') {
+      throw new ForbiddenException('Access denied');
+    }
+    if (role === 'branchManager' && !branchId) {
+      throw new ForbiddenException('Branch ID is required');
+    }
+    const managerBranchId =
+      role === 'branchManager' ? new Types.ObjectId(branchId) : undefined;
 
     const session = await this.getConnection().startSession();
     let updatedOrder: OrderDocument | null = null;
 
     try {
       await session.withTransaction(async () => {
+        const orderFilter: Record<string, unknown> = {
+          _id: new Types.ObjectId(id),
+        };
+        if (managerBranchId) {
+          orderFilter.branchId = managerBranchId;
+        }
         const order = await this.getOrderModel()
-          .findOne({ _id: id, branchId })
+          .findOne(orderFilter)
           .session(session)
           .exec();
         if (!order) throw new NotFoundException('Order not found');
+
+        const orderBranchId = new Types.ObjectId(String(order.branchId));
+        await this.getBranchesService().assertExists(orderBranchId.toString());
 
         if (nextStatus === 'cancelled' && role !== 'admin') {
           throw new ForbiddenException('Only admins can cancel paid orders');
@@ -330,21 +349,23 @@ export class OrdersService {
           return;
         }
 
+        const currentStatus =
+          order.status === 'processing' ? 'paid' : order.status;
         if (nextStatus === 'cancelled') {
-          if (order.status !== 'paid') {
+          if (currentStatus !== 'paid') {
             throw new BadRequestException('Only paid orders can be cancelled');
           }
         } else if (
-          !(STATUS_TRANSITIONS[order.status] ?? []).includes(nextStatus)
+          !(STATUS_TRANSITIONS[currentStatus] ?? []).includes(nextStatus)
         ) {
           throw new BadRequestException(
-            `Invalid status transition from ${order.status} to ${nextStatus}`,
+            `Invalid status transition from ${currentStatus} to ${nextStatus}`,
           );
         }
 
         const changed = await this.getOrderModel()
           .findOneAndUpdate(
-            { _id: order._id, branchId: order.branchId, status: order.status },
+            { _id: order._id, branchId: orderBranchId, status: order.status },
             {
               $set: { status: nextStatus },
               $push: {

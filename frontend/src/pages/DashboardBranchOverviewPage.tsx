@@ -6,7 +6,7 @@ import {
   ClipboardList,
   PackageSearch,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -21,43 +21,22 @@ import type { DashboardTableColumn } from "../shared/components/dashboard";
 import OrderStatus from "../shared/components/OrderStatus";
 import { FormError } from "../shared/components/FormError";
 import { useAuth } from "../shared/hooks/useAuth";
-import { reportsService } from "../shared/services/reports.service";
 import type { DashboardReport, ReportLowStockProduct } from "../shared/services/reports.service";
 import type { Order } from "../shared/types/order";
 import { formatPrice } from "../shared/utils/pricing";
 import { shortOrderId } from "../shared/utils/orderId";
 import { normalizeError } from "../shared/api/errors";
+import { useBranchReportQuery } from "../shared/hooks/useApiQueries";
 
 export default function DashboardBranchOverviewPage() {
   const { user } = useAuth();
   const branchId = user?.branchId;
-  const [report, setReport] = useState<DashboardReport | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadReport() {
-      try {
-        const data = await reportsService.branch();
-        if (isMounted) setReport(data);
-      } catch (error) {
-        if (isMounted) {
-          setLoadError(
-            normalizeError(error, "Failed to load branch data.").message,
-          );
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
-
-    queueMicrotask(() => void loadReport());
-    return () => {
-      isMounted = false;
-    };
-  }, [branchId]);
+  const reportQuery = useBranchReportQuery(Boolean(branchId));
+  const report: DashboardReport | null = reportQuery.data ?? null;
+  const isLoading = reportQuery.isLoading;
+  const loadError = reportQuery.error
+    ? normalizeError(reportQuery.error, "Failed to load branch data.").message
+    : "";
 
   const branchName =
     report?.branch?.name ??
@@ -122,8 +101,7 @@ export default function DashboardBranchOverviewPage() {
     {
       key: "customer",
       header: "Customer",
-      render: (order) =>
-        order.shippingAddress.fullName || "Unnamed customer",
+      render: (order) => order.customerEmail ?? "Customer",
     },
     {
       key: "total",

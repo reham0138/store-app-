@@ -1,11 +1,14 @@
-# API CONTRACT — The Crown & Anchor
+# Historical API contract — The Crown & Anchor
 
-**Status:** v2 — updated after the team decided to rebuild the backend from scratch.
-**Rule:** This file + `frontend/src/shared/types/` are the single source of truth.
-If backend and frontend disagree, fix one of them — never let them drift.
+**Status:** Superseded. Do not use this document as the integration contract.
+The current implementation under `backend/src/` is the integration source of
+truth, as selected for the frontend connection work. This document describes a
+different planned API and data model; it is retained as historical reference
+only. Reconcile or replace it when the active API is intentionally redesigned.
 
-Backend stack: NestJS + MongoDB (Mongoose). Base path: `/api`.
-The old `backend/` folder is NOT used. Keep it only as a reference (`backend-old`).
+Backend stack: NestJS + MongoDB (Mongoose). Base path: `/api`. See
+`backend/README.md` for the active routes, payloads, response envelopes, and
+limitations.
 
 ---
 

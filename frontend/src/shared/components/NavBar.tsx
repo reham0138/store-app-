@@ -12,7 +12,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import DashboardSidebar from "./dashboard/DashboardSidebar";
 import type { DashboardSidebarItem } from "./dashboard/DashboardSidebar";
@@ -25,6 +25,7 @@ export default function NavBar() {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [prevPathname, setPrevPathname] = useState(location.pathname);
   if (prevPathname !== location.pathname) {
@@ -63,7 +64,11 @@ export default function NavBar() {
       <p className="truncate px-3 text-sm font-semibold text-white">{user.name}</p>
       <button
         type="button"
-        onClick={() => { logout(); setIsOpen(false); }}
+        onClick={() => {
+          logout();
+          setIsOpen(false);
+          navigate("/login", { replace: true });
+        }}
         className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white"
       >
         <LogOut size={18} aria-hidden="true" /> Sign out

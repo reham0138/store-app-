@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Package } from "lucide-react";
 
-import { ordersService } from "../shared/services/orders.service";
 import type { OrderQuery } from "../shared/services/orders.service";
-import type { Order, OrderStatus as OrderStatusValue } from "../shared/types/order";
+import type { OrderStatus as OrderStatusValue } from "../shared/types/order";
 import { normalizeError } from "../shared/api/errors";
 
 import { formatPrice } from "../shared/utils/pricing";
@@ -14,47 +13,34 @@ import { shortOrderId } from "../shared/utils/orderId";
 import OrderStatus from "../shared/components/OrderStatus";
 import { Select } from "../shared/components/Select";
 import { Label } from "../shared/components/Label";
+import { useOrderListQuery } from "../shared/hooks/useApiQueries";
+import { USE_MOCK } from "../shared/api/mock";
 
 const PAGE_SIZE = 10;
 
 const STATUS_OPTIONS: { value: "" | OrderStatusValue; label: string }[] = [
   { value: "", label: "All statuses" },
   { value: "pending", label: "Pending" },
-  { value: "processing", label: "Processing" },
+  ...(USE_MOCK ? [{ value: "processing" as const, label: "Processing" }] : []),
+  { value: "paid", label: "Paid" },
   { value: "shipped", label: "Shipped" },
   { value: "delivered", label: "Delivered" },
   { value: "cancelled", label: "Cancelled" },
 ];
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<"" | OrderStatusValue>("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const query: OrderQuery = { page, limit: PAGE_SIZE, status: status || undefined };
+  const ordersQuery = useOrderListQuery(query);
+  const orders = ordersQuery.data?.items ?? [];
+  const total = ordersQuery.data?.total ?? 0;
+  const loading = ordersQuery.isLoading;
+  const error = ordersQuery.error
+    ? normalizeError(ordersQuery.error, "Couldn't load your orders.").message
+    : "";
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
-  const loadOrders = useCallback(async () => {
-    setLoading(true);
-    try {
-      const query: OrderQuery = { page, limit: PAGE_SIZE };
-      if (status) query.status = status;
-      const data = await ordersService.list(query);
-      setOrders(data.items);
-      setTotal(data.total);
-      setError("");
-    } catch (err) {
-      setError(normalizeError(err, "Couldn't load your orders.").message);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, status]);
-
-  useEffect(() => {
-    queueMicrotask(() => void loadOrders());
-  }, [loadOrders]);
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
@@ -97,7 +83,7 @@ export default function OrdersPage() {
           <p className="font-medium text-status-error">{error}</p>
           <button
             type="button"
-            onClick={() => void loadOrders()}
+            onClick={() => void ordersQuery.refetch()}
             className="mt-4 rounded-lg bg-brand-navy px-5 py-2 text-sm text-white"
           >
             Try Again
@@ -200,21 +186,12 @@ export default function OrdersPage() {
               </div>
 
               <div className="mt-4 border-t border-border-subtle pt-4">
-                {order.branch && (
+                {order.branch && order.branch.name !== "Branch" && (
                   <p className="text-sm text-text-slate">
                     Fulfilled by: {order.branch.name}
                   </p>
                 )}
 
-                <p className="text-sm text-text-slate">
-                  Deliver to: {order.shippingAddress.city}
-                </p>
-
-                <p className="mt-1 text-sm text-text-slate">
-                  Payment: {order.paymentMethod === "cash"
-                    ? "Cash on Delivery"
-                    : "Card (Demo)"}
-                </p>
               </div>
 
             </article>

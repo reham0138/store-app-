@@ -2,6 +2,7 @@ import type { Order, OrderStatus } from "../types/order";
 import type { StoreProduct } from "../types/cart";
 import { apiClient, USE_MOCK, ApiError, normalizeError } from "../api/index.ts";
 import { ordersService } from "./orders.service";
+import { mapBackendOrder } from "./orders.service";
 import { getProducts } from "./product.service";
 import { getBranches } from "./branches.service";
 import { authService } from "./authService";
@@ -69,7 +70,7 @@ const TOP_PRODUCTS_LIMIT = 5;
 const RECENT_ORDERS_LIMIT = 5;
 
 function emptyStatusCounts(): Record<OrderStatus, number> {
-  return { pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0 };
+  return { pending: 0, processing: 0, paid: 0, shipped: 0, delivered: 0, cancelled: 0 };
 }
 
 function dayKey(date: Date): string {
@@ -133,7 +134,7 @@ function buildReport(
   for (const order of activeOrders) {
     for (const item of order.items) {
       const entry = soldByProduct.get(item.productId) ?? {
-        title: item.title,
+        title: item.title ?? "Product",
         quantitySold: 0,
       };
       entry.quantitySold += item.quantity;
@@ -243,10 +244,133 @@ async function mockBranchReport(): Promise<DashboardReport> {
   return mockReport(branchId ?? "__unassigned__", false, true);
 }
 
-async function apiReport(path: string): Promise<DashboardReport> {
+function relationId(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "object" && value !== null) {
+    const record = value as { id?: unknown; _id?: unknown };
+    const id = record.id ?? record._id;
+    if (typeof id === "string") return id;
+  }
+  throw new Error("The reports API returned an invalid entity ID.");
+}
+
+function requireArray<T>(value: unknown, endpoint: string): T[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`The ${endpoint} report returned an invalid response.`);
+  }
+  return value as T[];
+}
+
+interface BackendOverview {
+  totalOrders: number;
+  totalRevenue: number;
+  ordersByStatus: Record<string, number>;
+}
+
+async function fetchBackendReport(branchId?: string): Promise<DashboardReport> {
+  const params = branchId ? { branchId } : undefined;
   try {
-    const { data } = await apiClient.get<DashboardReport>(path);
-    return data;
+    const [
+      overviewResponse,
+      lowStockResponse,
+      topProductsResponse,
+      salesByDayResponse,
+      salesByCategoryResponse,
+      recentOrdersResponse,
+    ] = await Promise.all([
+      apiClient.get<BackendOverview>("/reports/overview", { params }),
+      apiClient.get<unknown>("/reports/low-stock", { params }),
+      apiClient.get<unknown>("/reports/top-selling", { params }),
+      apiClient.get<unknown>("/reports/daily-sales", { params }),
+      apiClient.get<unknown>("/reports/sales-by-category", { params }),
+      apiClient.get<unknown>("/reports/recent-orders", { params }),
+    ]);
+
+    const overview = overviewResponse.data;
+    const statusCounts = emptyStatusCounts();
+    for (const [status, count] of Object.entries(overview.ordersByStatus ?? {})) {
+      if (status in statusCounts && typeof count === "number") {
+        statusCounts[status as OrderStatus] = count;
+      }
+    }
+
+    const lowStockRows = requireArray<{
+      productId: string | { _id?: string; id?: string; name?: string };
+      branchId: string | { _id?: string; id?: string };
+      stock: number;
+    }>(lowStockResponse.data, "low-stock")
+      .map((item) => ({
+        productId: relationId(item.productId),
+        title: typeof item.productId === "object" ? item.productId.name ?? "Product" : "Product",
+        branchId: relationId(item.branchId),
+        stock: item.stock,
+      }))
+      .filter((item) => item.stock <= LOW_STOCK_MAX);
+    const lowStockProducts = lowStockRows.slice(0, LOW_STOCK_LIMIT);
+
+    const topProducts = requireArray<{
+      _id: string;
+      name: string;
+      totalQuantity: number;
+    }>(topProductsResponse.data, "top-selling")
+      .map((item) => ({
+        productId: item._id,
+        title: item.name,
+        quantitySold: item.totalQuantity,
+      }))
+      .slice(0, TOP_PRODUCTS_LIMIT);
+
+    const salesByDay = requireArray<{
+      _id: string;
+      totalOrders: number;
+      totalRevenue: number;
+    }>(salesByDayResponse.data, "daily-sales")
+      .map((item) => ({
+        date: item._id,
+        orders: item.totalOrders,
+        revenue: item.totalRevenue,
+      }))
+      .slice(-SALES_DAYS);
+
+    const salesByCategory = requireArray<{
+      categoryName: string;
+      totalQuantity: number;
+      totalRevenue: number;
+    }>(salesByCategoryResponse.data, "sales-by-category")
+      .map((item) => ({
+        category: item.categoryName,
+        quantitySold: item.totalQuantity,
+        revenue: item.totalRevenue,
+      }));
+
+    const recentOrders = requireArray<Parameters<typeof mapBackendOrder>[0]>(
+      recentOrdersResponse.data,
+      "recent-orders",
+    ).map(mapBackendOrder);
+    const completedOrders =
+      statusCounts.paid + statusCounts.shipped + statusCounts.delivered;
+    const revenue = overview.totalRevenue;
+
+    return {
+      totalOrders: overview.totalOrders,
+      revenue,
+      averageOrderValue: completedOrders > 0 ? revenue / completedOrders : 0,
+      outOfStockCount: lowStockRows.filter((product) => product.stock <= 0).length,
+      ordersByStatus: statusCounts,
+      lowStockProducts,
+      topProducts,
+      salesByDay,
+      salesByCategory,
+      recentOrders,
+      ...(branchId
+        ? {
+            branch: {
+              id: branchId,
+              name: "Branch",
+            },
+          }
+        : {}),
+    };
   } catch (error) {
     const normalized = normalizeError(error, "Failed to load report.");
     throw new ApiError(normalized.message, normalized.code, normalized.status);
@@ -257,11 +381,27 @@ export const reportsService = {
   /** Admin store-wide report. Optional branchId scopes the whole report. */
   admin(branchId?: string): Promise<DashboardReport> {
     if (USE_MOCK) return mockAdminReport(branchId);
-    const query = branchId ? `?branchId=${encodeURIComponent(branchId)}` : "";
-    return apiReport(`/reports/summary${query}`);
+    return fetchBackendReport(branchId);
   },
   /** Branch-manager report scoped to the JWT branch (manager never sends branchId). */
   branch(): Promise<DashboardReport> {
-    return USE_MOCK ? mockBranchReport() : apiReport("/reports/branch");
+    if (USE_MOCK) return mockBranchReport();
+    return fetchBackendReport().then(async (report) => {
+      const branchId = authService.getCurrentUser()?.branchId;
+      if (!branchId) {
+        throw new ApiError(
+          "The signed-in branch manager has no assigned branch.",
+          "FORBIDDEN",
+          403,
+        );
+      }
+      const branches = await getBranches();
+      const branch = branches.find((item) => item.id === branchId);
+      if (!branch) {
+        throw new ApiError("The assigned branch was not returned by the backend.", "NOT_FOUND", 404);
+      }
+      report.branch = { id: branch.id, name: branch.name };
+      return report;
+    });
   },
 };

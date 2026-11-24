@@ -1,5 +1,5 @@
 import { ClipboardList } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -13,8 +13,10 @@ import OrderStatus from "../shared/components/OrderStatus";
 import { formatPrice } from "../shared/utils/pricing";
 import type { Order, OrderStatus as OrderStatusValue } from "../shared/types/order";
 import { ORDER_STATUS_FLOW } from "../shared/types/order";
-import { ordersService } from "../shared/services/orders.service";
 import { normalizeError } from "../shared/api/errors";
+import { useOrderListQuery, useUpdateOrderStatusMutation } from "../shared/hooks/useApiQueries";
+import { useAuth } from "../shared/hooks/useAuth";
+import { USE_MOCK } from "../shared/api/mock";
 import { Select } from "../shared/components/Select";
 import { FormError } from "../shared/components/FormError";
 import { Label } from "../shared/components/Label";
@@ -29,6 +31,7 @@ const PAGE_SIZE = 20;
 const statusLabels: Record<OrderStatusValue, string> = {
   pending: "Pending",
   processing: "Processing",
+  paid: "Paid",
   shipped: "Shipped",
   delivered: "Delivered",
   cancelled: "Cancelled",
@@ -37,7 +40,8 @@ const statusLabels: Record<OrderStatusValue, string> = {
 const STATUS_FILTER_OPTIONS: { value: "" | OrderStatusValue; label: string }[] = [
   { value: "", label: "All statuses" },
   { value: "pending", label: "Pending" },
-  { value: "processing", label: "Processing" },
+  ...(USE_MOCK ? [{ value: "processing" as const, label: "Processing" }] : []),
+  { value: "paid", label: "Paid" },
   { value: "shipped", label: "Shipped" },
   { value: "delivered", label: "Delivered" },
   { value: "cancelled", label: "Cancelled" },
@@ -56,7 +60,7 @@ const orderColumns: DashboardTableColumn<Order>[] = [
   {
     key: "customer",
     header: "Customer",
-    render: (order) => order.shippingAddress.fullName || "Unnamed customer",
+    render: (order) => order.customerEmail ?? "Customer",
   },
   {
     key: "date",
@@ -79,52 +83,41 @@ const orderColumns: DashboardTableColumn<Order>[] = [
 export default function DashboardOrdersPage({
   branchScoped = false,
 }: DashboardOrdersPageProps) {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [total, setTotal] = useState(0);
+  const { user } = useAuth();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"" | OrderStatusValue>("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const ordersQuery = useOrderListQuery({
+    status: statusFilter || undefined,
+    page,
+    limit: PAGE_SIZE,
+  });
+  const statusMutation = useUpdateOrderStatusMutation();
+  const orders = ordersQuery.data?.items ?? [];
+  const total = ordersQuery.data?.total ?? 0;
+  const isLoading = ordersQuery.isLoading;
+  const error = ordersQuery.error
+    ? normalizeError(ordersQuery.error, "Failed to load orders.").message
+    : "";
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
-  const loadOrders = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await ordersService.list({
-        status: statusFilter || undefined,
-        page,
-        limit: PAGE_SIZE,
-      });
-      setOrders(data.items);
-      setTotal(data.total);
-      setError("");
-    } catch (loadError) {
-      setError(normalizeError(loadError, "Failed to load orders.").message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [page, statusFilter]);
-
-  useEffect(() => {
-    queueMicrotask(() => void loadOrders());
-  }, [loadOrders]);
 
   async function handleStatusChange(order: Order, status: OrderStatusValue) {
     setActionError("");
     setActionMessage("");
     try {
-      await ordersService.updateOrderStatus(order.id, status);
+      await statusMutation.mutateAsync({
+        id: order.id,
+        status,
+        branchId: order.branchId ?? user?.branchId,
+      });
       setActionMessage(`Order ${shortOrderId(order.id)} updated to ${statusLabels[status]}.`);
-      await loadOrders();
     } catch (updateError) {
       const normalized = normalizeError(updateError, "Unable to update order status.");
       setActionError(normalized.message);
       if (normalized.code === "INVALID_TRANSITION") {
-        // Status changed elsewhere — refresh so the dropdown shows reality.
-        await loadOrders();
+        await ordersQuery.refetch();
       }
     }
   }
@@ -135,7 +128,9 @@ export default function DashboardOrdersPage({
       key: "status",
       header: "Status",
       render: (order) => {
-        const nextStatuses = ORDER_STATUS_FLOW[order.status];
+        const nextStatuses = ORDER_STATUS_FLOW[order.status].filter(
+          (status) => user?.role === "admin" || status !== "cancelled",
+        );
         return (
           <div className="flex min-w-40 items-center gap-2">
             <OrderStatus status={order.status} />
@@ -208,7 +203,7 @@ export default function DashboardOrdersPage({
             <p className="text-sm text-status-error">{error}</p>
             <button
               type="button"
-              onClick={() => void loadOrders()}
+              onClick={() => void ordersQuery.refetch()}
               className="mt-3 rounded-lg bg-brand-navy px-4 py-2 text-sm text-white"
             >
               Try Again

@@ -28,8 +28,27 @@ function redirectTo(path: string) {
   window.location.assign(path);
 }
 
+function unwrapSuccessEnvelope(value: unknown): unknown {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    Array.isArray(value) ||
+    !("success" in value) ||
+    value.success !== true ||
+    !("data" in value)
+  ) {
+    return value;
+  }
+
+  if ("meta" in value) {
+    return { data: value.data, meta: value.meta };
+  }
+
+  return value.data;
+}
+
 export const apiClient = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL ?? "http://localhost:3000"}/api`,
+  baseURL: `${(import.meta.env.VITE_API_URL ?? "http://localhost:3000").replace(/\/+$/, "")}/api`,
   timeout: 15000,
   headers: { "Content-Type": "application/json" },
 });
@@ -43,7 +62,10 @@ apiClient.interceptors.request.use((config) => {
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    response.data = unwrapSuccessEnvelope(response.data);
+    return response;
+  },
   (error) => {
     const status = error?.response?.status;
     const url: string = error?.config?.url ?? "";

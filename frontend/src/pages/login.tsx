@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../shared/hooks/useAuth.ts'
-import { AuthError } from '../shared/services/authService.ts'
 import { AuthCard } from '../shared/components/AuthCard.tsx'
 import { FormError } from '../shared/components/FormError.tsx'
 import { PasswordField } from '../shared/components/PasswordField.tsx'
@@ -10,6 +9,7 @@ import { SubmitButton } from '../shared/components/SubmitButton.tsx'
 import { TextField } from '../shared/components/TextField.tsx'
 import { getDashboardPath } from '../shared/utils/dashboardRoute.ts'
 import { USE_MOCK } from '../shared/api/index.ts'
+import { normalizeError } from '../shared/api/errors.ts'
 import {
 	MAX_EMAIL_LENGTH,
 	validateEmail,
@@ -57,7 +57,7 @@ export default function LoginPage() {
 		try {
 			await login({ email, password })
 		} catch (error) {
-			setFormError(error instanceof AuthError ? error.message : 'Something went wrong. Please try again.')
+			setFormError(normalizeError(error, 'Unable to sign in. Please try again.').message)
 			setSubmitting(false)
 		}
 	}

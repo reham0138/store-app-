@@ -6,7 +6,7 @@ import {
   Pencil,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -26,15 +26,17 @@ import { FormError } from "../shared/components/FormError";
 import { Input } from "../shared/components/Input";
 import { Select } from "../shared/components/Select";
 import { Label } from "../shared/components/Label";
-import {
-  listProducts,
-  updateProductStock,
-} from "../shared/services/product.service";
 import type { StockStatusFilter } from "../shared/services/product.service";
 import { normalizeError } from "../shared/api/errors";
+import {
+  useCategoriesQuery,
+  useProductListQuery,
+  useUpdateStockMutation,
+} from "../shared/hooks/useApiQueries";
 
 const PAGE_SIZE = 20;
 const LOW_STOCK_THRESHOLD = 5;
+const EMPTY_PRODUCTS: StoreProduct[] = [];
 
 interface DashboardInventoryPageProps {
   branchScoped?: boolean;
@@ -42,7 +44,6 @@ interface DashboardInventoryPageProps {
 
 interface InventoryRow {
   product: StoreProduct;
-  totalStock: number;
   branchStock: number;
   status: "In stock" | "Low stock" | "Out of stock";
 }
@@ -70,15 +71,52 @@ export default function DashboardInventoryPage({
   const [stockStatus, setStockStatus] = useState<"" | StockStatusFilter>("");
   const [page, setPage] = useState(1);
 
-  const [products, setProducts] = useState<StoreProduct[]>([]);
-  const [total, setTotal] = useState(0);
-  const [totals, setTotals] = useState({ all: 0, low: 0, out: 0 });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [stockDraft, setStockDraft] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const canLoadInventory = Boolean(branchId) && !(branchScoped && !managerBranchId);
+  const productsQuery = useProductListQuery({
+    branchId,
+    search: debouncedSearch || undefined,
+    category: category || undefined,
+    stockStatus: stockStatus || undefined,
+    page,
+    limit: PAGE_SIZE,
+  }, canLoadInventory);
+  const allCountQuery = useProductListQuery({ branchId, page: 1, limit: 1 }, canLoadInventory);
+  const lowCountQuery = useProductListQuery(
+    { branchId, stockStatus: "low", page: 1, limit: 1 },
+    canLoadInventory,
+  );
+  const outCountQuery = useProductListQuery(
+    { branchId, stockStatus: "out", page: 1, limit: 1 },
+    canLoadInventory,
+  );
+  const categoriesQuery = useCategoriesQuery();
+  const stockMutation = useUpdateStockMutation();
+  const products = productsQuery.data?.items ?? EMPTY_PRODUCTS;
+  const total = productsQuery.data?.total ?? 0;
+  const totals = {
+    all: allCountQuery.data?.total ?? 0,
+    low: lowCountQuery.data?.total ?? 0,
+    out: outCountQuery.data?.total ?? 0,
+  };
+  const isLoading = canLoadInventory && (
+    productsQuery.isLoading ||
+    allCountQuery.isLoading ||
+    lowCountQuery.isLoading ||
+    outCountQuery.isLoading
+  );
+  const queryError =
+    productsQuery.error ??
+    allCountQuery.error ??
+    lowCountQuery.error ??
+    outCountQuery.error ??
+    categoriesQuery.error;
+  const error = queryError
+    ? normalizeError(queryError, "Failed to load inventory.").message
+    : "";
 
   // Debounce search; any filter change resets to page 1.
   useEffect(() => {
@@ -94,74 +132,35 @@ export default function DashboardInventoryPage({
     setPage(1);
   };
 
-  const loadProducts = useCallback(async () => {
-    setIsLoading(true);
-    if (branchScoped && !managerBranchId) {
-      setProducts([]);
-      setTotal(0);
-      setIsLoading(false);
-      return;
-    }
-    try {
-      const [list, all, low, out] = await Promise.all([
-        listProducts({
-          branchId,
-          search: debouncedSearch || undefined,
-          category: category || undefined,
-          stockStatus: stockStatus || undefined,
-          page,
-          limit: PAGE_SIZE,
-        }),
-        branchId
-          ? listProducts({ branchId, page: 1, limit: 1 })
-          : Promise.resolve({ total: 0 }),
-        branchId
-          ? listProducts({ branchId, stockStatus: "low", page: 1, limit: 1 })
-          : Promise.resolve({ total: 0 }),
-        branchId
-          ? listProducts({ branchId, stockStatus: "out", page: 1, limit: 1 })
-          : Promise.resolve({ total: 0 }),
-      ]);
-      setProducts(list.items);
-      setTotal(list.total);
-      setTotals({ all: all.total, low: low.total, out: out.total });
-      setError("");
-    } catch (loadError) {
-      setError(normalizeError(loadError, "Failed to load inventory.").message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [branchId, managerBranchId, branchScoped, debouncedSearch, category, stockStatus, page]);
-
-  useEffect(() => {
-    queueMicrotask(() => void loadProducts());
-  }, [loadProducts]);
-
   const rows = useMemo<InventoryRow[]>(() => {
     return products.map((product) => {
       // With ?branchId= the API/mock already reflects that branch's stock on product.stock.
       const branchStock = product.stock;
-      const totalStock = product.branchInventory?.reduce(
-        (sum, item) => sum + item.stock,
-        0,
-      ) ?? product.stock;
-
       return {
         product,
-        totalStock: branchScoped ? branchStock : totalStock,
         branchStock,
         status: stockStatusOf(branchStock),
       };
     });
-  }, [products, branchScoped]);
+  }, [products]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const categories = useMemo(() => {
-    const set = new Set(products.map((p) => p.category));
-    if (category) set.add(category);
-    return [...set].sort();
-  }, [products, category]);
+    const categoriesById = new Map(
+      (categoriesQuery.data ?? []).map((item) => [item.id, item]),
+    );
+    for (const product of products) {
+      const id = product.categoryId ?? product.category;
+      if (id && !categoriesById.has(id)) {
+        categoriesById.set(id, { id, name: product.category });
+      }
+    }
+    if (category && !categoriesById.has(category)) {
+      categoriesById.set(category, { id: category, name: category });
+    }
+    return [...categoriesById.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [categoriesQuery.data, products, category]);
 
   function startEditing(row: InventoryRow) {
     if (!branchId) {
@@ -201,16 +200,21 @@ export default function DashboardInventoryPage({
     }
 
     try {
-      const updated = await updateProductStock(productId, branchId, stock);
-      // Update the row from the returned Product — no full reload needed.
-      setProducts((prev) =>
-        prev.map((p) => (p.id === productId ? { ...p, ...updated } : p)),
-      );
+      const currentStock = products.find((product) => product.id === productId)?.stock;
+      if (currentStock === undefined) {
+        throw new Error("The selected product is no longer in the inventory list.");
+      }
+      const delta = stock - currentStock;
+      if (delta === 0) {
+        setEditingProductId(null);
+        setStockDraft("");
+        return;
+      }
+      await stockMutation.mutateAsync({ productId, branchId, delta });
       setEditingProductId(null);
       setStockDraft("");
       setActionMessage("Branch stock updated.");
-      // Refresh the summary counts.
-      void loadProducts();
+      void productsQuery.refetch();
     } catch (saveError) {
       setActionError(normalizeError(saveError, "Unable to save the stock update.").message);
     }
@@ -231,11 +235,6 @@ export default function DashboardInventoryPage({
       key: "branch",
       header: inventoryBranch ? `${inventoryBranch.name} stock` : "Branch stock",
       render: ({ branchStock }) => branchStock,
-    },
-    {
-      key: "total",
-      header: branchScoped ? "Stock on hand" : "Total stock",
-      render: ({ totalStock }) => totalStock,
     },
     {
       key: "value",
@@ -412,7 +411,10 @@ export default function DashboardInventoryPage({
             <Label label="Category">
               <Select
                 value={category}
-                options={categories.map((c) => ({ value: c, label: c }))}
+                options={categories.map((item) => ({
+                  value: item.id,
+                  label: item.name,
+                }))}
                 placeholder="All categories"
                 onChange={(event) =>
                   resetPageOnFilter(() => setCategory(event.target.value))

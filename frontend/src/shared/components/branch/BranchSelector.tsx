@@ -22,6 +22,7 @@ export function BranchSelector() {
     branches.find((branch) => branch.name === "main") ??
     branches[0] ??
     null;
+  const locatedBranches = branches.filter(hasCoordinates);
   const selectedBranchId = branches.some(
     (branch) => branch.id === selectedBranch?.id,
   )
@@ -35,7 +36,6 @@ export function BranchSelector() {
       return;
     }
 
-    const locatedBranches = branches.filter(hasCoordinates);
     if (!locatedBranches.length) {
       setLocationError("Branch locations are not available yet.");
       return;
@@ -102,11 +102,16 @@ export function BranchSelector() {
           type="button"
           variant="tertiary"
           onClick={handleUseLocation}
-          disabled={isLocating || !branches.length}
+          disabled={isLocating || !locatedBranches.length}
         >
           <MapPin aria-hidden="true" size={16} />
           {isLocating ? "Finding nearby branch..." : "Use my location"}
         </Button>
+        {!isLoading && branches.length > 0 && !locatedBranches.length && (
+          <p className="mt-2 text-sm text-text-slate">
+            Location selection is unavailable because branch coordinates are not configured.
+          </p>
+        )}
       </div>
       <div>
         <Button

@@ -59,6 +59,19 @@ describe('BranchesController', () => {
     expect(branchesService.findAll).toHaveBeenCalledWith(true);
   });
 
+  it('should return active branches to a public visitor', async () => {
+    const result = [{ name: 'Damascus' }];
+    branchesService.findAll.mockResolvedValue(result);
+
+    await expect(
+      controller.findAll({ includeInactive: 'true' } as any, {
+        role: 'visitor',
+      } as any),
+    ).resolves.toEqual(result);
+
+    expect(branchesService.findAll).toHaveBeenCalledWith(false);
+  });
+
   it('should return manager own branch', async () => {
     const result = { _id: '123', name: 'Main Branch' };
     branchesService.findOne.mockResolvedValue(result);

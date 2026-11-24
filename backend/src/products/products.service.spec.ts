@@ -5,7 +5,12 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
+import { getModelToken } from '@nestjs/mongoose';
+import { Test } from '@nestjs/testing';
 import { ProductsService } from './products.service.js';
+import { Product } from './entities/product.entity.js';
+import { Inventory } from '../inventory/entities/inventory.entity.js';
+import { BranchesService } from '../branches/branches.service.js';
 
 describe('ProductsService', () => {
   let service: ProductsService;
@@ -73,6 +78,34 @@ describe('ProductsService', () => {
   it('should be defined', () => {
     setup();
     expect(service).toBeDefined();
+  });
+
+  it('injects BranchesService when created by Nest', async () => {
+    const aggregate = createAggregate([product]);
+    const productModel = {
+      aggregate: vi.fn().mockReturnValue(aggregate),
+      countDocuments: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(1),
+      }),
+    };
+    const inventoryModel = { collection: { name: 'inventories' } };
+    const branchesService = { assertActive: vi.fn().mockResolvedValue(undefined) };
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        ProductsService,
+        { provide: getModelToken(Product.name), useValue: productModel },
+        { provide: getModelToken(Inventory.name), useValue: inventoryModel },
+        { provide: BranchesService, useValue: branchesService },
+      ],
+    }).compile();
+
+    try {
+      const injectedService = moduleRef.get(ProductsService);
+      await injectedService.findAll({ branchId, page: 1, limit: 12 } as any);
+      expect(branchesService.assertActive).toHaveBeenCalledWith(branchId);
+    } finally {
+      await moduleRef.close();
+    }
   });
 
   it('should return products with pagination', async () => {
