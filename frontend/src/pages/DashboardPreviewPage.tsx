@@ -32,6 +32,7 @@ import { Label } from "../shared/components/Label";
 import { Select } from "../shared/components/Select";
 import type { StoreProduct } from "../shared/types/cart";
 import type { Order } from "../shared/types/order";
+import { uploadProductImage } from "../shared/services/product.service";
 import type { ProductInput } from "../shared/services/product.service";
 import type { DashboardReport, ReportLowStockProduct } from "../shared/services/reports.service";
 import { formatPrice } from "../shared/utils/pricing";
@@ -60,6 +61,7 @@ const emptyForm: ProductFormValues = {
   stock: "",
   discountPercentage: "0",
   description: "",
+  images: [],
 };
 
 function getStockStatus(stock: number): "In stock" | "Low stock" | "Out of stock" {
@@ -83,6 +85,7 @@ function toFormValues(product: StoreProduct): ProductFormValues {
     stock: String(product.stock),
     discountPercentage: String(product.discountPercentage),
     description: product.description,
+    images: product.images.length > 0 ? product.images : product.thumbnail ? [product.thumbnail] : [],
   };
 }
 
@@ -94,8 +97,8 @@ function toCatalogInput(values: ProductFormValues): ProductInput {
     brand: values.brand.trim(),
     price: Number(values.price),
     discountPercentage: Number(values.discountPercentage),
-    thumbnail: "",
-    images: [] as string[],
+    thumbnail: values.images[0] ?? "",
+    images: values.images,
   };
 }
 
@@ -222,6 +225,8 @@ export default function DashboardPreviewPage() {
           brand: catalog.brand,
           price: catalog.price,
           discountPercentage: catalog.discountPercentage,
+          thumbnail: catalog.thumbnail,
+          images: catalog.images,
           },
         });
         setActionMessage("Product updated successfully.");
@@ -642,6 +647,7 @@ export default function DashboardPreviewPage() {
               }
               mode={editingProductId === null ? "add" : "edit"}
               categories={categoriesQuery.data}
+              onImageUpload={USE_MOCK ? undefined : uploadProductImage}
               onSubmit={(values) => void handleProductSubmit(values)}
               onCancel={closeForm}
             />

@@ -20,12 +20,14 @@ export interface ProductFormValues {
   stock: string;
   discountPercentage: string;
   description: string;
+  images: string[];
 }
 
 interface ProductFormProps {
   initialValues: ProductFormValues;
   mode: "add" | "edit";
   categories?: CategoryOption[];
+  onImageUpload?: (file: File) => Promise<string>;
   onSubmit: (values: ProductFormValues) => void;
   onCancel: () => void;
 }
@@ -34,14 +36,56 @@ export default function ProductForm({
   initialValues,
   mode,
   categories = [],
+  onImageUpload,
   onSubmit,
   onCancel,
 }: ProductFormProps) {
-  const [values, setValues] = useState(initialValues);
+  const [values, setValues] = useState(() => ({
+    ...initialValues,
+    images: [...initialValues.images],
+  }));
   const [error, setError] = useState("");
+  const [uploadingImages, setUploadingImages] = useState(false);
 
-  function updateField(field: keyof ProductFormValues, value: string) {
+  function updateField(
+    field: Exclude<keyof ProductFormValues, "images">,
+    value: string,
+  ) {
     setValues((previous) => ({ ...previous, [field]: value }));
+  }
+
+  async function handleImageSelection(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.currentTarget.files ?? []);
+    event.currentTarget.value = "";
+    if (files.length === 0) return;
+    if (!onImageUpload) {
+      setError("Switch to live backend mode to upload product images.");
+      return;
+    }
+    if (values.images.length + files.length > 8) {
+      setError("A product can have up to 8 images.");
+      return;
+    }
+
+    setError("");
+    setUploadingImages(true);
+    try {
+      for (const file of files) {
+        const url = await onImageUpload(file);
+        setValues((previous) => ({ ...previous, images: [...previous.images, url] }));
+      }
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "Failed to upload image.");
+    } finally {
+      setUploadingImages(false);
+    }
+  }
+
+  function removeImage(url: string) {
+    setValues((previous) => ({
+      ...previous,
+      images: previous.images.filter((image) => image !== url),
+    }));
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -76,6 +120,7 @@ export default function ProductForm({
     }
 
     setError("");
+    if (uploadingImages) return;
     onSubmit(values);
   }
 
@@ -172,12 +217,57 @@ export default function ProductForm({
         />
       </Label>
 
+      <div className="grid gap-3">
+        <Label label="Product images">
+          <Input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif"
+            multiple
+            disabled={!onImageUpload || uploadingImages || values.images.length >= 8}
+            onChange={(event) => void handleImageSelection(event)}
+          />
+        </Label>
+        <p className="text-xs text-text-slate">
+          Upload up to 8 images, max 8 MB each. The first image is used as the main product image.
+          {!onImageUpload && " Set VITE_USE_MOCK=false to upload."}
+        </p>
+        {uploadingImages && (
+          <p className="text-sm text-text-slate" role="status">Uploading image...</p>
+        )}
+        {values.images.length > 0 && (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {values.images.map((image, index) => (
+              <div key={`${image}-${index}`} className="relative">
+                <img
+                  src={image}
+                  alt={`Product image ${index + 1}`}
+                  className="h-28 w-full rounded-lg border border-border-subtle object-cover"
+                />
+                {index === 0 && (
+                  <span className="absolute bottom-1 start-1 rounded bg-surface-white/90 px-2 py-1 text-xs">
+                    Main image
+                  </span>
+                )}
+                <button
+                  type="button"
+                  disabled={uploadingImages}
+                  onClick={() => removeImage(image)}
+                  className="absolute end-1 top-1 rounded bg-surface-white px-2 py-1 text-xs text-status-error shadow"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button type="button" variant="tertiary" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">
-          {mode === "add" ? "Add product" : "Save changes"}
+        <Button type="submit" disabled={uploadingImages}>
+          {uploadingImages ? "Uploading..." : mode === "add" ? "Add product" : "Save changes"}
         </Button>
       </div>
     </form>

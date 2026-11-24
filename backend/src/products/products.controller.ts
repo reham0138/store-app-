@@ -9,9 +9,13 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { IsMongoId } from 'class-validator';
 import { ProductsService } from './products.service.js';
+import { ProductImagesService } from './product-images.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
@@ -26,7 +30,10 @@ class BranchIdQueryDto {
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly productImagesService: ProductImagesService,
+  ) {}
 
   @Get()
   findAll(@Query() query: ProductQueryDto) {
@@ -60,6 +67,27 @@ findLowStock(
     @Query() query: BranchIdQueryDto,
   ) {
     return this.productsService.findOne(id.toString(), query.branchId);
+  }
+
+  @Roles('admin')
+  @Post('images')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 8 * 1024 * 1024, files: 1 },
+      fileFilter: (_request, file, callback) => {
+        if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.mimetype)) {
+          callback(new BadRequestException('Only JPEG, PNG, WebP, or AVIF images are allowed'), false);
+          return;
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  uploadImage(@UploadedFile() file?: { buffer: Buffer }) {
+    if (!file) {
+      throw new BadRequestException('An image file is required');
+    }
+    return this.productImagesService.upload(file.buffer);
   }
 
   @Roles('admin')

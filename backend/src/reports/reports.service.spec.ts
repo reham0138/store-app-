@@ -99,6 +99,18 @@ describe('ReportsService', () => {
     expect(result).toHaveLength(1);
   });
 
+  it('should omit low-stock inventory with a missing populated product', async () => {
+    const { service, inventoryQuery } = createService();
+    inventoryQuery.exec.mockResolvedValue([
+      { stock: 5, productId: 'product1' },
+      { stock: 0, productId: null },
+    ]);
+
+    await expect(service.getLowStock(branchId)).resolves.toEqual([
+      { stock: 5, productId: 'product1' },
+    ]);
+  });
+
   it('should return top selling products', async () => {
     const { service, orderModel } = createService();
 

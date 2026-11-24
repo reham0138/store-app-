@@ -78,12 +78,13 @@ export class ReportsService {
     filter.branchId = new Types.ObjectId(branchId);
   }
 
-  return this.inventoryModel
+  const inventory = await this.inventoryModel
     .find(filter)
     .populate('productId', 'name sku price')
     .populate('branchId', 'name code')
     .sort({ stock: 1 })
     .exec();
+  return inventory.filter((item) => item.productId != null);
 }
 async getTopSellingProducts(branchId?: string) {
   const match: any = {

@@ -32,11 +32,18 @@ function ProductDetails({ productId }: { productId?: string }) {
   const [comment, setComment] = useState("");
   const [editingReview, setEditingReview] = useState<ProductReview | null>(null);
   const [formError, setFormError] = useState("");
+  const [activeImage, setActiveImage] = useState("");
   const productQuery = useProductQuery(productId, selectedBranch?.id);
   const reviewsQuery = useInfiniteReviewsQuery(productId ?? "", REVIEWS_PAGE_SIZE);
   const upsertReviewMutation = useUpsertReviewMutation(productId ?? "");
   const deleteReviewMutation = useDeleteReviewMutation(productId ?? "");
   const product = productQuery.data ?? null;
+  const productImages = product
+    ? [...new Set([product.thumbnail, ...product.images].filter(Boolean))]
+    : [];
+  const selectedImage = productImages.includes(activeImage)
+    ? activeImage
+    : productImages[0];
   const loading = productQuery.isLoading || reviewsQuery.isLoading;
   const loadingMore = reviewsQuery.isFetchingNextPage;
   const reviews = reviewsQuery.data?.pages.flatMap((page) => page.items) ?? EMPTY_REVIEWS;
@@ -150,7 +157,31 @@ function ProductDetails({ productId }: { productId?: string }) {
         </button>
 
         <div className="grid gap-8 rounded-2xl border border-border-subtle bg-surface-white p-5 md:grid-cols-2 md:p-8">
-          <img src={product.thumbnail} alt={product.title} className="h-80 w-full rounded-xl object-cover" />
+          <div>
+            <img
+              src={selectedImage ?? product.thumbnail}
+              alt={product.title}
+              className="h-80 w-full rounded-xl object-cover"
+            />
+            {productImages.length > 1 && (
+              <div className="mt-3 flex gap-2 overflow-x-auto">
+                {productImages.map((image, index) => (
+                  <button
+                    key={image}
+                    type="button"
+                    onClick={() => setActiveImage(image)}
+                    aria-label={`Show product image ${index + 1}`}
+                    aria-pressed={selectedImage === image}
+                    className={`shrink-0 rounded-lg border-2 ${
+                      selectedImage === image ? "border-brand-gold" : "border-border-subtle"
+                    }`}
+                  >
+                    <img src={image} alt="" className="size-16 rounded-md object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div>
             <p className="text-sm text-text-slate">{product.brand} · {product.category}</p>
             <h1 className="mt-2 text-3xl font-bold text-brand-navy">{product.title}</h1>

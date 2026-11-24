@@ -10,6 +10,9 @@ describe('ProductsController', () => {
   const otherBranchId = '507f1f77bcf86cd799439013';
 
   let controller: ProductsController;
+  const productImagesService = {
+    upload: vi.fn(),
+  };
   let service: {
     findAll: ReturnType<typeof vi.fn>;
     findLowStock: ReturnType<typeof vi.fn>;
@@ -33,6 +36,7 @@ describe('ProductsController', () => {
 
     controller = new ProductsController(
       service as unknown as ProductsService,
+      productImagesService as any,
     );
   });
 
@@ -90,6 +94,20 @@ describe('ProductsController', () => {
     controller.create(dto as any);
 
     expect(service.create).toHaveBeenCalledWith(dto);
+  });
+
+  it('should upload a product image', async () => {
+    productImagesService.upload.mockResolvedValue({ url: 'https://res.cloudinary.com/demo/image.jpg' });
+    const file = { buffer: Buffer.from('image') };
+
+    await expect(controller.uploadImage(file)).resolves.toEqual({
+      url: 'https://res.cloudinary.com/demo/image.jpg',
+    });
+    expect(productImagesService.upload).toHaveBeenCalledWith(file.buffer);
+  });
+
+  it('should reject product image uploads without a file', () => {
+    expect(() => controller.uploadImage()).toThrow(BadRequestException);
   });
 
   it('should update a product', () => {

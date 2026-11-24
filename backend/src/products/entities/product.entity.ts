@@ -14,6 +14,12 @@ export class Product {
   @Prop({ trim: true })
   description?: string;
 
+  @Prop({ trim: true, default: '' })
+  thumbnail: string;
+
+  @Prop({ type: [String], default: [] })
+  images: string[];
+
   @Prop({ required: true, min: 0 })
   price: number;
 
