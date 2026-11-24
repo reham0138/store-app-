@@ -52,9 +52,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   )
 
   const logout = useCallback<AuthContextValue['logout']>(() => {
-    authService.logout()
-    queryClient.clear()
-    queryClient.setQueryData(queryKeys.auth.session, null)
+    try {
+      authService.logout()
+    } finally {
+      queryClient.clear()
+      queryClient.setQueryData(queryKeys.auth.session, null)
+    }
   }, [queryClient])
 
   const value = useMemo(
