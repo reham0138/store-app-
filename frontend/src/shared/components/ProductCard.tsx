@@ -59,7 +59,7 @@ function ProductCard({ product }: ProductCardProps) {
         to={`/products/${product.id}`}
         className="rounded-t-xl focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-gold"
       >
-        <div className="relative h-40 overflow-hidden bg-surface-cream">
+        <div className="relative h-52 overflow-hidden bg-surface-cream">
           <img
             src={product.thumbnail}
             alt={product.title}
