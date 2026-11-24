@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import ThemeToggle from "../ThemeToggle";
 
@@ -15,6 +16,7 @@ export default function DashboardTopbar({
   actions,
 }: DashboardTopbarProps) {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const displayName = userName ?? user?.name ?? "Store dashboard";
 
   return (
@@ -28,7 +30,10 @@ export default function DashboardTopbar({
         {actions && <div className="flex items-center gap-2">{actions}</div>}
         <button
           type="button"
-          onClick={logout}
+          onClick={() => {
+            logout();
+            navigate("/login", { replace: true });
+          }}
           aria-label="Sign out"
           className="inline-flex items-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-sm font-medium text-brand-navy transition hover:bg-surface-cream"
         >
