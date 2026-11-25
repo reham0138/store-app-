@@ -12,6 +12,11 @@ class AssistantChatDto {
   productId?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  selectedProductName?: string;
+
+  @IsOptional()
   @IsMongoId()
   branchId?: string;
 
