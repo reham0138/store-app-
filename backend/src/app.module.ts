@@ -41,7 +41,7 @@ const databaseLogger = new Logger('MongoDB');
         // Mongo-backed requests will fail individually; routes that do not need Mongo remain usable.
         lazyConnection: true,
         serverSelectionTimeoutMS: 5000,
-        onConnectionCreate: (connection) => {
+        connectionFactory: (connection) => {
           connection.on('connected', () => databaseLogger.log('MongoDB connected'));
           connection.on('disconnected', () => databaseLogger.warn('MongoDB disconnected'));
           connection.on('error', (error) => databaseLogger.error('MongoDB connection error', error.message));
