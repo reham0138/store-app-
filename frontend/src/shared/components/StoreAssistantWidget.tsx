@@ -5,7 +5,7 @@ import { apiClient } from "../api/client";
 import { useCart } from "../hooks/useCart";
 import { useBranch } from "../contexts/useBranch";
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = { role: "user" | "assistant"; content: string; selectedProductName?: string };
 type AssistantReply = { message: string; sources?: { title: string; url: string }[]; browseProducts?: boolean; suggestedQuestions?: string[] };
 
 const CONNECTION_ERROR_MESSAGE =
@@ -44,10 +44,15 @@ export default function StoreAssistantWidget() {
     const contextualContent = selectedProductName
       ? `المنتج المحدد من السلة: "${selectedProductName}". سؤال المستخدم: ${content}`
       : content;
-    const history = messages.slice(-10);
+    const history = messages.slice(-10).map((entry) => ({
+      role: entry.role,
+      content: entry.role === "user" && entry.selectedProductName
+        ? `Selected cart product: "${entry.selectedProductName}". User question: ${entry.content}`
+        : entry.content,
+    }));
     const requestIsArabic = /[\u0600-\u06FF]/.test(content);
     setReplyLanguageArabic(requestIsArabic);
-    setMessages((previous) => [...previous, { role: "user", content: contextualContent }]);
+    setMessages((previous) => [...previous, { role: "user", content, selectedProductName }]);
     setMessage("");
     setSuggestedQuestions([]);
     setShowBrowseProducts(false);
