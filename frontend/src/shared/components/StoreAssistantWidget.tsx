@@ -6,13 +6,15 @@ import { useBranch } from "../contexts/useBranch";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
+const CONNECTION_ERROR_MESSAGE =
+  "عذراً، تعذّر الاتصال بالمساعد حالياً. يرجى المحاولة مرة أخرى بعد قليل.";
+
 export default function StoreAssistantWidget() {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const { items } = useCart();
   const { selectedBranch } = useBranch();
 
@@ -27,7 +29,6 @@ export default function StoreAssistantWidget() {
     if (!content || loading) return;
     setMessages((previous) => [...previous, { role: "user", content }]);
     setMessage("");
-    setError("");
     setLoading(true);
     try {
       const response = await apiClient.post<{ message: string; sources?: { title: string; url: string }[] }>(
@@ -38,13 +39,17 @@ export default function StoreAssistantWidget() {
           branchId: selectedBranch?.id,
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
+        // Ollama may need substantially longer than the API client's default 15 seconds.
+        // The backend's model timeout is 60 seconds, so leave a small response margin.
+        { timeout: 75000 },
       );
       const sourceText = response.data.sources?.length
         ? "\n\nالمصادر:\n" + response.data.sources.map((source) => `• ${source.title}: ${source.url}`).join("\n")
         : "";
       setMessages((previous) => [...previous, { role: "assistant", content: response.data.message + sourceText }]);
     } catch {
-      setError("ما قدرت أوصل للمساعد. تأكدي أن الباك إند وOllama شغالين.");
+      // Show shoppers a friendly message; technical details stay in backend logs.
+      setMessages((previous) => [...previous, { role: "assistant", content: CONNECTION_ERROR_MESSAGE }]);
     } finally {
       setLoading(false);
     }
@@ -71,7 +76,6 @@ export default function StoreAssistantWidget() {
               <div key={index} className={`max-w-[90%] whitespace-pre-wrap rounded-xl px-3 py-2 text-sm ${item.role === "user" ? "mr-auto bg-brand-navy text-white" : "ml-auto bg-surface-cream text-text-main"}`}>{item.content}</div>
             ))}
             {loading && <p className="text-xs text-text-slate">عم حضّر الإجابة...</p>}
-            {error && <p role="alert" className="text-xs text-status-error">{error}</p>}
           </div>
           <div className="space-y-2 border-t border-border-subtle p-3">
             <label className="block text-xs font-medium text-text-slate">المنتج الموجود في السلة</label>
