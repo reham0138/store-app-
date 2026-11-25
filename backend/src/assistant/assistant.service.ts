@@ -236,7 +236,7 @@ export class AssistantService {
         const [branch, stock] = branchIdValid ? await Promise.all([
           this.branches.findById(input.branchId).select('name address').lean(),
           this.inventory.findOne({
-            productId: new Types.ObjectId(input.productId),
+            productId: new Types.ObjectId(String(product._id)),
             branchId: new Types.ObjectId(input.branchId),
           }).select('stock').lean(),
         ]) : [null, null];
