@@ -44,7 +44,10 @@ const databaseLogger = new Logger('MongoDB');
         connectionFactory: (connection) => {
           connection.on('connected', () => databaseLogger.log('MongoDB connected'));
           connection.on('disconnected', () => databaseLogger.warn('MongoDB disconnected'));
-          connection.on('error', (error) => databaseLogger.error('MongoDB connection error', error.message));
+          connection.on('error', (error: unknown) => databaseLogger.error(
+            'MongoDB connection error',
+            error instanceof Error ? error.message : String(error),
+          ));
           return connection;
         },
       }),
