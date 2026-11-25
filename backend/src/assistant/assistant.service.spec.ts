@@ -57,12 +57,16 @@ describe('AssistantService', () => {
   const modelCall = vi.fn();
 
   beforeEach(() => {
+    vi.stubEnv('GROQ_API_KEY', 'test-key');
     modelCall.mockReset().mockRejectedValue(new Error('ECONNREFUSED'));
     vi.stubGlobal('fetch', modelCall);
     service = createService();
     (service as any).logger = { warn: vi.fn(), error: vi.fn() };
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
   const ask = (message: string, extra: Partial<AssistantChatDto> = {}) =>
     service.chat({ message, branchId: LATAKIA, ...extra });
@@ -266,14 +270,38 @@ describe('AssistantService', () => {
     });
 
     it('uses the model for free-form product questions', async () => {
-      modelCall.mockResolvedValue({ ok: true, json: async () => ({ message: { content: 'بيانات المتجر ما بتذكر هالشي.' } }) });
-      expect((await ask('بينفع للألعاب؟', selected)).aiGenerated).toBe(true);
-    });
+  modelCall.mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      choices: [
+        {
+          message: {
+            content: 'بيانات المتجر ما بتذكر هالشي.',
+          },
+        },
+      ],
+    }),
+  });
 
-    it('rejects a model answer in the wrong language', async () => {
-      modelCall.mockResolvedValue({ ok: true, json: async () => ({ message: { content: 'Sure, it is great.' } }) });
-      expect((await ask('بينفع للألعاب؟', selected)).aiGenerated).toBeUndefined();
-    });
+  expect((await ask('بينفع للألعاب؟', selected)).aiGenerated).toBe(true);
+});
+
+  it('rejects a model answer in the wrong language', async () => {
+  modelCall.mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      choices: [
+        {
+          message: {
+            content: 'Sure, it is great.',
+          },
+        },
+      ],
+    }),
+  });
+
+  expect((await ask('بينفع للألعاب؟', selected)).aiGenerated).toBeUndefined();
+});
 
     it('declines unrelated topics', async () => {
       expect((await ask('مين ربح بالمباراة؟')).message).toContain('بعتذر');
