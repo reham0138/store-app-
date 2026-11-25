@@ -204,7 +204,7 @@ export class AssistantService {
           .select('name sku description price categoryId rating reviewCount').lean()
         : null;
 
-      const productQuestion = /(?:سعر|بكم|كم حق|المواصفات|مواصفات|تفاصيل|وصف|مخزون|متوفر|كمية|تقييم|reviews?|rating|price|cost|stock|specifications|details|describe)/i.test(message);
+      const productQuestion = /(?:سعر|بكم|كم حق|المواصفات|مواصفات|تفاصيل|تفاصيله|وصف|اشرح|احكيلي عن|شو هو|ما هو|مخزون|متوفر|كمية|تقييم|مراجعات|reviews?|rating|price|cost|stock|specifications|details|describe|tell me about|what is this)/i.test(message);
       if (!product && productQuestion) {
         return {
           message: arabic
