@@ -47,14 +47,14 @@ export class AssistantService {
       if (!response.ok) return [];
       const html = await response.text();
       const results: SearchResult[] = [];
-      const blocks = html.match(/<div class="result[^>]*>[\\s\\S]*?<\\/div>\\s*<\\/div>/g) ?? [];
+      const blocks = html.match(/<div class="result[^>]*>[\s\S]*?<\/div>\s*<\/div>/g) ?? [];
       for (const block of blocks.slice(0, 5)) {
-        const link = block.match(/<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\\s\\S]*?)<\\/a>/);
-        const snippet = block.match(/class="result__snippet"[^>]*>([\\s\\S]*?)<\\/a>/);
+        const link = block.match(/<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/);
+        const snippet = block.match(/class="result__snippet"[^>]*>([\s\S]*?)<\/a>/);
         if (!link) continue;
         const clean = (value: string) => value.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&')
           .replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'").replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>').replace(/\\s+/g, ' ').trim();
+          .replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
         let resultUrl = link[1].replace(/&amp;/g, '&');
         try {
           const parsed = new URL(resultUrl, 'https://duckduckgo.com');
@@ -114,7 +114,7 @@ FACT POLICY: Never invent specifications, compatibility, prices, stock, warranti
 If no product is selected and the user asks for a specific product's details, ask them to select that product from their cart first.
 Keep answers concise and useful.`;
 
-      const baseUrl = (process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434').replace(/\\/+$/, '');
+      const baseUrl = (process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434').replace(/\/+$/, '');
       const model = process.env.OLLAMA_MODEL || 'gemma3:1b';
       const response = await fetch(`${baseUrl}/api/chat`, {
         method: 'POST',
