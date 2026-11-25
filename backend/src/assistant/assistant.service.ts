@@ -357,6 +357,7 @@ export class AssistantService {
             answer = correctedAnswer;
           }
         }
+      }
       return { message: answer, sources: sources.map(({ title, url }) => ({ title, url })), suggestedQuestions: this.suggestedQuestions(arabic), browseProducts: false };
     } catch (error) {
       this.logger.error('Store assistant request failed', error instanceof Error ? error.stack : String(error));
