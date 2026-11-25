@@ -58,11 +58,10 @@ export default function StoreAssistantWidget() {
         ? "\n\nالمصادر:\n" + response.data.sources.map((source) => `• ${source.title}: ${source.url}`).join("\n")
         : "";
       setMessages((previous) => [...previous, { role: "assistant", content: response.data.message + sourceText }]);
-      setSuggestedQuestions(response.data.suggestedQuestions ?? [
-        "كيف بفلتر المنتجات حسب الفئة؟",
-        "كيف بعرف إذا المنتج متوفر بفرعي؟",
-        "كيف بقارن بين منتجين؟",
-      ]);
+      const replyIsArabic = /[\\u0600-\\u06FF]/.test(response.data.message);
+      setSuggestedQuestions(response.data.suggestedQuestions ?? (replyIsArabic
+        ? ["كيف بفلتر المنتجات حسب الفئة؟", "كيف بعرف إذا المنتج متوفر بفرعي؟", "كيف بقارن بين منتجين؟"]
+        : ["How do I filter products by category?", "How can I check stock at my branch?", "Can you compare two products?"]));
       setShowBrowseProducts(Boolean(response.data.browseProducts));
     } catch {
       // Show shoppers a friendly message; technical details stay in backend logs.
