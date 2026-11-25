@@ -19,9 +19,11 @@ export default function StoreAssistantWidget() {
   const { selectedBranch } = useBranch();
 
   const suggestions = [
-    "ساعدني أفهم مواصفات المنتج",
-    "قارن لي مواصفات المنتج المحدد",
-    "شو المعلومات المتوفرة عن هالمنتج؟",
+    "شو المنتجات المتوفرة؟",
+    "شو الفئات الموجودة بالمتجر؟",
+    "وين فروع المتجر؟",
+    "اقترح علي منتجات الأعلى تقييماً",
+    "شو سعر ومخزون المنتج المحدد؟",
   ];
 
   async function send(text = message) {
@@ -73,7 +75,7 @@ export default function StoreAssistantWidget() {
               </div>
             )}
             {messages.map((item, index) => (
-              <div key={index} className={`max-w-[90%] whitespace-pre-wrap rounded-xl px-3 py-2 text-sm ${item.role === "user" ? "mr-auto bg-brand-navy text-white" : "ml-auto bg-surface-cream text-text-main"}`}>{item.content}</div>
+              <div key={index} dir={/[\\u0600-\\u06FF]/.test(item.content) ? "rtl" : "ltr"} className={`max-w-[90%] whitespace-pre-wrap rounded-xl px-3 py-2 text-sm text-start ${item.role === "user" ? "mr-auto bg-brand-navy text-white" : "ml-auto bg-surface-cream text-text-main"}`}>{item.content}</div>
             ))}
             {loading && <p className="text-xs text-text-slate">عم حضّر الإجابة...</p>}
           </div>
