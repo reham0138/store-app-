@@ -19,6 +19,7 @@ export default function StoreAssistantWidget() {
   const [loading, setLoading] = useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const [showBrowseProducts, setShowBrowseProducts] = useState(false);
+  const [replyLanguageArabic, setReplyLanguageArabic] = useState(true);
   const navigate = useNavigate();
   const { items } = useCart();
   const { selectedBranch } = useBranch();
@@ -58,7 +59,7 @@ export default function StoreAssistantWidget() {
         ? "\n\nالمصادر:\n" + response.data.sources.map((source) => `• ${source.title}: ${source.url}`).join("\n")
         : "";
       setMessages((previous) => [...previous, { role: "assistant", content: response.data.message + sourceText }]);
-      const replyIsArabic = /[\\u0600-\\u06FF]/.test(response.data.message);
+      const replyIsArabic = /[\u0600-\u06FF]/.test(response.data.message);
       setSuggestedQuestions(response.data.suggestedQuestions ?? (replyIsArabic
         ? ["كيف بفلتر المنتجات حسب الفئة؟", "كيف بعرف إذا المنتج متوفر بفرعي؟", "كيف بقارن بين منتجين؟"]
         : ["How do I filter products by category?", "How can I check stock at my branch?", "Can you compare two products?"]));
@@ -68,6 +69,7 @@ export default function StoreAssistantWidget() {
       setMessages((previous) => [...previous, { role: "assistant", content: CONNECTION_ERROR_MESSAGE }]);
       setSuggestedQuestions(["شو المنتجات المتوفرة؟", "شو الفئات الموجودة بالمتجر؟"]);
       setShowBrowseProducts(false);
+      setReplyLanguageArabic(true);
     } finally {
       setLoading(false);
     }
@@ -95,7 +97,7 @@ export default function StoreAssistantWidget() {
             ))}
             {!loading && messages.length > 0 && suggestedQuestions.length > 0 && (
               <div className="ml-auto flex max-w-[95%] flex-col items-start gap-2">
-                <p className="text-xs text-text-slate">أسئلة ممكن تهمك</p>
+                <p className="text-xs text-text-slate">{replyLanguageArabic ? "أسئلة ممكن تهمك" : "You might also ask"}</p>
                 <div className="flex flex-wrap gap-2">
                   {suggestedQuestions.map((question) => (
                     <button key={question} type="button" onClick={() => void send(question)}
@@ -107,7 +109,7 @@ export default function StoreAssistantWidget() {
                 {showBrowseProducts && (
                   <button type="button" onClick={() => { setOpen(false); navigate("/products"); }}
                     className="rounded-lg bg-brand-navy px-4 py-2 text-sm font-medium text-white">
-                    افتحي قائمة المنتجات والفلاتر
+                    {replyLanguageArabic ? "افتحي قائمة المنتجات والفلاتر" : "Browse products and filters"}
                   </button>
                 )}
               </div>
