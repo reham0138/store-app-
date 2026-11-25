@@ -26,7 +26,16 @@ export class AssistantService {
   }
 
   private isArabic(message: string): boolean {
-    return /[\u0600-\u06FF]/.test(message);
+    const arabicCount = (message.match(/[\u0600-\u06FF]/g) ?? []).length;
+    const latinCount = (message.match(/[A-Za-z]/g) ?? []).length;
+    return arabicCount > 0 && arabicCount >= latinCount;
+  }
+
+  private answerMatchesLanguage(answer: string, arabic: boolean): boolean {
+    const arabicCount = (answer.match(/[\u0600-\u06FF]/g) ?? []).length;
+    const latinCount = (answer.match(/[A-Za-z]/g) ?? []).length;
+    if (arabic) return arabicCount > 0 && latinCount <= Math.max(12, arabicCount * 0.15);
+    return latinCount > 0 && arabicCount <= Math.max(2, latinCount * 0.03);
   }
 
   private isGreeting(message: string): boolean {
@@ -244,8 +253,37 @@ export class AssistantService {
       });
       if (!response.ok) throw new Error('Ollama request failed with HTTP ' + response.status);
       const payload = await response.json() as { message?: { content?: string } };
-      const answer = payload.message?.content?.trim();
+      let answer = payload.message?.content?.trim();
       if (!answer) throw new Error('Ollama returned an empty response');
+
+      // Small local models sometimes ignore the requested response language.
+      // Detect mixed-language output and make one constrained correction pass.
+      if (!this.answerMatchesLanguage(answer, arabic)) {
+        const languageOnlyInstruction = arabic
+          ? 'أعد كتابة الإجابة السابقة باللغة العربية فقط. لا تكتب أي جملة أو شرح باللغة الإنجليزية. حافظ على الحقائق نفسها ولا تضف أي معلومة جديدة.'
+          : 'Rewrite the previous answer in English only. Do not include Arabic sentences. Preserve the same facts and do not add any new information.';
+        const correction = await fetch(baseUrl + '/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model, stream: false,
+            messages: [
+              { role: 'system', content: languageOnlyInstruction },
+              { role: 'user', content: answer },
+            ],
+            options: { temperature: 0 },
+          }),
+          signal: AbortSignal.timeout(30000),
+        });
+        if (correction.ok) {
+          const correctedPayload = await correction.json() as { message?: { content?: string } };
+          const correctedAnswer = correctedPayload.message?.content?.trim();
+          if (correctedAnswer && this.answerMatchesLanguage(correctedAnswer, arabic)) {
+            answer = correctedAnswer;
+          }
+        }
+      }
+
       return { message: answer, sources: sources.map(({ title, url }) => ({ title, url })) };
     } catch (error) {
       this.logger.error('Store assistant request failed', error instanceof Error ? error.stack : String(error));
