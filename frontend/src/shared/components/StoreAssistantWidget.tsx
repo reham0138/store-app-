@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MessageCircle, Send, X, Bot } from "lucide-react";
 import { apiClient } from "../api/client";
 import { useCart } from "../hooks/useCart";
 import { useBranch } from "../contexts/useBranch";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
+type AssistantReply = { message: string; sources?: { title: string; url: string }[]; browseProducts?: boolean; suggestedQuestions?: string[] };
 
 const CONNECTION_ERROR_MESSAGE =
   "عذراً، تعذّر الاتصال بالمساعد حالياً. يرجى المحاولة مرة أخرى بعد قليل.";
@@ -15,6 +17,9 @@ export default function StoreAssistantWidget() {
   const [selectedProductId, setSelectedProductId] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
+  const [showBrowseProducts, setShowBrowseProducts] = useState(false);
+  const navigate = useNavigate();
   const { items } = useCart();
   const { selectedBranch } = useBranch();
 
@@ -29,17 +34,21 @@ export default function StoreAssistantWidget() {
   async function send(text = message) {
     const content = text.trim();
     if (!content || loading) return;
+    const history = messages.slice(-10);
     setMessages((previous) => [...previous, { role: "user", content }]);
     setMessage("");
+    setSuggestedQuestions([]);
+    setShowBrowseProducts(false);
     setLoading(true);
     try {
-      const response = await apiClient.post<{ message: string; sources?: { title: string; url: string }[] }>(
+      const response = await apiClient.post<AssistantReply>(
         "/assistant/chat",
         {
           message: content,
           productId: selectedProductId || undefined,
           branchId: selectedBranch?.id,
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          history,
         },
         // Ollama may need substantially longer than the API client's default 15 seconds.
         // The backend's model timeout is 60 seconds, so leave a small response margin.
@@ -49,9 +58,17 @@ export default function StoreAssistantWidget() {
         ? "\n\nالمصادر:\n" + response.data.sources.map((source) => `• ${source.title}: ${source.url}`).join("\n")
         : "";
       setMessages((previous) => [...previous, { role: "assistant", content: response.data.message + sourceText }]);
+      setSuggestedQuestions(response.data.suggestedQuestions ?? [
+        "كيف بفلتر المنتجات حسب الفئة؟",
+        "كيف بعرف إذا المنتج متوفر بفرعي؟",
+        "كيف بقارن بين منتجين؟",
+      ]);
+      setShowBrowseProducts(Boolean(response.data.browseProducts));
     } catch {
       // Show shoppers a friendly message; technical details stay in backend logs.
       setMessages((previous) => [...previous, { role: "assistant", content: CONNECTION_ERROR_MESSAGE }]);
+      setSuggestedQuestions(["شو المنتجات المتوفرة؟", "شو الفئات الموجودة بالمتجر؟"]);
+      setShowBrowseProducts(false);
     } finally {
       setLoading(false);
     }
@@ -77,6 +94,25 @@ export default function StoreAssistantWidget() {
             {messages.map((item, index) => (
               <div key={index} dir={/[\u0600-\u06FF]/.test(item.content) ? "rtl" : "ltr"} className={`max-w-[90%] whitespace-pre-wrap rounded-xl px-3 py-2 text-sm text-start ${item.role === "user" ? "mr-auto bg-brand-navy text-white" : "ml-auto bg-surface-cream text-text-main"}`}>{item.content}</div>
             ))}
+            {!loading && messages.length > 0 && suggestedQuestions.length > 0 && (
+              <div className="ml-auto flex max-w-[95%] flex-col items-start gap-2">
+                <p className="text-xs text-text-slate">أسئلة ممكن تهمك</p>
+                <div className="flex flex-wrap gap-2">
+                  {suggestedQuestions.map((question) => (
+                    <button key={question} type="button" onClick={() => void send(question)}
+                      className="rounded-full border border-border-subtle bg-surface-white px-3 py-2 text-xs text-brand-navy hover:bg-surface-cream">
+                      {question}
+                    </button>
+                  ))}
+                </div>
+                {showBrowseProducts && (
+                  <button type="button" onClick={() => { setOpen(false); navigate("/products"); }}
+                    className="rounded-lg bg-brand-navy px-4 py-2 text-sm font-medium text-white">
+                    افتحي قائمة المنتجات والفلاتر
+                  </button>
+                )}
+              </div>
+            )}
             {loading && <p className="text-xs text-text-slate">عم حضّر الإجابة...</p>}
           </div>
           <div className="space-y-2 border-t border-border-subtle p-3">
