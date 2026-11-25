@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Send, X, Bot } from "lucide-react";
+import { MessageCircle, Send, X, Bot, Trash2, Sparkles, RotateCcw } from "lucide-react";
 import { apiClient } from "../api/client";
 import { useCart } from "../hooks/useCart";
 import { useBranch } from "../contexts/useBranch";
@@ -20,6 +20,8 @@ export default function StoreAssistantWidget() {
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const [showBrowseProducts, setShowBrowseProducts] = useState(false);
   const [replyLanguageArabic, setReplyLanguageArabic] = useState(true);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { items } = useCart();
   const { selectedBranch } = useBranch();
@@ -32,6 +34,20 @@ export default function StoreAssistantWidget() {
     "شو سعر ومخزون المنتج المحدد؟",
   ];
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, loading, suggestedQuestions]);
+
+  function clearConversation() {
+    if (loading) return;
+    setMessages([]);
+    setMessage("");
+    setSuggestedQuestions([]);
+    setShowBrowseProducts(false);
+    setConfirmClear(false);
+    setReplyLanguageArabic(true);
+  }
+
   async function send(text = message) {
     const content = text.trim();
     if (!content || loading) return;
@@ -39,8 +55,6 @@ export default function StoreAssistantWidget() {
       ? items.find(({ product }) => product.id === selectedProductId)
       : undefined;
     const selectedProductName = selectedCartItem?.product.title?.trim();
-    // Include the selected product in the actual user turn so the model can
-    // distinguish it from products discussed earlier in the conversation.
     const contextualContent = selectedProductName
       ? `المنتج المحدد من السلة: "${selectedProductName}". سؤال المستخدم: ${content}`
       : content;
@@ -56,6 +70,7 @@ export default function StoreAssistantWidget() {
     setMessage("");
     setSuggestedQuestions([]);
     setShowBrowseProducts(false);
+    setConfirmClear(false);
     setLoading(true);
     try {
       const response = await apiClient.post<AssistantReply>(
@@ -68,8 +83,6 @@ export default function StoreAssistantWidget() {
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           history,
         },
-        // Ollama may need substantially longer than the API client's default 15 seconds.
-        // The backend's model timeout is 60 seconds, so leave a small response margin.
         { timeout: 75000 },
       );
       const sourceText = response.data.sources?.length
@@ -83,7 +96,6 @@ export default function StoreAssistantWidget() {
         : ["How do I filter products by category?", "How can I check stock at my branch?", "Can you compare two products?"]));
       setShowBrowseProducts(Boolean(response.data.browseProducts));
     } catch {
-      // Show shoppers a friendly message; technical details stay in backend logs.
       setMessages((previous) => [...previous, { role: "assistant", content: CONNECTION_ERROR_MESSAGE }]);
       setSuggestedQuestions(requestIsArabic
         ? ["شو المنتجات المتوفرة؟", "شو الفئات الموجودة بالمتجر؟"]
@@ -96,60 +108,122 @@ export default function StoreAssistantWidget() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-[100] font-sans" dir="rtl">
+    <div className="fixed bottom-4 right-4 z-[100] font-sans sm:bottom-5 sm:right-5" dir="rtl">
       {open && (
-        <section className="mb-3 flex h-[min(620px,75vh)] w-[min(370px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-border-subtle bg-surface-white shadow-2xl">
-          <header className="flex items-center justify-between bg-brand-navy px-4 py-3 text-white">
-            <div className="flex items-center gap-2"><Bot size={21} /><div><p className="font-semibold">مساعد Crown & Anchor</p><p className="text-xs text-white/70">مساعدة في منتجات المتجر</p></div></div>
-            <button type="button" onClick={() => setOpen(false)} aria-label="إغلاق المساعد" className="rounded-lg p-1 hover:bg-white/10"><X size={20} /></button>
+        <section className="mb-3 flex h-[min(680px,calc(100dvh-6rem))] w-[min(390px,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-border-subtle bg-surface-white shadow-[0_18px_60px_rgba(15,23,42,0.22)] animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <header className="flex shrink-0 items-center justify-between bg-brand-navy px-4 py-3.5 text-white">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-white/10"><Bot size={22} /></div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">مساعد Crown & Anchor</p>
+                <p className="mt-0.5 text-[11px] text-white/70">موجود لمساعدتك باختيار المنتجات</p>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <button type="button" onClick={() => setConfirmClear(true)} disabled={!messages.length || loading}
+                aria-label="حذف المحادثة" title="حذف المحادثة"
+                className="rounded-xl p-2 text-white/80 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30">
+                <Trash2 size={18} />
+              </button>
+              <button type="button" onClick={() => setOpen(false)} aria-label="إغلاق المساعد"
+                className="rounded-xl p-2 text-white/80 transition hover:bg-white/10 hover:text-white"><X size={19} /></button>
+            </div>
           </header>
-          <div className="flex-1 space-y-3 overflow-y-auto p-3">
+
+          {confirmClear && (
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border-subtle bg-surface-cream px-4 py-3">
+              <p className="text-xs text-text-main">متأكدة إنك بدك تحذفي المحادثة؟</p>
+              <div className="flex shrink-0 gap-2">
+                <button type="button" onClick={() => setConfirmClear(false)} className="rounded-lg px-2.5 py-1.5 text-xs text-text-slate hover:bg-black/5">إلغاء</button>
+                <button type="button" onClick={clearConversation} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-700">حذف</button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain bg-surface-white px-3 py-4 sm:px-4" aria-live="polite">
             {messages.length === 0 && (
-              <div className="space-y-3">
-                <p className="rounded-xl bg-surface-cream p-3 text-sm text-text-main">أهلاً! فيني ساعدك بمعلومات المنتجات ومواصفاتها. اختاري منتجاً من سلتك إذا كان سؤالك عن منتج محدد.</p>
-                <div className="flex flex-wrap gap-2">
-                  {suggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => void send(suggestion)} className="rounded-full border border-border-subtle px-3 py-2 text-xs text-brand-navy hover:bg-surface-cream">{suggestion}</button>)}
+              <div className="flex min-h-full flex-col justify-center gap-4 py-3">
+                <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-surface-cream text-brand-navy"><Sparkles size={27} /></div>
+                <div className="text-center">
+                  <h3 className="text-base font-semibold text-text-main">أهلاً فيك! كيف بقدر أساعدك؟</h3>
+                  <p className="mx-auto mt-1.5 max-w-[270px] text-xs leading-6 text-text-slate">اسأليني عن المنتجات، الأسعار، التقييمات أو توفر المنتجات بالفروع.</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="px-1 text-[11px] font-medium text-text-slate">ابدئي بسؤال سريع</p>
+                  <div className="grid gap-2">
+                    {suggestions.map((suggestion) => (
+                      <button key={suggestion} type="button" onClick={() => void send(suggestion)}
+                        className="rounded-xl border border-border-subtle bg-surface-white px-3 py-2.5 text-right text-xs leading-5 text-text-main transition hover:border-brand-gold hover:bg-surface-cream active:scale-[0.99]">
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
+
             {messages.map((item, index) => (
-              <div key={index} dir={/[\u0600-\u06FF]/.test(item.content) ? "rtl" : "ltr"} className={`max-w-[90%] whitespace-pre-wrap rounded-xl px-3 py-2 text-sm text-start ${item.role === "user" ? "mr-auto bg-brand-navy text-white" : "ml-auto bg-surface-cream text-text-main"}`}>{item.content}</div>
+              <div key={index} dir={/[\u0600-\u06FF]/.test(item.content) ? "rtl" : "ltr"}
+                className={`max-w-[88%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2.5 text-start text-[13px] leading-6 shadow-sm ${item.role === "user" ? "mr-auto rounded-br-md bg-brand-navy text-white" : "ml-auto rounded-bl-md bg-surface-cream text-text-main"}`}>
+                {item.content}
+              </div>
             ))}
+
             {!loading && messages.length > 0 && suggestedQuestions.length > 0 && (
               <div className="ml-auto flex max-w-[95%] flex-col items-start gap-2">
-                <p className="text-xs text-text-slate">{replyLanguageArabic ? "أسئلة ممكن تهمك" : "You might also ask"}</p>
+                <p className="text-[11px] font-medium text-text-slate">{replyLanguageArabic ? "ممكن كمان تسألي" : "You might also ask"}</p>
                 <div className="flex flex-wrap gap-2">
                   {suggestedQuestions.map((question) => (
                     <button key={question} type="button" onClick={() => void send(question)}
-                      className="rounded-full border border-border-subtle bg-surface-white px-3 py-2 text-xs text-brand-navy hover:bg-surface-cream">
+                      className="rounded-full border border-border-subtle bg-surface-white px-3 py-2 text-xs text-brand-navy transition hover:border-brand-gold hover:bg-surface-cream">
                       {question}
                     </button>
                   ))}
                 </div>
                 {showBrowseProducts && (
                   <button type="button" onClick={() => { setOpen(false); navigate("/products"); }}
-                    className="rounded-lg bg-brand-navy px-4 py-2 text-sm font-medium text-white">
+                    className="rounded-xl bg-brand-navy px-4 py-2.5 text-xs font-medium text-white transition hover:opacity-90">
                     {replyLanguageArabic ? "افتحي قائمة المنتجات والفلاتر" : "Browse products and filters"}
                   </button>
                 )}
               </div>
             )}
-            {loading && <p className="text-xs text-text-slate">عم حضّر الإجابة...</p>}
+
+            {loading && (
+              <div className="ml-auto flex max-w-[88%] items-center gap-2 rounded-2xl rounded-bl-md bg-surface-cream px-3.5 py-3 text-xs text-text-slate">
+                <span className="size-1.5 animate-pulse rounded-full bg-brand-gold" />
+                {replyLanguageArabic ? "عم حضّر الإجابة..." : "Preparing your answer..."}
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
-          <div className="space-y-2 border-t border-border-subtle p-3">
-            <label className="block text-xs font-medium text-text-slate">المنتج الموجود في السلة</label>
-            <select value={selectedProductId} onChange={(event) => setSelectedProductId(event.target.value)} className="h-10 w-full rounded-lg border border-border-subtle bg-surface-white px-2 text-sm">
-              <option value="">بدون منتج محدد</option>
+
+          <div className="shrink-0 space-y-2.5 border-t border-border-subtle bg-surface-white p-3 sm:p-3.5">
+            <div className="flex items-center justify-between gap-2">
+              <label htmlFor="assistant-product" className="text-[11px] font-medium text-text-slate">المنتج من سلتك (اختياري)</label>
+              {selectedProductId && <button type="button" onClick={() => setSelectedProductId("")} className="text-[11px] text-brand-navy underline underline-offset-2">إلغاء التحديد</button>}
+            </div>
+            <select id="assistant-product" value={selectedProductId} onChange={(event) => setSelectedProductId(event.target.value)}
+              className="h-10 w-full rounded-xl border border-border-subtle bg-surface-white px-3 text-xs text-text-main outline-none transition focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20">
+              <option value="">ما في منتج محدد</option>
               {items.map(({ product }) => <option key={product.id} value={product.id}>{product.title}</option>)}
             </select>
-            <form onSubmit={(event) => { event.preventDefault(); void send(); }} className="flex gap-2">
-              <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="اكتبي سؤالك عن منتجات المتجر..." className="min-w-0 flex-1 rounded-xl border border-border-subtle bg-surface-white px-3 py-2 text-sm outline-none focus:border-brand-gold" maxLength={2000} />
-              <button type="submit" disabled={!message.trim() || loading} aria-label="إرسال" className="rounded-xl bg-brand-navy px-3 text-white disabled:opacity-50"><Send size={17} /></button>
+            <form onSubmit={(event) => { event.preventDefault(); void send(); }} className="flex items-end gap-2">
+              <textarea value={message} onChange={(event) => setMessage(event.target.value)}
+                onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void send(); } }}
+                placeholder="اكتبي سؤالك هون..." rows={1} maxLength={2000}
+                className="max-h-28 min-h-11 min-w-0 flex-1 resize-y rounded-xl border border-border-subtle bg-surface-white px-3 py-3 text-sm text-text-main outline-none transition placeholder:text-text-slate/70 focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20" />
+              <button type="submit" disabled={!message.trim() || loading} aria-label="إرسال"
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-navy text-white transition hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40">
+                <Send size={17} />
+              </button>
             </form>
+            <p className="text-center text-[10px] text-text-slate/70">Enter للإرسال · Shift + Enter لسطر جديد</p>
           </div>
         </section>
       )}
-      <button type="button" onClick={() => setOpen((value) => !value)} aria-label="فتح مساعد المتجر" className="ml-auto flex size-14 items-center justify-center rounded-full bg-brand-navy text-white shadow-lg transition hover:scale-105">
+      <button type="button" onClick={() => setOpen((value) => !value)} aria-label={open ? "إغلاق مساعد المتجر" : "فتح مساعد المتجر"}
+        className="ml-auto flex size-14 items-center justify-center rounded-full bg-brand-navy text-white shadow-lg transition duration-200 hover:scale-105 hover:shadow-xl active:scale-95">
         {open ? <X size={23} /> : <MessageCircle size={24} />}
       </button>
     </div>
