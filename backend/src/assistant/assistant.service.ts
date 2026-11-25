@@ -150,10 +150,22 @@ export class AssistantService {
     if (this.isGreeting(message)) {
       return {
         message: this.greeting(input.timeZone, arabic) + '! ' + (arabic
-          ? 'كيف فيني ساعدك بمنتجات المتجر؟ فيني أعرض المنتجات والفئات، أو أساعدك بالسعر والمواصفات والمخزون.'
-          : 'How can I help with our store? I can show products and categories or help with prices, specifications, and stock.'),
+          ? 'كيف فيني ساعدك؟ اختاري منتجاً من القائمة حتى أقدر أساعدك بمعلوماته.'
+          : 'How can I help? Select a product from the list so I can assist you with its details.'),
         sources: [],
         suggestedQuestions: this.suggestedQuestions(arabic),
+      };
+    }
+
+    // Every non-greeting request must be tied to an explicitly selected
+    // product. Do not let the model answer general questions without context.
+    if (!input.productId && !input.selectedProductName?.trim()) {
+      return {
+        message: arabic
+          ? 'عذراً، حتى أقدر أساعدك بمعلومات دقيقة، اختاري المنتج أولاً من القائمة الموجودة أسفل المحادثة، وبعدها ابعتي سؤالك.'
+          : 'Sorry, to give you accurate information, please select a product from the list below the chat first, then send your question.',
+        sources: [],
+        suggestedQuestions: [],
       };
     }
 
@@ -217,14 +229,6 @@ export class AssistantService {
       }
 
       const productQuestion = /(?:سعر|بكم|كم حق|المواصفات|مواصفات|تفاصيل|تفاصيله|وصف|اشرح|احكيلي عن|شو هو|ما هو|مخزون|متوفر|كمية|تقييم|مراجعات|reviews?|rating|price|cost|stock|specifications|details|describe|tell me about|what is this)/i.test(message);
-      if (!product && productQuestion) {
-        return {
-          message: arabic
-            ? 'أكيد، بس حددي المنتج من القائمة الموجودة تحت المحادثة حتى أعطيكي معلوماته الدقيقة.'
-            : 'Sure. Please select a product from the list below the chat so I can give you accurate information.',
-          sources: [],
-        };
-      }
 
       let productContext = 'No product is selected.';
       let sources: SearchResult[] = [];
