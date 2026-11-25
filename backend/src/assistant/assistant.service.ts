@@ -22,6 +22,18 @@ export class AssistantService {
     @InjectModel(Inventory.name) private readonly inventory: Model<InventoryDocument>,
   ) {}
 
+  private isGreeting(message: string): boolean {
+    const normalized = message
+      .normalize('NFKC')
+      .replace(/[\u064B-\u065F\u0670]/g, '')
+      .trim()
+      .toLocaleLowerCase()
+      .replace(/[.!؟?،,؛;]+$/g, '')
+      .trim();
+
+    return /^(?:صباح الخير|صباح النور|مساء الخير|مساء النور|السلام عليكم|وعليكم السلام|مرحبا|مرحباً|مرحبتين|اهلا|أهلا|اهلين|أهلين|هلا|هاي|يا هلا|hello|hi|hey|good morning|good afternoon|good evening)(?:\s+(?:كيفك|كيف الحال|شلونك|كيف حالك))?$/.test(normalized);
+  }
+
   private greeting(timeZone?: string): string {
     let hour = new Date().getHours();
     try {
@@ -73,6 +85,14 @@ export class AssistantService {
   }
 
   async chat(input: ChatInput) {
+    // Greetings are deterministic and must never depend on MongoDB or Ollama.
+    if (this.isGreeting(input.message)) {
+      return {
+        message: \`${this.greeting(input.timeZone)}! كيف فيني ساعدك بمنتجات المتجر؟\`,
+        sources: [],
+      };
+    }
+
     try {
       const product = input.productId && Types.ObjectId.isValid(input.productId)
         ? await this.products.findOne({ _id: input.productId, isActive: { $ne: false } })
