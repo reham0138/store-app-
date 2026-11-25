@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -18,6 +18,8 @@ import { ReportsModule } from './reports/reports.module.js';
 import { AssistantModule } from './assistant/assistant.module.js';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
+const databaseLogger = new Logger('MongoDB');
+
 @Module({
   imports: [
     AuthModule,
@@ -35,6 +37,16 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         uri: config.getOrThrow<string>('MONGODB_URI'),
+        // Do not block the HTTP server from starting when Atlas is temporarily unreachable.
+        // Mongo-backed requests will fail individually; routes that do not need Mongo remain usable.
+        lazyConnection: true,
+        serverSelectionTimeoutMS: 5000,
+        onConnectionCreate: (connection) => {
+          connection.on('connected', () => databaseLogger.log('MongoDB connected'));
+          connection.on('disconnected', () => databaseLogger.warn('MongoDB disconnected'));
+          connection.on('error', (error) => databaseLogger.error('MongoDB connection error', error.message));
+          return connection;
+        },
       }),
     }),
     CategoriesModule,
