@@ -35,10 +35,19 @@ export default function StoreAssistantWidget() {
   async function send(text = message) {
     const content = text.trim();
     if (!content || loading) return;
+    const selectedCartItem = selectedProductId
+      ? items.find(({ product }) => product.id === selectedProductId)
+      : undefined;
+    const selectedProductName = selectedCartItem?.product.title?.trim();
+    // Include the selected product in the actual user turn so the model can
+    // distinguish it from products discussed earlier in the conversation.
+    const contextualContent = selectedProductName
+      ? `المنتج المحدد من السلة: "${selectedProductName}". سؤال المستخدم: ${content}`
+      : content;
     const history = messages.slice(-10);
     const requestIsArabic = /[\u0600-\u06FF]/.test(content);
     setReplyLanguageArabic(requestIsArabic);
-    setMessages((previous) => [...previous, { role: "user", content }]);
+    setMessages((previous) => [...previous, { role: "user", content: contextualContent }]);
     setMessage("");
     setSuggestedQuestions([]);
     setShowBrowseProducts(false);
@@ -47,7 +56,7 @@ export default function StoreAssistantWidget() {
       const response = await apiClient.post<AssistantReply>(
         "/assistant/chat",
         {
-          message: content,
+          message: contextualContent,
           productId: selectedProductId || undefined,
           branchId: selectedBranch?.id,
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
