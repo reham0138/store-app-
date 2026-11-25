@@ -206,3 +206,16 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Store assistant
+
+`POST /api/assistant/chat` (public, 30 requests per minute) answers shopper
+questions in Arabic or English. Product facts, stock, categories and branches are
+read from MongoDB; the endpoint works without any language model.
+
+An Ollama server is optional and only used for free-form questions about one
+product. Configure it with `OLLAMA_BASE_URL` (default `http://127.0.0.1:11434`)
+and `OLLAMA_MODEL` (default `gemma3:1b`).
+
+Run the frontend with `VITE_USE_MOCK=false` so the storefront and the assistant
+show the same catalog.

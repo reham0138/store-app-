@@ -1,39 +1,14 @@
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
-import { IsArray, IsMongoId, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Throttle } from '@nestjs/throttler';
+import { AssistantChatDto } from './assistant.dto.js';
 import { AssistantService } from './assistant.service.js';
-
-class AssistantChatDto {
-  @IsString()
-  @MaxLength(2000)
-  message: string;
-
-  @IsOptional()
-  @IsMongoId()
-  productId?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  selectedProductName?: string;
-
-  @IsOptional()
-  @IsMongoId()
-  branchId?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(80)
-  timeZone?: string;
-
-  @IsOptional()
-  @IsArray()
-  history?: Array<{ role: 'user' | 'assistant'; content: string }>; 
-}
 
 @Controller('assistant')
 export class AssistantController {
   constructor(private readonly assistantService: AssistantService) {}
 
+  // Public endpoint that may call a language model: stricter than the global limit.
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Post('chat')
   chat(@Body() body: AssistantChatDto) {
     if (!body.message?.trim()) {

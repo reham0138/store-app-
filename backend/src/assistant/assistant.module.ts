@@ -4,6 +4,7 @@ import { Product, ProductSchema } from '../products/entities/product.entity.js';
 import { Inventory, InventorySchema } from '../inventory/entities/inventory.entity.js';
 import { Category, CategorySchema } from '../categories/entities/category.entity.js';
 import { Branch, BranchSchema } from '../branches/entities/branch.entity.js';
+import { Review, ReviewSchema } from '../reviews/entities/review.entity.js';
 import { AssistantController } from './assistant.controller.js';
 import { AssistantService } from './assistant.service.js';
 
@@ -14,6 +15,7 @@ import { AssistantService } from './assistant.service.js';
       { name: Inventory.name, schema: InventorySchema },
       { name: Category.name, schema: CategorySchema },
       { name: Branch.name, schema: BranchSchema },
+      { name: Review.name, schema: ReviewSchema },
     ]),
   ],
   controllers: [AssistantController],
