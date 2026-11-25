@@ -36,7 +36,8 @@ export default function StoreAssistantWidget() {
     const content = text.trim();
     if (!content || loading) return;
     const history = messages.slice(-10);
-    const requestIsArabic = /[\u0600-\u06FF]/.test(content);\n    setReplyLanguageArabic(requestIsArabic);\n    setMessages((previous) => [...previous, { role: "user", content }]);
+    const requestIsArabic = /[\u0600-\u06FF]/.test(content);
+    setReplyLanguageArabic(requestIsArabic);\n    setMessages((previous) => [...previous, { role: "user", content }]);
     setMessage("");
     setSuggestedQuestions([]);
     setShowBrowseProducts(false);
@@ -59,7 +60,8 @@ export default function StoreAssistantWidget() {
         ? "\n\nالمصادر:\n" + response.data.sources.map((source) => `• ${source.title}: ${source.url}`).join("\n")
         : "";
       setMessages((previous) => [...previous, { role: "assistant", content: response.data.message + sourceText }]);
-      const replyIsArabic = /[\u0600-\u06FF]/.test(response.data.message);\n      setReplyLanguageArabic(replyIsArabic);
+      const replyIsArabic = /[\u0600-\u06FF]/.test(response.data.message);
+      setReplyLanguageArabic(replyIsArabic);
       setSuggestedQuestions(response.data.suggestedQuestions ?? (replyIsArabic
         ? ["كيف بفلتر المنتجات حسب الفئة؟", "كيف بعرف إذا المنتج متوفر بفرعي؟", "كيف بقارن بين منتجين؟"]
         : ["How do I filter products by category?", "How can I check stock at my branch?", "Can you compare two products?"]));
