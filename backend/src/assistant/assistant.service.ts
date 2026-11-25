@@ -95,9 +95,9 @@ export class AssistantService {
         price: product.price,
         branchStock: stock?.stock ?? null,
       });
-      if (!product.description?.trim()) {
-        sources = await this.searchWeb(`${product.name} ${product.sku} official specifications`);
-      }
+      // Search the exact selected model as a secondary source; the model is instructed
+      // to prefer stored fields and use web evidence only for facts missing from them.
+      sources = await this.searchWeb(`${product.name} ${product.sku} official specifications`);
     }
 
     const timeGreeting = this.greeting(input.timeZone);
