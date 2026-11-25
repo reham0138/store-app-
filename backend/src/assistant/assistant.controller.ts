@@ -1,5 +1,5 @@
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
-import { IsMongoId, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsArray, IsMongoId, IsOptional, IsString, MaxLength } from 'class-validator';
 import { AssistantService } from './assistant.service.js';
 
 class AssistantChatDto {
@@ -19,6 +19,10 @@ class AssistantChatDto {
   @IsString()
   @MaxLength(80)
   timeZone?: string;
+
+  @IsOptional()
+  @IsArray()
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>; 
 }
 
 @Controller('assistant')
