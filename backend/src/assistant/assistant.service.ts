@@ -210,10 +210,11 @@ export class AssistantService {
       const selectedName = input.selectedProductName?.trim();
       if (selectedName && product?.name?.trim() !== selectedName) {
         const productByName = await this.products.findOne({
-          name: { $regex: '^' + selectedName.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\      const product = input.productId && Types.ObjectId.isValid(input.productId)
-        ? await this.products.findOne({ _id: input.productId, isActive: { $ne: false } })
-          .select('name sku description price categoryId rating reviewCount').lean()
-        : null;') + '
+          name: selectedName,
+          isActive: { $ne: false },
+        }).select('name sku description price categoryId rating reviewCount').lean();
+        if (productByName) product = productByName;
+      }
 
       const productQuestion = /(?:سعر|بكم|كم حق|المواصفات|مواصفات|تفاصيل|تفاصيله|وصف|اشرح|احكيلي عن|شو هو|ما هو|مخزون|متوفر|كمية|تقييم|مراجعات|reviews?|rating|price|cost|stock|specifications|details|describe|tell me about|what is this)/i.test(message);
       if (!product && productQuestion) {
