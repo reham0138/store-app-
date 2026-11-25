@@ -153,6 +153,7 @@ export class AssistantService {
           ? 'كيف فيني ساعدك بمنتجات المتجر؟ فيني أعرض المنتجات والفئات، أو أساعدك بالسعر والمواصفات والمخزون.'
           : 'How can I help with our store? I can show products and categories or help with prices, specifications, and stock.'),
         sources: [],
+        suggestedQuestions: this.suggestedQuestions(arabic),
       };
     }
 
@@ -181,6 +182,7 @@ export class AssistantService {
             ? (arabic ? 'الفئات المتوفرة في المتجر:\n' : 'Store categories:\n') + names.map((name) => '- ' + name).join('\n')
             : (arabic ? 'ما في فئات مسجلة حالياً بالمتجر.' : 'There are no categories listed in the store yet.'),
           sources: [],
+          suggestedQuestions: this.suggestedQuestions(arabic),
         };
       }
 
@@ -193,6 +195,7 @@ export class AssistantService {
               '- ' + branch.name + (branch.address ? ' — ' + branch.address : '')).join('\n')
             : (arabic ? 'ما في فروع فعّالة مسجلة حالياً.' : 'There are no active store branches listed.'),
           sources: [],
+          suggestedQuestions: this.suggestedQuestions(arabic),
         };
       }
 
@@ -213,18 +216,70 @@ export class AssistantService {
 
       let productContext = 'No product is selected.';
       let sources: SearchResult[] = [];
+      let selectedBranchName: string | null = null;
+      let selectedStock: number | null = null;
       if (input.productId && !product) {
         productContext = 'The selected product could not be verified in the store database.';
       } else if (product) {
-        const stock = branchIdValid ? await this.inventory.findOne({
-          productId: new Types.ObjectId(input.productId), branchId: new Types.ObjectId(input.branchId),
-        }).select('stock').lean() : null;
+        const [branch, stock] = branchIdValid ? await Promise.all([
+          this.branches.findById(input.branchId).select('name address').lean(),
+          this.inventory.findOne({
+            productId: new Types.ObjectId(input.productId),
+            branchId: new Types.ObjectId(input.branchId),
+          }).select('stock').lean(),
+        ]) : [null, null];
+        selectedBranchName = branch?.name ?? null;
+        selectedStock = typeof stock?.stock === 'number' ? stock.stock : null;
+
+        // Answer factual product questions directly from MongoDB.
+        // This is faster and prevents the language model from inventing fields.
+        if (productQuestion) {
+          const lines = [arabic ? 'معلومات المنتج' : 'Product details', product.name];
+          if (typeof product.price === 'number') {
+            lines.push((arabic ? 'السعر: ' : 'Price: ') + product.price);
+          }
+          if (product.description?.trim()) {
+            lines.push((arabic ? 'الوصف: ' : 'Description: ') + product.description.trim());
+          } else {
+            lines.push(arabic ? 'الوصف: غير متوفر ضمن بيانات المتجر.' : 'Description: Not available in the store data.');
+          }
+          if (typeof product.rating === 'number' && product.rating > 0) {
+            lines.push((arabic ? 'التقييم: ' : 'Rating: ') + product.rating + '/5');
+          }
+          if (typeof product.reviewCount === 'number' && product.reviewCount > 0) {
+            lines.push((arabic ? 'عدد المراجعات: ' : 'Reviews: ') + product.reviewCount);
+          }
+          if (branchIdValid) {
+            lines.push(selectedBranchName
+              ? (arabic ? 'الفرع: ' : 'Branch: ') + selectedBranchName
+              : (arabic ? 'الفرع المحدد غير معروف حالياً.' : 'The selected branch could not be identified.'));
+            lines.push(selectedStock === null
+              ? (arabic ? 'المخزون: لا توجد بيانات مؤكدة لهذا المنتج في الفرع.' : 'Stock: No verified inventory record for this product at this branch.')
+              : (arabic ? 'الكمية المتوفرة: ' : 'Available stock: ') + selectedStock);
+          } else {
+            lines.push(arabic
+              ? 'المخزون: اختاري فرعاً للتحقق من الكمية المتوفرة.'
+              : 'Stock: Select a branch to verify availability.');
+          }
+          return {
+            message: lines.join('\\n'),
+            sources: [],
+            suggestedQuestions: this.suggestedQuestions(arabic),
+            productUrl: '/products/' + String(product._id),
+          };
+        }
+
         productContext = JSON.stringify({
           name: product.name, sku: product.sku, description: product.description || null,
           price: product.price, rating: product.rating, reviewCount: product.reviewCount,
-          branchStock: stock?.stock ?? null, stockVerifiedForSelectedBranch: branchIdValid,
+          branchName: selectedBranchName,
+          branchStock: selectedStock, stockVerifiedForSelectedBranch: branchIdValid,
         });
-        sources = await this.searchWeb(product.name + ' ' + product.sku + ' official specifications');
+
+        const asksForExternalSpecs = /(?:مواصفات|تفاصيل تقنية|تفاصيل اضافية|معلومات اضافية|ابحث|دور|specifications|technical details|more details|look up|search for)/i.test(message);
+        if (asksForExternalSpecs && !product.description?.trim()) {
+          sources = await this.searchWeb(product.name + ' ' + product.sku + ' official specifications');
+        }
       }
 
       const languageRule = arabic
