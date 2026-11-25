@@ -15,6 +15,7 @@ import { validate } from './config/env.validation.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
 import { ReportsModule } from './reports/reports.module.js';
+import { AssistantModule } from './assistant/assistant.module.js';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
@@ -42,6 +43,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     BranchesModule,
     ReviewsModule,
     ReportsModule,
+    AssistantModule,
   ],
   controllers: [AppController],
   providers: [
