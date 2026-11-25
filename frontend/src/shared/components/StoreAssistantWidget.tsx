@@ -75,7 +75,7 @@ export default function StoreAssistantWidget() {
               </div>
             )}
             {messages.map((item, index) => (
-              <div key={index} dir={/[\\u0600-\\u06FF]/.test(item.content) ? "rtl" : "ltr"} className={`max-w-[90%] whitespace-pre-wrap rounded-xl px-3 py-2 text-sm text-start ${item.role === "user" ? "mr-auto bg-brand-navy text-white" : "ml-auto bg-surface-cream text-text-main"}`}>{item.content}</div>
+              <div key={index} dir={/[\u0600-\u06FF]/.test(item.content) ? "rtl" : "ltr"} className={`max-w-[90%] whitespace-pre-wrap rounded-xl px-3 py-2 text-sm text-start ${item.role === "user" ? "mr-auto bg-brand-navy text-white" : "ml-auto bg-surface-cream text-text-main"}`}>{item.content}</div>
             ))}
             {loading && <p className="text-xs text-text-slate">عم حضّر الإجابة...</p>}
           </div>
