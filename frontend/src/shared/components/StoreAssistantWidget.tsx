@@ -37,7 +37,8 @@ export default function StoreAssistantWidget() {
     if (!content || loading) return;
     const history = messages.slice(-10);
     const requestIsArabic = /[\u0600-\u06FF]/.test(content);
-    setReplyLanguageArabic(requestIsArabic);\n    setMessages((previous) => [...previous, { role: "user", content }]);
+    setReplyLanguageArabic(requestIsArabic);
+    setMessages((previous) => [...previous, { role: "user", content }]);
     setMessage("");
     setSuggestedQuestions([]);
     setShowBrowseProducts(false);
@@ -69,9 +70,11 @@ export default function StoreAssistantWidget() {
     } catch {
       // Show shoppers a friendly message; technical details stay in backend logs.
       setMessages((previous) => [...previous, { role: "assistant", content: CONNECTION_ERROR_MESSAGE }]);
-      setSuggestedQuestions(["شو المنتجات المتوفرة؟", "شو الفئات الموجودة بالمتجر؟"]);
+      setSuggestedQuestions(requestIsArabic
+        ? ["شو المنتجات المتوفرة؟", "شو الفئات الموجودة بالمتجر؟"]
+        : ["What products are available?", "What store categories do you have?"]);
       setShowBrowseProducts(false);
-      setReplyLanguageArabic(true);
+      setReplyLanguageArabic(requestIsArabic);
     } finally {
       setLoading(false);
     }
