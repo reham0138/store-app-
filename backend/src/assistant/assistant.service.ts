@@ -34,7 +34,7 @@ export class AssistantService {
   }
 
   private isProductListQuestion(message: string): boolean {
-    return /(?:المنتجات|منتج|شو عندكم|شو في عندكم|شو متوفر|شو متوفّر|المتوفر|المتوفرة|الموجودة|عرض المنتجات|فرجيني|ورجيني|available products|what products|show me products|product catalog|what do you sell|in stock)/i.test(message);
+    return /(?:المنتجات|منتجات|شو عندكم|شو في عندكم|شو متوفر من المنتجات|شو متوفّر من المنتجات|عرض المنتجات|فرجيني المنتجات|ورجيني المنتجات|available products|what products|show me products|list products|product catalog|what do you sell)/i.test(message);
   }
 
   private isCategoryQuestion(message: string): boolean {
