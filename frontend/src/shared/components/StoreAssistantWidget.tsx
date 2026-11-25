@@ -58,6 +58,7 @@ export default function StoreAssistantWidget() {
         {
           message: contextualContent,
           productId: selectedProductId || undefined,
+          selectedProductName: selectedProductName || undefined,
           branchId: selectedBranch?.id,
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           history,
