@@ -15,6 +15,7 @@ import {
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import DashboardSidebar from "./dashboard/DashboardSidebar";
+import ThemeToggle from "./ThemeToggle";
 import type { DashboardSidebarItem } from "./dashboard/DashboardSidebar";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
@@ -148,6 +149,7 @@ export default function NavBar() {
         </nav>
 
         <div className="hidden shrink-0 items-center gap-3 xl:flex">
+          <ThemeToggle variant="surface" />
           {user ? (
             <>
               <span className="max-w-40 truncate text-sm text-text-slate">{user.name}</span>
@@ -172,6 +174,8 @@ export default function NavBar() {
           )}
         </div>
 
+        <div className="flex shrink-0 items-center gap-2 xl:hidden">
+        <ThemeToggle variant="surface" />
         <button
           type="button"
           onClick={() => setIsOpen((open) => !open)}
@@ -182,6 +186,7 @@ export default function NavBar() {
         >
           {isOpen ? <X size={21} aria-hidden="true" /> : <Menu size={21} aria-hidden="true" />}
         </button>
+      </div>
       </header>
 
       {isOpen && (

@@ -206,3 +206,71 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Store assistant
+
+The store assistant endpoint is:
+
+`POST /api/assistant/chat`
+
+It supports Arabic and English and is available without selecting a product for general store questions.
+
+### How it works
+
+- Product names, prices, descriptions, ratings, reviews, stock, categories, and branch information are retrieved from MongoDB.
+- These store facts are answered from the database; Groq is not used to invent or replace database values.
+- Groq is used only as a fallback for open-ended questions about a specific product, such as whether it may suit a particular use.
+- The model receives only the available product facts and is instructed not to invent missing specifications, discounts, warranties, delivery terms, or return policies.
+- If the API key is missing, Groq is unavailable, or the model response is unusable, the assistant falls back to the product information already available in the database.
+
+### Groq configuration
+
+The assistant uses the Groq Chat Completions API. Each developer must create their own Groq API key and configure it locally.
+
+1. Create an account and generate an API key at [Groq Console](https://console.groq.com/keys).
+2. In the backend directory, create a local `.env` file (do not commit it).
+3. Add:
+
+```env
+GROQ_API_KEY=your_own_groq_api_key
+GROQ_MODEL=openai/gpt-oss-120b
+```
+
+`GROQ_MODEL` is optional; if omitted, the backend uses `openai/gpt-oss-120b`.
+
+**Security:** Never put the Groq key in the frontend, source code, screenshots, or Git. Do not share one teammate's personal key. Each teammate should use their own key. If a key is exposed, revoke it in the Groq Console and generate a new one.
+
+### Run the assistant with the real store data
+
+1. Configure the backend environment variables described above, including `MONGODB_URI`, `JWT_SECRET` (at least 32 characters), `ADMIN_API_KEY`, and `STAFF_API_KEY`.
+2. Make sure the MongoDB database is reachable and contains the store's products, categories, branches, inventory, and reviews.
+3. Start the backend:
+
+```bash
+npm install
+npm run start:dev
+```
+
+4. In the frontend, set `VITE_USE_MOCK=false` so the storefront and assistant use the real backend data, then start the frontend using its project instructions.
+5. Open the storefront and use the assistant widget.
+
+The backend listens on port `3000` by default. The API is served under the `/api` prefix.
+
+### Test the assistant
+
+From the backend directory:
+
+```bash
+npm test -- assistant.service.spec.ts
+npm run build
+```
+
+The unit tests mock the Groq HTTP response; they do not require a real Groq API key or consume API credits. To test live model responses, run the backend with your own valid `GROQ_API_KEY`.
+
+### Troubleshooting
+
+- **Assistant answers database questions but not open-ended product questions:** check that `GROQ_API_KEY` is present in `backend/.env`, then restart the backend.
+- **Groq returns an authentication error:** verify the key in the Groq Console; do not paste it into chat or commit it.
+- **The assistant falls back to the product description:** the model may be unavailable, the request may have timed out, or the available product data may not answer the question. The assistant is designed not to make up missing facts.
+- **The assistant shows mock or different catalog data:** confirm `VITE_USE_MOCK=false` and that the frontend points to the intended backend and database.
+

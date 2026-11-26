@@ -43,6 +43,7 @@ import DashboardStaffPage from "./pages/DashboardStaffPage";
 import { ProtectedRoute } from "./shared/components/ProtectedRoute";
 import { useAuth } from "./shared/hooks/useAuth";
 import { useBranch } from "./shared/contexts/useBranch";
+import StoreAssistantWidget from "./shared/components/StoreAssistantWidget";
 
 const adminSidebarItems = [
   {
@@ -212,6 +213,7 @@ function App() {
                 </Route>
               </Route>
             </Routes>
+            <StoreAssistantWidget />
             </ErrorBoundary>
           </Router>
         </CartProvider>

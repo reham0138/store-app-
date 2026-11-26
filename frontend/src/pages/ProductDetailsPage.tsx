@@ -212,11 +212,15 @@ function ProductDetails({ productId }: { productId?: string }) {
           </div>
         </div>
 
-        <section className="mt-10 grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
-          <div>
+        <section className="mt-10">
+          <div className="mb-5">
             <h2 className="text-2xl font-bold text-brand-navy">Customer reviews</h2>
             <p className="mt-1 text-sm text-text-slate">{reviewsTotal} review{reviewsTotal === 1 ? "" : "s"}</p>
-            <div className="mt-5 space-y-4">
+          </div>
+
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)]">
+            <div className="min-w-0 rounded-2xl border border-border-subtle bg-surface-white p-5 sm:p-6">
+              <div className="space-y-4">
               {reviews.length === 0 && (
                 <p className="rounded-xl border border-border-subtle bg-surface-white p-6 text-sm text-text-slate">No reviews yet. Be the first to share your experience.</p>
               )}
@@ -254,10 +258,10 @@ function ProductDetails({ productId }: { productId?: string }) {
                   {loadingMore ? "Loading..." : "Load more reviews"}
                 </button>
               )}
+              </div>
             </div>
-          </div>
 
-          <div className="h-fit rounded-xl border border-border-subtle bg-surface-white p-6">
+            <div className="h-fit rounded-2xl border border-border-subtle bg-surface-white p-5 sm:p-6">
             <h2 className="text-xl font-bold text-brand-navy">
               {editingReview || myReview ? "Update your review" : "Write a review"}
             </h2>
@@ -286,6 +290,7 @@ function ProductDetails({ productId }: { productId?: string }) {
                 </div>
               </form>
             )}
+            </div>
           </div>
         </section>
       </section>

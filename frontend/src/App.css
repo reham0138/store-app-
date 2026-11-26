@@ -347,3 +347,33 @@ img.h-36 {
     width: 100%;
   }
 }
+
+/* Store assistant */
+/* The global "font: inherit" on form controls would override the widget's text sizes. */
+.assistant-root :where(button, input, textarea) {
+  font: revert-layer;
+}
+
+@keyframes assistant-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.assistant-panel,
+.assistant-sheet,
+.assistant-message {
+  animation: assistant-in 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-panel,
+  .assistant-sheet,
+  .assistant-message {
+    animation: none;
+  }
+}
+
+/* The surrounding field already draws the focus ring. */
+.assistant-root :is(input, textarea):focus-visible {
+  outline: none;
+}
